@@ -7,10 +7,11 @@ function notify_send() {
   //$period = 0;
 
   // Fetch all new nodes
-  $nresult = db_query("SELECT n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND (n.created > $period OR n.changed > $period) ORDER BY n.created");
+  $nresult = db_query("SELECT n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND n.created > $period ORDER BY n.created");
   while ($node = db_fetch_object($nresult)) {
     $nodes[$node->nid] = $node;
   }
+  $nodez = count($nodes);
 
   // Fetch new comments
   $cresult = db_query("SELECT c.cid, c.lid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.timestamp > $period ORDER BY c.lid, c.timestamp");
@@ -30,7 +31,7 @@ function notify_send() {
       $body = t("Greetings") ." ". $user->name .",\n\n";
 
       // New content
-      if ($user->node && count($nodes) && user_access("access content")) {
+      if ($user->node && $nodez && user_access("access content")) {
         $body .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
         foreach ($nodes as $node) {
           if ($node->moderate && user_access("access submission queue")) {
