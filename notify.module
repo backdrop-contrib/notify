@@ -20,7 +20,7 @@ function notify_send() {
   if (db_num_rows($result)) {
     while ($node = db_fetch_object($result)) {
       $output["nodes"]["plain"] .= strtr(t("published %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n  [ ". path_uri() ."node.php?id=$node->nid ]\n\n";
-      $output["nodes"]["teaser"] .= strtr(t("published %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) . ($node->teaser ? "\n  ." strip_tags($node->teaser) : "") ."\n  [ ". path_uri() ."node.php?id=$node->nid ]\n\n";
+      $output["nodes"]["teaser"] .= strtr(t("published %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) . ($node->teaser ? "\n  ". strip_tags($node->teaser) : "") ."\n  [ ". path_uri() ."node.php?id=$node->nid ]\n\n";
     }
   }
 
