@@ -159,10 +159,9 @@ function notify_page() {
         $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array(t("Disabled"), t("Enabled")), t("Include new comments in the notification mail."));
         $form .= form_submit(t("Save settings"));
 
-        theme("header");
-        theme("box", t("Notify"), form($form));
-
-        theme("footer");
+        print theme("header");
+        print theme("box", t("Notify"), form($form));
+        print theme("footer");
     }
   }
   else {
@@ -201,7 +200,7 @@ function notify_admin() {
         $i++;
       }
       $rows[$i][] = form_submit("Save");
-      $output = table($header, $rows);
+      $output = theme("table", $header, $rows);
       print form($output);
   }
 }
