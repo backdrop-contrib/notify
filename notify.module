@@ -25,7 +25,7 @@ function notify_send() {
   $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
   while ($user = db_fetch_object($uresult)) {
     if (user_access("access notify")) {
-      $to = "$account->name <$account->mail>";
+      $to = "$user->name <$user->mail>";
       $from = variable_get("site_mail", "root@localhost");
 
       $body = t("Greetings") ." ". $user->name .",\n\n";
@@ -52,6 +52,10 @@ function notify_send() {
         $body .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
         foreach ($comments as $nid=>$comment) {
           if ($nid != $nid_old) {
+            if (empty($nodes[$nid])) {
+              $result = db_query("SELECT title FROM node WHERE nid = '$nid'");
+              $nodes[$nid] = db_fetch_object($result);
+            }
             $body .= strtr(t("New comments attached to %title"), array("%title" => $nodes[$nid]->title)) ."\n";
             $nid_old = $nid;
           }
