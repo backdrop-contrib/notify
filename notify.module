@@ -27,18 +27,18 @@ function notify_send() {
   $period = variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
 
   // Fetch all new nodes
-  $nresult = db_query("SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND n.created > %d ORDER BY n.created", $period);
+  $nresult = db_query("SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM {node} n LEFT JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND n.created > %d ORDER BY n.created", $period);
   $php_node_types = array("book", "page");
   while ($node = db_fetch_object($nresult)) {
     // 030312AX: do not notify / show nodes containing php code
     // TODO: should these be eval'ed?
-    if (!(in_array($node->type, $php_node_types) && db_fetch_object(db_query("SELECT nid FROM $node->type WHERE nid = %d AND format = 1", $node->nid)))) {
+    if (!(in_array($node->type, $php_node_types) && db_fetch_object(db_query("SELECT nid FROM {$node->type} WHERE nid = %d AND format = 1", $node->nid)))) {
       $nodes[$node->nid] = $node;
     }
   }
 
   // Fetch new comments
-  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d ORDER BY c.nid, c.timestamp", $period);
+  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM {comments} c LEFT JOIN {users} u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d ORDER BY c.nid, c.timestamp", $period);
   while ($comment = db_fetch_object($cresult)) {
     $comments[$comment->nid][] = $comment;
   }
@@ -75,7 +75,7 @@ function notify_send() {
         foreach ($comments as $nid => $comment) {
           if ($nid != $nid_old) {
             if (strlen($nodes[$nid]->title) < 2) {
-              $result = db_query("SELECT title FROM node WHERE nid = %d", $nid);
+              $result = db_query("SELECT title FROM {node} WHERE nid = %d", $nid);
               $nodes[$nid] = db_fetch_object($result);
             }
             $body .= strtr(t("%count new comments attached to %title"), array("%count" => count($comment), "%title" => $nodes[$nid]->title)) ."\n";
@@ -153,7 +153,7 @@ function notify_page() {
         db_query("REPLACE {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)", $user->uid, $edit["status"], $edit["node"], $edit["teasers"], $edit["comment"]);
         $form .= status(t("Settings saved"));
       default:
-        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM users u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
+        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
         $notify = db_fetch_object($result);
 
         $form .= form_select(t("Notify status"), "status", $notify->status, array(t("Disabled"), t("Enabled")), t("Do you wish to receive periodic emails when new content is posted?"));
@@ -182,7 +182,7 @@ function notify_admin() {
         db_query("UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d", $settings['node'], $settings['teasers'], $settings['comment'], $uid);
       }
     default:
-      $result = db_query("SELECT u.uid, u.name, u.mail, n.* FROM users u LEFT JOIN {notify} n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name");
+      $result = db_query("SELECT u.uid, u.name, u.mail, n.* FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name");
       $header = array (t("username"), t("email address"), t("content"), t("teasers"), t("comment"), t("failed attempts"));
       $i = 0;
       while ($notify = db_fetch_object($result)) {
