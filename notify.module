@@ -10,7 +10,6 @@ function notify_send() {
   $nresult = db_query("SELECT n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND (n.created > $period OR n.changed > $period) ORDER BY n.created");
   while ($node = db_fetch_object($nresult)) {
     $nodes[$node->nid] = $node;
-    $nodes[$node->nid]->status = $node->moderate ? "queued" : ($node->changed > $node->created ? "updated" : "published");
   }
 
   // Fetch new comments
@@ -35,13 +34,13 @@ function notify_send() {
         $body .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
         foreach ($nodes as $node) {
           if ($node->moderate && user_access("access submission queue")) {
-            $body .= strtr(t("%status %type by %author: %title"), array("%status" => check_output($node->status), "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
-            $body .= $user->teasers ? "$node->teaser\n" : "";
+            $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
+            $body .= ($user->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
             $body .= "  [ ". path_uri() ."module.php?mod=queue&op=view&id=$node->nid ]\n\n";
           }
           elseif (!$node->moderate && $node->nid) {
-            $body .= strtr(t("%status %type by %author: %title"), array("%status" => check_output($node->status), "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
-            $body .= $user->teasers ? "$node->teaser\n" : "";
+            $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
+            $body .= ($user->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
             $body .= "  [ ". path_uri() ."node.php?id=$node->nid ]\n\n";
           }
         }
@@ -59,7 +58,7 @@ function notify_send() {
             $body .= strtr(t("New comments attached to %title"), array("%title" => $nodes[$nid]->title)) ."\n";
             $nid_old = $nid;
           }
-          $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($comment->subject), "%author" => ($comment->name ? $comment->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n\n";
+          $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($comment->subject), "%author" => ($comment->name ? $comment->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n\n";
         }
       }
 

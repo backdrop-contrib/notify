@@ -1,3 +1,9 @@
+11. December 2001
+-----------------
+notify.module
+- striped HTML tags from mails.
+- cleaned up the mail format a little.
+
 10. December 2001
 -----------------
 notify.module
