@@ -1,0 +1,42 @@
+<?php
+
+function members_page() {
+  global $op, $theme, $id, $QUERY_STRING;
+  
+  $theme->header();
+
+  $roles = explode(",", strtolower(variable_get("members_roles", "")));
+  if (is_array($roles) && count($roles)) {
+  
+    $result = db_query("SELECT userid,role,fake_email,url FROM users WHERE '". variable_get("members_roles", "") ."' LIKE CONCAT('%', role, '%') && status = 2 ORDER BY role,userid");
+  
+    while ($user = db_fetch_object($result)) {
+      $output[strtolower($user->role)] .= "<TR><TD><A HREF=\"account.php?mod=account&op=view&name=$user->userid\">$user->userid</A></TD><TD><A HREF=\"mailto:$user->fake_email\">$user->fake_email</A></TD><TD><A HREF=\"$user->url\">$user->url</A></TD></TR>\n";
+    }
+
+    foreach ($roles as $role) {
+      $role = trim($role);
+      if ($output[$role]) {
+        $theme->box(ucfirst($role), "<TABLE BORDER=0 CELLSPACING=2 CELLPADDING=2>\n<TR><TD><B>Username</B></TD><TD><B>E-mail</B></TD><TD><B>Homepage</B></TD></TR>\n$output[$role]</TABLE>\n");
+      }
+    }
+
+  }
+
+  $theme->footer();
+}
+
+function members_conf_options() {
+  $output .= form_textfield(t("Roles to show"), "members_roles", variable_get("members_roles", ""), 30, 55, t("Comma seperated list of roles to show in the member listing."));
+  return $output;
+}
+
+function members_link($type) {
+  if ($type == "page" && user_access("access content")) {
+    $links[] = "<a href=\"module.php?mod=members\">". t("members") ."</a>";
+  }
+  
+  return $links ? $links : array();
+}
+
+?>
