@@ -19,7 +19,7 @@ function notify_send() {
 
   if (db_num_rows($result)) {
     while ($node = db_fetch_object($result)) {
-      $output[nodes] .= strtr(t("%status %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->author ? $node->author : variable_get(anonymous, "Anonymous")), "%status" => node_status($node->status))) ."\n  ". path_uri() ."node.php?id=$node->nid\n\n";
+      $output[nodes] .= strtr(t("%status %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->userid ? $node->userid : variable_get(anonymous, "Anonymous")), "%status" => node_status($node->status))) ."\n  ". path_uri() ."node.php?id=$node->nid\n\n";
     }
   }
 
