@@ -86,19 +86,18 @@ function notify_send() {
                 .  "    ". url("node/view/$nid/$c->cid#$c->cid") ."\n\n";
         }
       }
+    }
+    if ($body) {
+      $to = $user->mail;
 
-      if ($body) {
-        $to = $user->mail;
+      $body = t("Greetings") ." ". $user->name .",\n\n$body";
 
-        $body = t("Greetings") ." ". $user->name .",\n\n$body";
+      $body .= "\n-- \n";
+      $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
+      $body .= t("To stop receiving these mails go to") ." $base_url/notify\n";
 
-        $body .= "\n-- \n";
-        $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
-        $body .= t("To stop receiving these mails go to") ." $base_url/notify\n";
-
-        if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
-          db_query("UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d", $user->uid);
-        }
+      if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
+        db_query("UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d", $user->uid);
       }
     }
   }
