@@ -134,7 +134,10 @@ function notify_link($type) {
 }
 
 function notify_page() {
-  global $op, $user, $edit;
+  global $user;
+
+  $op = $_POST["op"];
+  $edit = $_POST["edit"];
 
   if (user_access("access notify") && $user) {
     switch ($op) {
@@ -166,11 +169,11 @@ function notify_page() {
 }
 
 function notify_admin() {
-  global $op;
+  $op = $_POST["op"];
 
   switch ($op) {
     case "Save":
-      global $edit;
+      $edit = $_POST["edit"];
       foreach ($edit as $uid=>$settings) {
         db_query("UPDATE notify SET node = %d, teasers = %d, comment = %d WHERE uid = %d", $settings['node'], $settings['teasers'], $settings['comment'], $uid);
       }
