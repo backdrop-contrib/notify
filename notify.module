@@ -1,42 +1,113 @@
 <?php
 
-function members_page() {
-  global $op, $theme, $id, $QUERY_STRING;
-  
-  $theme->header();
+function notify_send() {
+  $period = variable_get("notify_send", 86400);
 
-  $roles = explode(",", strtolower(variable_get("members_roles", "")));
-  if (is_array($roles) && count($roles)) {
-  
-    $result = db_query("SELECT userid,role,fake_email,url FROM users WHERE '". variable_get("members_roles", "") ."' LIKE CONCAT('%', role, '%') && status = 2 ORDER BY role,userid");
-  
-    while ($user = db_fetch_object($result)) {
-      $output[strtolower($user->role)] .= "<TR><TD><A HREF=\"account.php?mod=account&op=view&name=$user->userid\">$user->userid</A></TD><TD><A HREF=\"mailto:$user->fake_email\">$user->fake_email</A></TD><TD><A HREF=\"$user->url\">$user->url</A></TD></TR>\n";
-    }
-
-    foreach ($roles as $role) {
-      $role = trim($role);
-      if ($output[$role]) {
-        $theme->box(ucfirst($role), "<TABLE BORDER=0 CELLSPACING=2 CELLPADDING=2>\n<TR><TD><B>Username</B></TD><TD><B>E-mail</B></TD><TD><B>Homepage</B></TD></TR>\n$output[$role]</TABLE>\n");
+  $nresult = db_query("SELECT n.nid, n.title, COUNT(c.cid) AS count FROM comments c LEFT JOIN node n ON n.nid = c.lid WHERE n.status = '". node_status("posted") ."' AND c.timestamp > ". (time() - $period) ." GROUP BY c.lid ORDER BY count DESC");
+  if (db_num_rows($nresult)) {
+    while ($node = db_fetch_object($nresult)) {
+      $output[comments] .= format_plural($node->count, "comment", "comments") ." ". t("attached to") ." ". check_output($node->title) ." (". path_uri() ."node.php?id=$node->nid):\n";
+      $cresult = db_query("SELECT c.subject, c.cid, c.pid, u.userid FROM comments c LEFT JOIN users u ON u.id = c.author WHERE c.lid = $node->nid ORDER BY c.timestamp DESC LIMIT $node->count");
+      while ($comment = db_fetch_object($cresult)) {
+        $output[comments] .= "  * ". check_output($comment->subject) ." ". t("by") ." ". $comment->userid ."\n    (". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid)\n";
       }
+      $output[comments] .= "\n";
     }
-
   }
 
-  $theme->footer();
+  $result = db_query("SELECT n.title, n.nid, n.type, n.status, u.userid FROM node n LEFT JOIN users u ON n.author = u.id WHERE ". time() ." - n.timestamp < $period ORDER BY n.timestamp DESC LIMIT 10");
+
+  if (db_num_rows($result)) {
+    while ($node = db_fetch_object($result)) {
+      $output[nodes] .= check_output($node->type) .": ". check_output($node->title) ." ". t("by") ." ". $node->userid ." ". node_status($node->status) ."\n  (". path_uri() ."node.php?id=$node->nid)\n\n";
+    }
+  }
+
+  $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
+  $from = variable_get("site_mail", "root@localhost");
+
+  if (count($output[comments])) {
+    $body .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
+    $body .= wordwrap($output[comments], 72);
+    $body .= "\n";
+  }
+
+  if (count($output[nodes])) {
+    $body .= t("Recent nodes") ."\n". str_repeat("-", strlen(t("Recent nodes"))) ."\n\n";
+    $body .= wordwrap($output[nodes], 72);
+    $body .= "\n";
+  }
+
+  if ($body) {
+    $body .= "-- \n";
+    $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
+    $body .= t("To stop reveiving these mails go to") ." ". path_uri() ."\n";
+    
+    $result = db_query("SELECT u.userid, u.real_email FROM users u LEFT JOIN notify n ON u.userid = n.userid WHERE n.userid != '' AND u.status = 2;");
+    while ($account = db_fetch_object($result)) {
+      $to = "$account->userid <$account->real_email>";
+      mail($to, $subject, t("Greetings") ." $account->userid,\n\n$body", "From: $from\nReply-to: $from\nX-Mailer: Drupal\n");
+    }
+  }
 }
 
-function members_conf_options() {
-  $output .= form_textfield(t("Roles to show"), "members_roles", variable_get("members_roles", ""), 30, 55, t("Comma seperated list of roles to show in the member listing."));
+function notify_conf_options() {
+  $period = array(900 => format_interval(900), 1800 => format_interval(1800), 3600 => format_interval(3600), 10800 => format_interval(10800), 21600 => format_interval(21600), 32400 => format_interval(32400), 43200 => format_interval(43200), 86400 => format_interval(86400), 172800 => format_interval(172800), 259200 => format_interval(259200), 604800 => format_interval(604800), 1209600 => format_interval(1209600), 2419200 => format_interval(2419200), 1000000000 => "Never");
+  $output .= form_select("Send notifications every", "notify_send", variable_get("notify_send", 86400), $period, "Requires crontab.");
+
   return $output;
 }
 
-function members_link($type) {
-  if ($type == "page" && user_access("access content")) {
-    $links[] = "<a href=\"module.php?mod=members\">". t("members") ."</a>";
+function notify_cron() {
+  if (time() - variable_get("notify_send_last", 0) > variable_get("notify_send", 86400)) {
+    variable_set("notify_send_last", time());
+    notify_send();
+  }
+}
+
+function notify_perm() {
+  return array("access notify");
+}
+
+function notify_link($type) {
+  if ($type == "menu" && user_access("access notify")) {
+    $links[] = "<a href=\"module.php?mod=notify\">". t("your notify") ."</a>";
   }
   
   return $links ? $links : array();
+}
+
+function notify_page() {
+  global $theme, $op, $user, $edit;
+  
+  if (user_access("access notify") && $user) {
+    switch ($op) {
+      case "test":
+        notify_send();
+        break;
+      case "Save settings":
+        if ($edit[status] == 1) {
+           db_query("REPLACE notify (userid) VALUES ('$user->userid')");
+        }
+        else {
+           db_query("DELETE FROM notify WHERE userid = '$user->userid'");
+        }
+      default:
+        $result = db_query("SELECT * FROM notify WHERE userid = '$user->userid'");
+        $match = db_num_rows($result);
+      
+        $form .= form_select(t("Notify"), "status", $match, array("Disabled", "Enabled"));
+        $form .= form_submit("Save settings");
+      
+        $theme->header();
+        $theme->box("Notify", form("module.php?mod=notify", $form));
+     
+        $theme->footer();
+    }
+  }
+  else {
+    print message_access();
+  }
 }
 
 ?>
