@@ -7,6 +7,7 @@ function notify_help($section) {
       $output = t("Enables notifications by email.");
       break;
   }
+  return $output;
 }
 
 function notify_content($node, $notify) {
@@ -93,7 +94,7 @@ function notify_send() {
 
         $body .= "\n-- \n";
         $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
-        $body .= t("To stop receiving these mails go to") ." $base_url/\n";
+        $body .= t("To stop receiving these mails go to") ." $base_url/notify\n";
 
         if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
           db_query("UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d", $user->uid);
@@ -124,8 +125,7 @@ function notify_perm() {
 
 function notify_link($type) {
   if ($type == "system") {
-    global $user;
-    if ($user->uid) {
+    if (user_access('access notify')) {
       menu("notify", t("my notify settings"), "notify_page", 0);
     }
     if (user_access("administer notify")) {
@@ -149,7 +149,7 @@ function notify_page() {
         break;
       case t("Save settings"):
         db_query("REPLACE {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)", $user->uid, $edit["status"], $edit["node"], $edit["teasers"], $edit["comment"]);
-        $form .= status(t("Settings saved"));
+        drupal_set_message(t("Notify settings saved"));
       default:
         $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
         $notify = db_fetch_object($result);
@@ -160,9 +160,7 @@ function notify_page() {
         $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array(t("Disabled"), t("Enabled")), t("Include new comments in the notification mail."));
         $form .= form_submit(t("Save settings"));
 
-        print theme("header");
-        print theme("box", t("Notify"), form($form));
-        print theme("footer");
+        print theme("page", form($form));
     }
   }
   else {
