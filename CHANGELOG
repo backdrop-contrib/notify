@@ -1,3 +1,8 @@
+31. January 2002
+----------------
+notify.module
+- changed to use new menu link hooks.
+
 21. December 2001
 -----------------
 notify.module

@@ -71,7 +71,7 @@ function notify_send() {
         $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
         $body .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
   
-        if (!mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
+        if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
           db_query("UPDATE notify SET attempts = attempts + 1 WHERE uid = $user->uid");
         }
       }
@@ -99,12 +99,12 @@ function notify_perm() {
 }
 
 function notify_link($type) {
-  if ($type == "menu" && user_access("access notify")) {
-    $links[""] = "<a href=\"module.php?mod=notify\">". t("your notifications") ."</a>";
+  if ($type == "menu.settings" && user_access("access notify")) {
+    $links[] = "<a href=\"module.php?mod=notify\">". t("notification settings") ."</a>";
   }
 
   if ($type == "admin" && user_access("administer notify")) {
-    $links[""] = "<a href=\"admin.php?mod=notify\">". t("notifications") ."</a>";
+    $links[] = "<a href=\"admin.php?mod=notify\">". t("notifications") ."</a>";
   }
 
   return $links ? $links : array();
