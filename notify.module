@@ -3,7 +3,7 @@
 
 function notify_help($section) {
   switch ($section) {
-    case 'admin/system/modules#description':
+    case 'admin/modules#description':
       $output = t("Enables notifications by email.");
       break;
   }
@@ -139,17 +139,14 @@ function notify_perm() {
   return array("access notify", "administer notify");
 }
 
-function notify_link($type) {
-  if ($type == "system") {
-    if (user_access('access notify')) {
-      menu("notify", t("my notify settings"), "notify_page", 0);
-    }
-    if (user_access("administer notify")) {
-      menu("admin/user/notify", "notifications", "notify_admin", NULL, 8);
-    }
-  }
+function notify_menu() {
+  global $user;
+  $items = array();
+  
+  $items[] = array('path' => "user/$user->uid/notify", 'title' => t("my notify settings"), 'callback' => 'notify_page', 'access' => user_access("access notify"), 'type' => MENU_LOCAL_TASK);
+  $items[] = array('path' => "admin/user/notify", 'title' => t("notifications"), 'callback' => 'notify_admin', 'access' => user_access("administer notify"), 'type' => MENU_LOCAL_TASK);
 
-  return array();
+  return $items;
 }
 
 function notify_page() {
@@ -214,9 +211,9 @@ function notify_admin() {
         $rows[$i][] = $notify->attempts;
         $i++;
       }
-      $rows[$i][] = form_submit("Save");
       $output = theme("table", $header, $rows);
-      print form($output);
+      $output.= form_submit("Save");
+      print theme('page', form($output));
   }
 }
 
