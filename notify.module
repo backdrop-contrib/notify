@@ -1,7 +1,7 @@
 <?php
 
 function notify_send() {
-  $period = variable_get("notify_send", 86400);
+  $period =  time() - variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
 
   $nresult = db_query("SELECT n.nid, n.title, COUNT(c.cid) AS count FROM comments c LEFT JOIN node n ON n.nid = c.lid WHERE n.status = '". node_status("posted") ."' AND c.timestamp > ". (time() - $period) ." GROUP BY c.lid ORDER BY count DESC");
   if (db_num_rows($nresult)) {
@@ -27,26 +27,27 @@ function notify_send() {
   $from = variable_get("site_mail", "root@localhost");
 
   if (count($output[comments])) {
-    $body .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
-    $body .= wordwrap($output[comments], 72);
-    $body .= "\n";
+    $body[comments] .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
+    $body[comments] .= wordwrap($output[comments], 72);
+    $body[comments] .= "\n";
   }
 
   if (count($output[nodes])) {
-    $body .= t("Recent nodes") ."\n". str_repeat("-", strlen(t("Recent nodes"))) ."\n\n";
-    $body .= wordwrap($output[nodes], 72);
-    $body .= "\n";
+    $body[nodes] .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent nodes"))) ."\n\n";
+    $body[nodes] .= wordwrap($output[nodes], 72);
+    $body[nodes] .= "\n";
   }
 
   if ($body) {
-    $body .= "-- \n";
-    $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
-    $body .= t("To stop reveiving these mails go to") ." ". path_uri() ."\n";
+    $body[footer] .= "-- \n";
+    $body[footer] .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
+    $body[footer] .= t("To stop reveiving these mails go to") ." ". path_uri() ."\n";
     
-    $result = db_query("SELECT u.userid, u.real_email FROM users u LEFT JOIN notify n ON u.userid = n.userid WHERE n.userid != '' AND u.status = 2;");
+    $result = db_query("SELECT u.userid, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2;");
     while ($account = db_fetch_object($result)) {
+      $body[header] .= t("Greetings") ." $account->userid,\n\n";
       $to = "$account->userid <$account->real_email>";
-      mail($to, $subject, t("Greetings") ." $account->userid,\n\n$body", "From: $from\nReply-to: $from\nX-Mailer: Drupal\n");
+      mail($to, $subject, $body[header] . ($account->node ? $body[nodes] : "") . ($account->comment ? $body[comments] : "") . $body[footer], "From: $from\nReply-to: $from\nX-Mailer: Drupal\n");
     }
   }
 }
@@ -66,12 +67,16 @@ function notify_cron() {
 }
 
 function notify_perm() {
-  return array("access notify");
+  return array("access notify", "administer notify");
 }
 
 function notify_link($type) {
   if ($type == "menu" && user_access("access notify")) {
-    $links[] = "<a href=\"module.php?mod=notify\">". t("your notify") ."</a>";
+    $links[] = "<a href=\"module.php?mod=notify\">". t("your notifications") ."</a>";
+  }
+
+  if ($type == "admin" && user_access("administer notify")) {
+    $links[] = "<a href=\"admin.php?mod=notify\">". t("notifications") ."</a>";
   }
   
   return $links ? $links : array();
@@ -86,17 +91,14 @@ function notify_page() {
         notify_send();
         break;
       case "Save settings":
-        if ($edit[status] == 1) {
-           db_query("REPLACE notify (userid) VALUES ('$user->userid')");
-        }
-        else {
-           db_query("DELETE FROM notify WHERE userid = '$user->userid'");
-        }
+        db_query(sprintf("REPLACE notify (id, status, node, comment) VALUES (%s, %s, %s, %s)", $user->id, check_input($edit[status]), check_input($edit[node]), check_input($edit[comment])));
       default:
-        $result = db_query("SELECT * FROM notify WHERE userid = '$user->userid'");
-        $match = db_num_rows($result);
-      
-        $form .= form_select(t("Notify"), "status", $match, array("Disabled", "Enabled"));
+        $result = db_query("SELECT u.userid, u.real_email, n.status, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE u.id = $user->id AND u.status = 2 ORDER BY u.userid");
+        $notify = db_fetch_object($result);
+        
+        $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"));
+        $form .= form_select(t("Notify new content"), "node", $notify->node, array("Disabled", "Enabled"), "Include new content in the notification mail.");
+        $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array("Disabled", "Enabled"), "Include new comments in the notification mail.");
         $form .= form_submit("Save settings");
       
         $theme->header();
@@ -108,6 +110,16 @@ function notify_page() {
   else {
     print message_access();
   }
+}
+
+function notify_admin() {
+  $result = db_query("SELECT u.userid, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2 ORDER BY u.userid");
+  print "<table border=\"1\" cellpadding=\"2\" cellspacing=\"2\">\n";
+  printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>", "username", "e-mail address", "content notify", "comment notify");
+  while ($notify = db_fetch_object($result)) {
+    printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>", $notify->userid, $notify->real_email, t($notify->node ? "Enabled" : "Disabled"), t($notify->comment ? "Enabled" : "Disabled"));
+  }
+  print "</table>";
 }
 
 ?>
