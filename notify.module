@@ -3,56 +3,61 @@
 
 function notify_send() {
   $period =  time() - variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
-
-  $nresult = db_query("SELECT n.nid, n.title, COUNT(c.cid) AS count FROM comments c LEFT JOIN node n ON n.nid = c.lid WHERE n.status = '". node_status("posted") ."' AND c.timestamp > ". (time() - $period) ." GROUP BY c.lid ORDER BY count DESC");
+  $nresult = db_query("SELECT n.nid, n.title, COUNT(n.nid) AS count FROM comments c LEFT JOIN node n ON n.nid = c.lid WHERE n.status = '1' AND c.timestamp > ". (time() - $period) ." GROUP BY n.nid, n.title ORDER BY count DESC");
   if (db_num_rows($nresult)) {
     while ($node = db_fetch_object($nresult)) {
-      $output[comments] .= strtr(t("%comments attached to %title"), array("%title" => check_output($node->title), "%comments" => format_plural($node->count, "comment", "comments"))) ."\n". path_uri() ."node.php?id=$node->nid\n";
-      $cresult = db_query("SELECT c.subject, c.cid, c.pid, u.name FROM comments c LEFT JOIN user u ON u.uid = c.author WHERE c.lid = $node->nid ORDER BY c.timestamp DESC LIMIT $node->count");
+      $output["comments"] .= strtr(t("%comments attached to %title"), array("%title" => check_output($node->title), "%comments" => format_plural($node->count, "comment", "comments"))) ."\n". path_uri() ."node.php?id=$node->nid\n";
+      $cresult = db_query("SELECT c.subject, c.cid, c.pid, u.name FROM comments c LEFT JOIN user u ON u.uid = c.uid WHERE c.lid = $node->nid ORDER BY c.timestamp DESC LIMIT $node->count");
       while ($comment = db_fetch_object($cresult)) {
-        $output[comments] .= strtr(t("%title by %author"), array("%title" => check_output($comment->subject), "%author" => ($comment->name ? $comment->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n";
+        $output["comments"] .= strtr(t("%title by %author"), array("%title" => check_output($comment->subject), "%author" => ($comment->name ? $comment->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n";
       }
-      $output[comments] .= "\n";
+      $output["comments"] .= "\n";
     }
   }
 
-  $result = db_query("SELECT n.title, n.nid, n.type, n.status, u.name FROM node n LEFT JOIN user u ON n.author = u.uid WHERE ". time() ." - n.timestamp < $period ORDER BY n.timestamp DESC LIMIT 10");
+  $result = db_query("SELECT n.title, n.nid, n.type, n.teaser, u.name FROM node n LEFT JOIN user u ON n.uid = u.uid WHERE n.status = 1 AND ". time() ." - n.created < $period ORDER BY n.created DESC LIMIT 10");
 
   if (db_num_rows($result)) {
     while ($node = db_fetch_object($result)) {
-      $output[nodes] .= strtr(t("%status %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")), "%status" => node_status($node->status))) ."\n  ". path_uri() ."node.php?id=$node->nid\n\n";
+      $output["nodes"]["plain"] .= strtr(t("published %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n  [" ". path_uri() ."node.php?id=$node->nid "]\n\n";
+      $output["nodes"]["teaser"] .= strtr(t("published %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) . ($node->teaser ? "\n  $node->teaser" : "") ."\n  [" ". path_uri() ."node.php?id=$node->nid "]\n\n";
     }
   }
 
-  if (count($output[comments])) {
-    $body[comments] .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
-    $body[comments] .= wordwrap($output[comments], 72);
-    $body[comments] .= "\n";
+  if (count($output["comments"])) {
+    $body["comments"] .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
+    $body["comments"] .= wordwrap($output["comments"], 72);
+    $body["comments"] .= "\n";
   }
 
-  if (count($output[nodes])) {
-    $body[nodes] .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
-    $body[nodes] .= wordwrap($output[nodes], 72);
-    $body[nodes] .= "\n";
+  if (count($output["nodes"])) {
+    $body["nodes"]["plain"] .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
+    $body["nodes"]["plain"] .= wordwrap($output["nodes"]["plain"], 72);
+    $body["nodes"]["plain"] .= "\n";
+
+    $body["nodes"]["teaser"] .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
+    $body["nodes"]["teaser"] .= wordwrap($output["nodes"]["teaser"], 72);
+    $body["nodes"]["teaser"] .= "\n";
   }
 
   if ($body) {
-    $body[footer] .= "-- \n";
-    $body[footer] .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
-    $body[footer] .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
+    $body["footer"] .= "-- \n";
+    $body["footer"] .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
+    $body["footer"] .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
     
-    $result = db_query("SELECT n.uid, u.name, u.mail, n.node, n.comment FROM user u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1". (variable_get(notify_attempts, 5) ? " AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
+    $result = db_query("SELECT n.uid, u.name, u.mail, n.node, n.teasers, n.comment FROM user u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1". (variable_get(notify_attempts, 5) ? " AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
     while ($account = db_fetch_object($result)) {
-       /* if the mail would be empty, jump to the next user */
-       if (($account->node ? $body[nodes] : "") . 
-           ($account->comment ? $body[comments] : "") == "")
+      // If the mail would be empty, jump to the next user
+      if (($account->node ? $body["nodes"] : "") . ($account->comment ? $body["comments"] : "") == "") {
 	 continue;
+      }
       $to = "$account->name <$account->mail>";
       $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
       $from = variable_get("site_mail", "root@localhost");
-      $body[header] = t("Greetings") ." ". $account->name .",\n\n";
-      if (!mail($to, $subject, $body[header] . ($account->node ? $body[nodes] : "") . ($account->comment ? $body[comments] : "") . $body[footer], "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
-        db_query("UPDATE notify SET attempts = attempts + 1 WHERE id = $account->id");
+      $body["header"] = t("Greetings") ." ". $account->name .",\n\n";
+
+      if (!mail($to, $subject, $body["header"] . ($account->node ? ($account->teasers ? $body["nodes"]["teaser"] : $body["nodes"]["plain"]) : "") . ($account->comment ? $body["comments"] : "") . $body["footer"], "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
+        db_query("UPDATE notify SET attempts = attempts + 1 WHERE uid = $account->uid");
       }
     }
   }
@@ -79,11 +84,11 @@ function notify_perm() {
 
 function notify_link($type) {
   if ($type == "menu" && user_access("access notify")) {
-    $links[] = "<a href=\"module.php?mod=notify\">". t("your notifications") ."</a>";
+    $links[""] = "<a href=\"module.php?mod=notify\">". t("your notifications") ."</a>";
   }
 
   if ($type == "admin" && user_access("administer notify")) {
-    $links[] = "<a href=\"admin.php?mod=notify\">". t("notifications") ."</a>";
+    $links[""] = "<a href=\"admin.php?mod=notify\">". t("notifications") ."</a>";
   }
   
   return $links ? $links : array();
@@ -95,13 +100,14 @@ function notify_page() {
   if (user_access("access notify") && $user) {
     switch ($op) {
       case t("Save settings"):
-        db_query(sprintf("REPLACE notify (uid, status, node, comment) VALUES (%s, %s, %s, %s)", $user->uid, check_input($edit[status]), check_input($edit[node]), check_input($edit[comment])));
+        db_query(sprintf("REPLACE notify (uid, status, node, teasers, comment) VALUES (%s, %s, %s, %s, %s)", $user->uid, check_input($edit["status"]), check_input($edit["node"]), check_input($edit["teasers"]), check_input($edit["comment"])));
       default:
-        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.comment FROM user u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = $user->uid AND u.status = 1 ORDER BY u.name");
+        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM user u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = $user->uid AND u.status = 1 ORDER BY u.name");
         $notify = db_fetch_object($result);
         
         $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"));
         $form .= form_select(t("Notify new content"), "node", $notify->node, array("Disabled", "Enabled"), t("Include new content in the notification mail."));
+        $form .= form_select(t("Include teasers"), "teasers", $notify->teasers, array("Disabled", "Enabled"), t("Include a teaser of the content when avaiable."));
         $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array("Disabled", "Enabled"), t("Include new comments in the notification mail."));
         $form .= form_submit(t("Save settings"));
       
