@@ -13,14 +13,31 @@ function notify_help($section) {
 function notify_content($node, $notify) {
   switch ($notify->teasers) {
     case 0:
-      break;
+      return;
     case 1:
-      $output = $node->teaser ? strip_tags("$node->teaser\n") : "";
+      $txt = $node->teaser;
       break;
     case 2:
-      $output = $node->body ? strip_tags("$node->body\n") : "";
+      $txt = $node->body;
   }
-  return $output;
+  $txt = ereg_replace ("(<br />|<br/>|<p>)", notify_lb(), $txt);
+  $txt = html_entity_decode($txt);
+  $txt = strip_tags($txt);
+  return $txt;
+}
+
+function notify_lb() {
+  $os = php_uname();
+  switch ($os) {
+    case strstr($os, 'Windows'):
+      return "\r\n";
+    case strstr($os, 'nix'):
+      return "\n";
+    case strstr($os, 'Mac'):
+      return "\r";
+    default:
+      return "\n";
+  }
 }
 
 function notify_send() {
@@ -57,12 +74,12 @@ function notify_send() {
       $body .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
       foreach ($nodes as $node) {
         if ($notify->moderate) {
-          $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => $node->type, "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
+          $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => $node->type, "%title" => $node->title, "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
           $body .= notify_content($node, $notify);
           $body .= "  [ ". url("queue/view/$node->nid") ." ]\n\n";
         }
         elseif (!$notify->moderate && $node->nid) {
-          $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => $node->type, "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
+          $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => $node->type, "%title" => $node->title, "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
           $body .= notify_content($node, $notify);
           $body .= "  [ ". url("node/view/$node->nid") ." ]\n\n";
         }
@@ -78,11 +95,11 @@ function notify_send() {
             $result = db_query("SELECT title FROM {node} WHERE nid = %d", $nid);
             $nodes[$nid] = db_fetch_object($result);
           }
-          $body .= strtr(t("%count new comments attached to %title"), array("%count" => count($comment), "%title" => $nodes[$nid]->title)) ."\n";
+          $body .= strtr(t("%count new comments attached to: %title"), array("%count" => count($comment), "%title" => $nodes[$nid]->title)) ."\n";
           $nid_old = $nid;
         }
         foreach ($comment as $c) {
-          $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($c->subject), "%author" => ($c->name ? $c->name : variable_get(anonymous, "Anonymous")))) ."\n"
+          $body .= "  ". strtr(t("%title by %author"), array("%title" => $c->subject, "%author" => ($c->name ? $c->name : variable_get(anonymous, "Anonymous")))) ."\n"
                 .  "    ". url("node/view/$nid/$c->cid#$c->cid") ."\n\n";
         }
       }
