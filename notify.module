@@ -23,7 +23,7 @@ function notify_send() {
   $period = variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
 
   // Fetch all new nodes
-  $nresult = db_query("SELECT n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND n.created > $period ORDER BY n.created");
+  $nresult = db_query("SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND n.created > $period ORDER BY n.created");
   while ($node = db_fetch_object($nresult)) {
     $nodes[$node->nid] = $node;
   }
@@ -37,10 +37,10 @@ function notify_send() {
   // Fetch users with notify enabled
   $uresult = db_query("SELECT uid, status, node, teasers, comment FROM notify WHERE status = 1". (variable_get(notify_attempts, 5) ? " AND attempts <= ". variable_get(notify_attempts, 5) : ""));
   global $user;
-  $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
   $from = variable_get("site_mail", ini_get("sendmail_from"));
   while ($notify = db_fetch_object($uresult)) {
     $user = user_load(array("uid" => $notify->uid));
+    $subject = variable_get("site_name", "drupal") ." ". t("notification for %name", array ("%name" =>$user->name));
     if (user_access("access notify")) {
       $body = "";
       // New content
@@ -50,13 +50,11 @@ function notify_send() {
           if ($notify->moderate && user_access("access submission queue")) {
             $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
             $body .= notify_content($node, $notify);
-            // $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
             $body .= "  [ ". path_uri() . url("queue/view/$node->nid") ." ]\n\n";
           }
           elseif (!$notify->moderate && $node->nid) {
             $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
             $body .= notify_content($node, $notify);
-            // $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
             $body .= "  [ ". path_uri() . url("node/view/$node->nid") ." ]\n\n";
           }
         }
@@ -175,13 +173,18 @@ function notify_admin() {
       }
     default:
       $result = db_query("SELECT u.uid, u.name, u.mail, n.node, n.comment, n.teasers, n.attempts FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 && u.status = 1 ORDER BY u.name");
-      $output = "<table border=\"1\" cellpadding=\"2\" cellspacing=\"2\">\n";
-      $output .= sprintf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>", "username", "e-mail address", "content", "teaser", "comment", "failed attempts");
+      $header = array (t("username"), t("email address"), t("content"), t("comment"), t("failed attempts"));
+      $i = 0;
       while ($notify = db_fetch_object($result)) {
-        $output .= sprintf("<tr><td>%s</td><td>%s</td><td align=\"center\">%s</td><td align=\"center\">%s</td><td align=\"center\">%s</td><td align=\"center\">%s</td></tr>", format_name($notify), $notify->mail, "<input type=\"checkbox\" name=\"edit[$notify->uid][node]\"". ($notify->node ? " checked=\"checked\"" : "") .">", "<input type=\"checkbox\" name=\"edit[$notify->uid][teasers]\"". ($notify->teasers ? " checked=\"checked\"" : "") .">", "<input type=\"checkbox\" name=\"edit[$notify->uid][comment]\"". ($notify->comment ? " checked=\"checked\"" : "") .">", $notify->attempts);
+        $rows[$i][] = format_name($notify);
+        $rows[$i][] = $notify->mail;
+        $rows[$i][] = "<input type=\"checkbox\" name=\"edit[$notify->uid][node]\"". ($notify->node ? " checked=\"checked\"" : "") .">";
+        $rows[$i][] = "<input type=\"checkbox\" name=\"edit[$notify->uid][comment]\"". ($notify->comment ? " checked=\"checked\"" : "") .">";
+        $rows[$i][] = $notify->attempts;
+        $i++;
       }
-      $output .= "</table>";
-      $output .= form_submit("Save");
+      $rows[$i][] = form_submit("Save");
+      $output = table($header, $rows);
       print form($output);
   }
 }
