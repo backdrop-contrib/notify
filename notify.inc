@@ -117,14 +117,14 @@ function _notify_send() {
       $body .= t('Recent content') ."\n". str_repeat('-', strlen(t('Recent content'))) ."\n\n";
       foreach ($nodes as $node) {
         if ($user->moderate) {
-          $body .= strtr(t('%status %type by %author: %title'), array('%status' => 'queued', '%type' => $node->type, '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
+          $body .= strtr(t('%status %type by %author: %title'), array('%status' => 'queued', '%type' => node_invoke($node, 'node_name'), '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
           $body .= _notify_content($node, $user);
-          $body .= '  [ '. url("queue/$node->nid") ." ]\n\n";
+          $body .= '  [ '. url("queue/$node->nid", NULL, NULL, TRUE) ." ]\n\n";
         }
         elseif (!$user->moderate && $node->nid) {
-          $body .= strtr(t('%status %type by %author: %title'), array('%status' => 'published', '%type' => $node->type, '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
+          $body .= strtr(t('%status %type by %author: %title'), array('%status' => 'published', '%type' => node_invoke($node, 'node_name'), '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
           $body .= _notify_content($node, $user);
-          $body .= '  [ '. url("node/$node->nid") ." ]\n\n";
+          $body .= '  [ '. url("node/$node->nid", NULL, NULL, TRUE) ." ]\n\n";
         }
       }
     }
@@ -143,7 +143,7 @@ function _notify_send() {
         }
         foreach ($comment as $c) {
           $body .= '  '. strtr(t('%title by %author'), array('%title' => $c->subject, '%author' => ($c->name ? $c->name : variable_get(anonymous, 'Anonymous')))) ."\n"
-                .  '    '. url("node/$nid/$c->cid#$c->cid") ."\n\n";
+                .  '    '. url("node/$nid/$c->cid#$c->cid", NULL, NULL, TRUE) ."\n\n";
         }
       }
     }
@@ -152,7 +152,7 @@ function _notify_send() {
 
       $body .= "\n-- \n";
       $body .= t('This is an automatic mail from') .' '. variable_get('site_name', 'drupal') ."\n";
-      $body .= t('To stop receiving these mails go to') ." $base_url/user/$user->uid/notify\n";
+      $body .= t('To stop receiving these mails go to') .' '. url("user/$user->uid/notify" , NULL, NULL, TRUE) ."\n";
 
       if (!user_mail($user->mail, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
         db_query('UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d', $user->uid);
