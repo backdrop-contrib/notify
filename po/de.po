@@ -20,11 +20,11 @@ msgstr "Einstellungen sichern"
 
 #: notify.inc:12
 msgid "Notify settings saved"
-msgstr "Einstellungen für Benachrichtigungen gespeichert"
+msgstr "Einstellungen fÃ¼r Benachrichtigungen gespeichert"
 
 #: notify.inc:17
 msgid "Notify status"
-msgstr "Status für Benachrichtigungen"
+msgstr "Status fÃ¼r Benachrichtigungen"
 
 #: notify.inc:17;18;20
 msgid "Enabled"
@@ -32,7 +32,7 @@ msgstr "Eingeschalten"
 
 #: notify.inc:17
 msgid "Do you wish to receive periodic emails when new content is posted?"
-msgstr "Willst Du eine E-Mail bekommen wenn neue Beiträge erschienen sind?"
+msgstr "Willst Du eine E-Mail bekommen wenn neue BeitrÃ¤ge erschienen sind?"
 
 #: notify.inc:18
 msgid "Notify new content"
@@ -40,7 +40,7 @@ msgstr ""
 
 #: notify.inc:18
 msgid "Include new content in the notification mail."
-msgstr "Neue Beiträge in der E-Mail mitschicken."
+msgstr "Neue BeitrÃ¤ge in der E-Mail mitschicken."
 
 #: notify.inc:19
 msgid "Content"
@@ -60,15 +60,15 @@ msgstr "Titel + Gesamtinhalt"
 
 #: notify.inc:19
 msgid "Select the amount of each post that you would like to see in your notification emails."
-msgstr "Wähle aus, wieviel von jeder Nachricht in jeder E-Mail enthalten sein soll."
+msgstr "WÃ¤hle aus, wieviel von jeder Nachricht in jeder E-Mail enthalten sein soll."
 
 #: notify.inc:20
 msgid "Notify new comments"
-msgstr "Über neue Kommentare benachrichtigen"
+msgstr "Ãœber neue Kommentare benachrichtigen"
 
 #: notify.inc:20
 msgid "Include new comments in the notification mail."
-msgstr "Auch neue Kommentare in der E-Mail berücksichtigen."
+msgstr "Auch neue Kommentare in der E-Mail berÃ¼cksichtigen."
 
 #: notify.inc:30;56
 msgid "Save"
@@ -100,11 +100,11 @@ msgstr ""
 
 #: notify.inc:113
 msgid "notification for %name"
-msgstr "Benachrichtigung für %name"
+msgstr "Benachrichtigung fÃ¼r %name"
 
 #: notify.inc:117;117
 msgid "Recent content"
-msgstr "Neue Beiträge"
+msgstr "Neue BeitrÃ¤ge"
 
 #: notify.inc:120;125
 msgid "%status %type by %author: %title"
