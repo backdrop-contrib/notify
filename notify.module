@@ -2,7 +2,7 @@
 // $Id$
 
 function notify_send() {
-  $period =  variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
+  $period = variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
 
   // Fetch all new nodes
   $nresult = db_query("SELECT n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND n.created > $period ORDER BY n.created");
@@ -45,9 +45,9 @@ function notify_send() {
       // New comments
       if ($notify->comment && count($comments) && user_access("access comments")) {
         $body .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
-        foreach ($comments as $nid=>$comment) {
+        foreach ($comments as $nid => $comment) {
           if ($nid != $nid_old) {
-            if (!$nodes[$nid]->title) {
+            if (strlen($nodes[$nid]->title) < 2) {
               $result = db_query("SELECT title FROM node WHERE nid = '$nid'");
               $nodes[$nid] = db_fetch_object($result);
             }
@@ -61,15 +61,15 @@ function notify_send() {
       }
 
       if ($body) {
-        $to = "\"$user->name\" <$user->mail>";
-    
+        $to = "$user->mail";
+
         $body = t("Greetings") ." ". $user->name .",\n\n$body";
-  
+
         $body .= "\n-- \n";
         $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
         $body .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
-  
-        if (!user_mail($to, $subject, str_replace("\n", "\r\n", wordwrap($body, 72)), "From: $from\r\nReply-to: $from\r\nX-Mailer: Drupal\r\nReturn-path: <$from>\r\nErrors-to: $from")) {
+
+        if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
           db_query("UPDATE notify SET attempts = attempts + 1 WHERE uid = $user->uid");
         }
       }
