@@ -45,7 +45,7 @@ function notify_send() {
       $to = "$account->userid <$account->real_email>";
       $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
       $from = variable_get("site_mail", "root@localhost");
-      $body[header] .= t("Greetings") ." $account->userid,\n\n";
+      $body[header] = t("Greetings") ." $account->userid,\n\n";
       if (!mail($to, $subject, $body[header] . ($account->node ? $body[nodes] : "") . ($account->comment ? $body[comments] : "") . $body[footer], "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
         db_query("UPDATE notify SET attempts = attempts + 1 WHERE id = $account->id");
       }
@@ -63,8 +63,8 @@ function notify_conf_options() {
 
 function notify_cron() {
   if (time() - variable_get("notify_send_last", 0) > variable_get("notify_send", 86400)) {
-    variable_set("notify_send_last", time());
     notify_send();
+    variable_set("notify_send_last", time());
   }
 }
 
