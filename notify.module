@@ -3,15 +3,12 @@
 
 function notify_send() {
   $period =  variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
-  //$period = $period + 5500000;
-  //$period = 0;
 
   // Fetch all new nodes
   $nresult = db_query("SELECT n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND n.created > $period ORDER BY n.created");
   while ($node = db_fetch_object($nresult)) {
     $nodes[$node->nid] = $node;
   }
-  $nodez = count($nodes);
 
   // Fetch new comments
   $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.timestamp > $period ORDER BY c.nid, c.timestamp");
@@ -20,36 +17,37 @@ function notify_send() {
   }
 
   // Fetch users with notify enabled
-  $uresult = db_query("SELECT n.uid, u.name, u.mail, n.node, u.role, n.teasers, n.comment FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1". (variable_get(notify_attempts, 5) ? " AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
+  $uresult = db_query("SELECT uid, status, node, teasers, comment FROM notify WHERE status = 1". (variable_get(notify_attempts, 5) ? " AND attempts <= ". variable_get(notify_attempts, 5) : ""));
   global $user;
   $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
   $from = variable_get("site_mail", "root@localhost");
-  while ($user = db_fetch_object($uresult)) {
+  while ($notify = db_fetch_object($uresult)) {
+    $user = user_load(array("uid" => $user->uid));
     if (user_access("access notify")) {
       $body = "";
       // New content
-      if ($user->node && $nodez && user_access("access content")) {
+      if ($notify->node && count($nodes) && user_access("access content")) {
         $body .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
         foreach ($nodes as $node) {
-          if ($node->moderate && user_access("access submission queue")) {
+          if ($notify->moderate && user_access("access submission queue")) {
             $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
-            $body .= ($user->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
+            $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
             $body .= "  [ ". path_uri() ."module.php?mod=queue&op=view&id=$node->nid ]\n\n";
           }
-          elseif (!$node->moderate && $node->nid) {
+          elseif (!$notify->moderate && $node->nid) {
             $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
-            $body .= ($user->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
+            $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
             $body .= "  [ ". path_uri() ."node.php?id=$node->nid ]\n\n";
           }
         }
       }
 
       // New comments
-      if ($user->comment && count($comments) && user_access("access comments")) {
+      if ($notify->comment && count($comments) && user_access("access comments")) {
         $body .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
         foreach ($comments as $nid=>$comment) {
           if ($nid != $nid_old) {
-            if (empty($nodes[$nid]->title)) {
+            if (!$nodes[$nid]->title) {
               $result = db_query("SELECT title FROM node WHERE nid = '$nid'");
               $nodes[$nid] = db_fetch_object($result);
             }
@@ -63,7 +61,7 @@ function notify_send() {
       }
 
       if ($body) {
-        $to = "$user->name <$user->mail>";
+        $to = "\"$user->name\" <$user->mail>";
     
         $body = t("Greetings") ." ". $user->name .",\n\n$body";
   
@@ -71,7 +69,7 @@ function notify_send() {
         $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
         $body .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
   
-        if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
+        if (!user_mail($to, $subject, str_replace("\n", "\r\n", wordwrap($body, 72)), "From: $from\r\nReply-to: $from\r\nX-Mailer: Drupal\r\nReturn-path: <$from>\r\nErrors-to: $from")) {
           db_query("UPDATE notify SET attempts = attempts + 1 WHERE uid = $user->uid");
         }
       }
@@ -100,11 +98,11 @@ function notify_perm() {
 
 function notify_link($type) {
   if ($type == "menu.settings" && user_access("access notify")) {
-    $links[] = "<a href=\"module.php?mod=notify\">". t("notification settings") ."</a>";
+    $links[] = lm(t("notification settings"), array("mod" => "notify"));
   }
 
   if ($type == "admin" && user_access("administer notify")) {
-    $links[] = "<a href=\"admin.php?mod=notify\">". t("notifications") ."</a>";
+    $links[] = la(t("notifications"), array("mod" => "notify"));
   }
 
   return $links ? $links : array();
@@ -154,7 +152,7 @@ function notify_admin() {
         }
       }
     default:
-      print "<SMALL><A HREF=\"admin.php?mod=notify\">overview</A> | <A HREF=\"admin.php?mod=system#notify\">settings</A></SMALL><HR>\n";
+      print "\n<small>". la(t("overview"), array("mod" => "notify")) ." | ". la(t("settings"), array("mod" => "system"), "notify") ."</small><hr />\n";
       $result = db_query("SELECT u.uid, u.name, u.mail, n.node, n.comment, n.teasers, n.attempts FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 && u.status = 1 ORDER BY u.name");
       $output = "<table border=\"1\" cellpadding=\"2\" cellspacing=\"2\">\n";
       $output .= sprintf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>", "username", "e-mail address", "content", "teaser", "comment", "failed attempts");
