@@ -128,7 +128,7 @@ function notify_link($type) {
 }
 
 function notify_page() {
-  global $theme, $op, $user, $edit;
+  global $op, $user, $edit;
 
   if (user_access("access notify") && $user) {
     switch ($op) {
@@ -148,10 +148,10 @@ function notify_page() {
         $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array("Disabled", "Enabled"), t("Include new comments in the notification mail."));
         $form .= form_submit(t("Save settings"));
 
-        $theme->header();
-        $theme->box(t("Notify"), form($form));
+        theme("header");
+        theme("box", t("Notify"), form($form));
 
-        $theme->footer();
+        theme("footer");
     }
   }
   else {
