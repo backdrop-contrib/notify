@@ -104,8 +104,8 @@ function notify_send() {
 
 function notify_settings() {
   $period = array(900 => format_interval(900), 1800 => format_interval(1800), 3600 => format_interval(3600), 10800 => format_interval(10800), 21600 => format_interval(21600), 32400 => format_interval(32400), 43200 => format_interval(43200), 86400 => format_interval(86400), 172800 => format_interval(172800), 259200 => format_interval(259200), 604800 => format_interval(604800), 1209600 => format_interval(1209600), 2419200 => format_interval(2419200), 1000000000 => "Never");
-  $output .= form_select("Send notifications every", "notify_send", variable_get("notify_send", 86400), $period, "Requires crontab.");
-  $output .= form_select("Number of failed sends after which notifications are disabled", "notify_attempts", variable_get("notify_attempts", 5), array("Disabled", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20));
+  $output .= form_select(t("Send notifications every"), "notify_send", variable_get("notify_send", 86400), $period, t("Requires crontab."));
+  $output .= form_select(t("Number of failed sends after which notifications are disabled"), "notify_attempts", variable_get("notify_attempts", 5), array(t("Disabled"), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20));
 
   return $output;
 }
@@ -146,15 +146,15 @@ function notify_page() {
         break;
       case t("Save settings"):
         db_query("REPLACE notify (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)", $user->uid, $edit["status"], $edit["node"], $edit["teasers"], $edit["comment"]);
-        $form .= status("Settings saved");
+        $form .= status(t("Settings saved"));
       default:
         $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
         $notify = db_fetch_object($result);
 
-        $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"), t("Do you wish to receive periodic emails when new content is posted?"));
-        $form .= form_select(t("Notify new content"), "node", $notify->node, array("Disabled", "Enabled"), t("Include new content in the notification mail."));
-        $form .= form_select(t("Content"), "teasers", $notify->teasers, array("Title only", "Title + Teaser", "Title + Body"), t("Select the amount of each post that you would like to see in your notification emails."));
-        $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array("Disabled", "Enabled"), t("Include new comments in the notification mail."));
+        $form .= form_select(t("Notify status"), "status", $notify->status, array(t("Disabled"), t("Enabled")), t("Do you wish to receive periodic emails when new content is posted?"));
+        $form .= form_select(t("Notify new content"), "node", $notify->node, array(t("Disabled"), t("Enabled")), t("Include new content in the notification mail."));
+        $form .= form_select(t("Content"), "teasers", $notify->teasers, array(t("Title only"), t("Title + Teaser"), t("Title + Body")), t("Select the amount of each post that you would like to see in your notification emails."));
+        $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array(t("Disabled"), t("Enabled")), t("Include new comments in the notification mail."));
         $form .= form_submit(t("Save settings"));
 
         theme("header");
@@ -190,7 +190,7 @@ function notify_admin() {
         //$rows[$i][] = form_hidden("$notify->uid][status", 0) ."<input type=\"checkbox\" name=\"edit[$notify->uid][status]\"". ($notify->status ? " checked=\"checked\"" : "") .">";
         $rows[$i][] = form_hidden("$notify->uid][node", 0) .'<input type="checkbox" name="edit['. $notify->uid .'][node]" value="1"'. ($notify->node ? ' checked="checked"' : '') .'>';
         $select = "";
-        foreach (array("Title only", "Title + Teaser", "Title + Body") as $key => $choice) {
+        foreach (array(t("Title only"), t("Title + Teaser"), t("Title + Body")) as $key => $choice) {
           $select .= '<option value="'. $key .'"'. ($key == $notify->teasers ? " selected=\"selected\"" : "") .">$choice</option>";
         }
         $rows[$i][] = '<select name="edit['. $notify->uid .'][teasers]">'. $select .'</select>';
