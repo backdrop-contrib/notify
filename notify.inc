@@ -116,7 +116,7 @@ function _notify_send() {
     $body = '';
     // New content
     if ($user->node && count($nodes)) {
-      $body .= t('Recent content') ."\n". str_repeat('-', strlen(t('Recent content'))) ."\n\n";
+      $body .= t('Recent content') ."\n". str_repeat('-', 78) ."\n\n";
       foreach ($nodes as $node) {
         if ($user->moderate) {
           $body .= strtr(t('%status %type by %author: %title'), array('%status' => t('queued'), '%type' => node_invoke($node, 'node_name'), '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
@@ -133,7 +133,7 @@ function _notify_send() {
 
     // New comments
     if ($user->comment && count($comments)) {
-      $body .= t('Recent comments') ."\n". str_repeat('-', strlen(t('Recent comments'))) ."\n\n";
+      $body .= t('Recent comments') ."\n". str_repeat('-', 78) ."\n\n";
       foreach ($comments as $nid => $comment) {
         if ($nid != $nid_old) {
           if (strlen($nodes[$nid]->title) < 2) {
