@@ -6,6 +6,19 @@ function notify_system($field) {
   return $system[$field];
 }
 
+function notify_content($node, $notify) {
+  switch ($notify->teasers) {
+    case 0:
+      break;
+    case 1:
+      $output = $node->teaser ? strip_tags("$node->teaser\n") : "";
+      break;
+    case 2:
+      $output = $node->body ? strip_tags("$node->body\n") : "";
+  }
+  return $output;    
+}  
+
 function notify_send() {
   $period = variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
 
@@ -25,7 +38,7 @@ function notify_send() {
   $uresult = db_query("SELECT uid, status, node, teasers, comment FROM notify WHERE status = 1". (variable_get(notify_attempts, 5) ? " AND attempts <= ". variable_get(notify_attempts, 5) : ""));
   global $user;
   $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
-  $from = variable_get("site_mail", "root@localhost");
+  $from = variable_get("site_mail", ini_get("sendmail_from"));
   while ($notify = db_fetch_object($uresult)) {
     $user = user_load(array("uid" => $notify->uid));
     if (user_access("access notify")) {
@@ -36,12 +49,14 @@ function notify_send() {
         foreach ($nodes as $node) {
           if ($notify->moderate && user_access("access submission queue")) {
             $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
-            $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
+            $body .= notify_content($node, $notify);
+            // $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
             $body .= "  [ ". path_uri() . url("queue/view/$node->nid") ." ]\n\n";
           }
           elseif (!$notify->moderate && $node->nid) {
             $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
-            $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
+            $body .= notify_content($node, $notify);
+            // $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
             $body .= "  [ ". path_uri() . url("node/view/$node->nid") ." ]\n\n";
           }
         }
@@ -131,7 +146,7 @@ function notify_page() {
 
         $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"), t("Do you wish to receive periodic emails when new content is posted?"));
         $form .= form_select(t("Notify new content"), "node", $notify->node, array("Disabled", "Enabled"), t("Include new content in the notification mail."));
-        $form .= form_select(t("Include teasers"), "teasers", $notify->teasers, array("Disabled", "Enabled"), t("Include a brief teaser of the content when available."));
+        $form .= form_select(t("Content"), "teasers", $notify->teasers, array("Title only", "Title + Teaser", "Title + Body"), t("Select the amount of each post that you would like to see in your notification emails."));
         $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array("Disabled", "Enabled"), t("Include new comments in the notification mail."));
         $form .= form_submit(t("Save settings"));
 
