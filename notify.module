@@ -9,7 +9,7 @@ function notify_send() {
       $output[comments] .= strtr(t("%comments attached to %title"), array("%title" => check_output($node->title), "%comments" => format_plural($node->count, "comment", "comments"))) ."\n". path_uri() ."node.php?id=$node->nid\n";
       $cresult = db_query("SELECT c.subject, c.cid, c.pid, u.name FROM comments c LEFT JOIN users u ON u.id = c.author WHERE c.lid = $node->nid ORDER BY c.timestamp DESC LIMIT $node->count");
       while ($comment = db_fetch_object($cresult)) {
-        $output[comments] .= strtr(t("%title by %author"), array("%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n";
+        $output[comments] .= strtr(t("%title by %author"), array("%title" => check_output($comment->subject), "%author" => ($comment->name ? $comment->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n";
       }
       $output[comments] .= "\n";
     }
