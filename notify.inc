@@ -14,10 +14,12 @@ function _notify_page($op, $edit) {
         $result = db_query('SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name', $user->uid);
         $notify = db_fetch_object($result);
 
-        $form .= form_select(t('Notify status'), 'status', $notify->status, array(t('Disabled'), t('Enabled')), t('Do you wish to receive periodic emails when new content is posted?'));
-        $form .= form_select(t('Notify new content'), 'node', $notify->node, array(t('Disabled'), t('Enabled')), t('Include new content in the notification mail.'));
-        $form .= form_select(t('Content'), 'teasers', $notify->teasers, array(t('Title only'), t('Title + Teaser'), t('Title + Body')), t('Select the amount of each post that you would like to see in your notification emails.'));
-        $form .= form_select(t('Notify new comments'), 'comment', $notify->comment, array(t('Disabled'), t('Enabled')), t('Include new comments in the notification mail.'));
+        $group = form_radios(t('Notify status'), 'status', $notify->status, array(t('Disabled'), t('Enabled')), t('Do you wish to receive periodic emails when new content is posted?'));
+        $form .= form_group(t('Master switch'), $group);
+        $group = form_radios(t('Notify new content'), 'node', $notify->node, array(t('Disabled'), t('Enabled')), t('Include new content in the notification mail.'));
+        $group .= form_radios(t('Content'), 'teasers', $notify->teasers, array(t('Title only'), t('Title + Teaser'), t('Title + Body')), t('Select the amount of each post that you would like to see in your notification emails.'));
+        $group .= form_radios(t('Notify new comments'), 'comment', $notify->comment, array(t('Disabled'), t('Enabled')), t('Include new comments in the notification mail.'));
+        $form .= form_group(t('Detailed settings'), $group);
         $form .= form_submit(t('Save settings'));
 
         print theme('page', form($form));
