@@ -1,3 +1,13 @@
+8. December 2001
+----------------
+notify.module
+- changed the send code to be more flexible.
+- updated the mail code to show the status of nodes.
+- users without access to the queue will not be shown queued nodes.
+- the link to queued nodes will now link to the queue and not the node.
+- updated the admin page so the site admin can change the notification of
+  users.
+
 17. November 2001
 -----------------
 notify.mysql
