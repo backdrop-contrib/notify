@@ -3,6 +3,8 @@
 notify.module
 - fixed node title not being attached to comments properly.
 - fixed a bug in the mail routine that would not mail everyone.
+- passed the body of the mail through wordwrap.
+- added some spacing to the mail.
 
 8. December 2001
 ----------------

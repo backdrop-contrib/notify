@@ -59,7 +59,7 @@ function notify_send() {
             $body .= strtr(t("New comments attached to %title"), array("%title" => $nodes[$nid]->title)) ."\n";
             $nid_old = $nid;
           }
-          $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($comment->subject), "%author" => ($comment->name ? $comment->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n";
+          $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($comment->subject), "%author" => ($comment->name ? $comment->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n\n";
         }
       }
 
@@ -67,7 +67,7 @@ function notify_send() {
       $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
       $body .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
 
-      if (!mail($to, $subject, $body, "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
+      if (!mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
         db_query("UPDATE notify SET attempts = attempts + 1 WHERE uid = $user->uid");
       }
     }
@@ -116,7 +116,7 @@ function notify_page() {
       case t("Save settings"):
         db_query(sprintf("REPLACE notify (uid, status, node, teasers, comment) VALUES (%s, %s, %s, %s, %s)", $user->uid, check_input($edit["status"]), check_input($edit["node"]), check_input($edit["teasers"]), check_input($edit["comment"])));
       default:
-        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM user u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = $user->uid AND u.status = 1 ORDER BY u.name");
+        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = $user->uid AND u.status = 1 ORDER BY u.name");
         $notify = db_fetch_object($result);
 
         $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"));
@@ -150,7 +150,7 @@ function notify_admin() {
       }
     default:
       print "<SMALL><A HREF=\"admin.php?mod=notify\">overview</A> | <A HREF=\"admin.php?mod=system#notify\">settings</A></SMALL><HR>\n";
-      $result = db_query("SELECT u.uid, u.name, u.mail, n.node, n.comment, n.teasers, n.attempts FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE u.status = 1 ORDER BY u.name");
+      $result = db_query("SELECT u.uid, u.name, u.mail, n.node, n.comment, n.teasers, n.attempts FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 && u.status = 1 ORDER BY u.name");
       $output = "<table border=\"1\" cellpadding=\"2\" cellspacing=\"2\">\n";
       $output .= sprintf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>", "username", "e-mail address", "content", "teaser", "comment", "failed attempts");
       while ($notify = db_fetch_object($result)) {
