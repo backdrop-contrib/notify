@@ -1,3 +1,9 @@
+21. December 2001
+-----------------
+notify.module
+- fixed node titles not always being shown with comments.
+- fixed not all comments being included in mails.
+
 13. December 2001
 -----------------
 notify.module

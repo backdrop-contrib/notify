@@ -16,7 +16,7 @@ function notify_send() {
   // Fetch new comments
   $cresult = db_query("SELECT c.cid, c.lid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.timestamp > $period ORDER BY c.lid, c.timestamp");
   while ($comment = db_fetch_object($cresult)) {
-    $comments[$comment->lid] = $comment;
+    $comments[$comment->lid][] = $comment;
   }
 
   // Fetch users with notify enabled
@@ -49,14 +49,16 @@ function notify_send() {
         $body .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
         foreach ($comments as $nid=>$comment) {
           if ($nid != $nid_old) {
-            if (empty($nodes[$nid])) {
+            if (empty($nodes[$nid]->title)) {
               $result = db_query("SELECT title FROM node WHERE nid = '$nid'");
               $nodes[$nid] = db_fetch_object($result);
             }
-            $body .= strtr(t("New comments attached to %title"), array("%title" => $nodes[$nid]->title)) ."\n";
+            $body .= strtr(t("%count new comments attached to %title"), array("%count" => count($comment), "%title" => $nodes[$nid]->title)) ."\n";
             $nid_old = $nid;
           }
-          $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($comment->subject), "%author" => ($comment->name ? $comment->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n\n";
+          foreach ($comment as $c) {
+            $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($c->subject), "%author" => ($c->name ? $c->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$nid&cid=$c->cid&pid=$c->pid#$c->cid\n\n";
+          }
         }
       }
 
@@ -148,7 +150,7 @@ function notify_admin() {
       db_query("UPDATE notify SET node = '0', teasers = '0', comment = '0'");
       if (is_array($edit)) {
         foreach ($edit as $uid=>$settings) {
-          db_query("UPDATE notify SET status = '1', node = '". ($settings[node] ? 1 : 0) ."', teasers = '". ($settings[teasers] ? 1 : 0) ."', comment = '". ($settings[comment] ? 1 : 0) ."' WHERE uid = '". check_input($uid) ."'");
+          db_query("UPDATE notify SET status = '1', node = '". ($settings["node"] ? 1 : 0) ."', teasers = '". ($settings["teasers"] ? 1 : 0) ."', comment = '". ($settings["comment"] ? 1 : 0) ."' WHERE uid = '". check_input($uid) ."'");
         }
       }
     default:
