@@ -96,14 +96,14 @@ function _notify_send() {
   $uresult = db_query("SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {notify} n INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 ". (($notify_attempts = variable_get('notify_attempts', 5)) ? ' AND n.attempts <= %d' : ''), $notify_attempts);
   while ($user = db_fetch_object($uresult)) {
     // Fetch all new nodes
-    $nresult = db_query('SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM {node} n '. node_access_join_sql() .' INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND n.created > %d AND '. node_access_where_sql('view', 'na', $user->uid) .' ORDER BY n.created', $period);
+    $nresult = db_query('SELECT DISTINCT(n.nid), n.body, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM {node} n '. node_access_join_sql() .' INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND n.created > %d AND '. node_access_where_sql('view', 'na', $user->uid) .' ORDER BY n.created', $period);
     $nodes = array();
     while ($node = db_fetch_object($nresult)) {
       $nodes[$node->nid] = $node;
     }
 
     // Fetch new comments
-    $cresult = db_query('SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM {comments} c INNER JOIN {node} n ON n.nid = c.nid '. node_access_join_sql() .' INNER JOIN {users} u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d AND '. node_access_where_sql('view', 'na', $user->uid) .' ORDER BY c.nid, c.timestamp', $period);
+    $cresult = db_query('SELECT DISTINCT(c.cid), c.nid, c.subject, c.pid, u.name FROM {comments} c '. node_access_join_sql('c') .' INNER JOIN {users} u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d AND '. node_access_where_sql('view', 'na', $user->uid) .' ORDER BY c.nid, c.timestamp', $period);
     $comments = array();
     while ($comment = db_fetch_object($cresult)) {
       $comments[$comment->nid][] = $comment;
