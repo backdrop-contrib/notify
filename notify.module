@@ -40,12 +40,12 @@ function notify_send() {
     $body[footer] .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
     $body[footer] .= t("To stop reveiving these mails go to") ." ". path_uri() ."\n";
     
-    $result = db_query("SELECT n.id, u.userid, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2". (variable_get(notify_attempts, 5) ? " AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
+    $result = db_query("SELECT n.id, u.name, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2". (variable_get(notify_attempts, 5) ? " AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
     while ($account = db_fetch_object($result)) {
       $to = "$account->userid <$account->real_email>";
       $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
       $from = variable_get("site_mail", "root@localhost");
-      $body[header] = t("Greetings") ." $account->userid,\n\n";
+      $body[header] = t("Greetings") ." $account->name,\n\n";
       if (!mail($to, $subject, $body[header] . ($account->node ? $body[nodes] : "") . ($account->comment ? $body[comments] : "") . $body[footer], "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
         db_query("UPDATE notify SET attempts = attempts + 1 WHERE id = $account->id");
       }
