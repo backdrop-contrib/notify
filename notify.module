@@ -7,19 +7,19 @@ function notify_send() {
   if (db_num_rows($nresult)) {
     while ($node = db_fetch_object($nresult)) {
       $output[comments] .= strtr(t("%comments attached to %title"), array("%title" => check_output($node->title), "%comments" => format_plural($node->count, "comment", "comments"))) ."\n". path_uri() ."node.php?id=$node->nid\n";
-      $cresult = db_query("SELECT c.subject, c.cid, c.pid, u.userid FROM comments c LEFT JOIN users u ON u.id = c.author WHERE c.lid = $node->nid ORDER BY c.timestamp DESC LIMIT $node->count");
+      $cresult = db_query("SELECT c.subject, c.cid, c.pid, u.name FROM comments c LEFT JOIN users u ON u.id = c.author WHERE c.lid = $node->nid ORDER BY c.timestamp DESC LIMIT $node->count");
       while ($comment = db_fetch_object($cresult)) {
-        $output[comments] .= strtr(t("%title by %author"), array("%title" => check_output($node->title), "%author" => ($node->userid ? $node->userid : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n";
+        $output[comments] .= strtr(t("%title by %author"), array("%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n";
       }
       $output[comments] .= "\n";
     }
   }
 
-  $result = db_query("SELECT n.title, n.nid, n.type, n.status, u.userid FROM node n LEFT JOIN users u ON n.author = u.id WHERE ". time() ." - n.timestamp < $period ORDER BY n.timestamp DESC LIMIT 10");
+  $result = db_query("SELECT n.title, n.nid, n.type, n.status, u.name FROM node n LEFT JOIN users u ON n.author = u.id WHERE ". time() ." - n.timestamp < $period ORDER BY n.timestamp DESC LIMIT 10");
 
   if (db_num_rows($result)) {
     while ($node = db_fetch_object($result)) {
-      $output[nodes] .= strtr(t("%status %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->userid ? $node->userid : variable_get(anonymous, "Anonymous")), "%status" => node_status($node->status))) ."\n  ". path_uri() ."node.php?id=$node->nid\n\n";
+      $output[nodes] .= strtr(t("%status %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")), "%status" => node_status($node->status))) ."\n  ". path_uri() ."node.php?id=$node->nid\n\n";
     }
   }
 
@@ -40,12 +40,12 @@ function notify_send() {
     $body[footer] .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
     $body[footer] .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
     
-    $result = db_query("SELECT n.id, u.userid, u.name, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2". (variable_get(notify_attempts, 5) ? " AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
+    $result = db_query("SELECT n.id, u.name, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2". (variable_get(notify_attempts, 5) ? " AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
     while ($account = db_fetch_object($result)) {
-      $to = "$account->userid <$account->real_email>";
+      $to = "$account->name <$account->real_email>";
       $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
       $from = variable_get("site_mail", "root@localhost");
-      $body[header] = t("Greetings") ." ". ($account->name ? $account->name : $account->userid) .",\n\n";
+      $body[header] = t("Greetings") ." ". ($account->name ? $account->name : $account->name) .",\n\n";
       if (!mail($to, $subject, $body[header] . ($account->node ? $body[nodes] : "") . ($account->comment ? $body[comments] : "") . $body[footer], "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
         db_query("UPDATE notify SET attempts = attempts + 1 WHERE id = $account->id");
       }
@@ -92,7 +92,7 @@ function notify_page() {
       case "Save settings":
         db_query(sprintf("REPLACE notify (id, status, node, comment) VALUES (%s, %s, %s, %s)", $user->id, check_input($edit[status]), check_input($edit[node]), check_input($edit[comment])));
       default:
-        $result = db_query("SELECT u.userid, u.real_email, n.status, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE u.id = $user->id AND u.status = 2 ORDER BY u.userid");
+        $result = db_query("SELECT u.name, u.real_email, n.status, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE u.id = $user->id AND u.status = 2 ORDER BY u.name");
         $notify = db_fetch_object($result);
         
         $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"));
@@ -114,11 +114,11 @@ function notify_page() {
 function notify_admin() {
   global $op;
   print "<SMALL><A HREF=\"admin.php?mod=notify\">overview</A> | <A HREF=\"admin.php?mod=system#notify\">settings</A></SMALL><HR>\n";
-  $result = db_query("SELECT u.userid, u.real_email, n.node, n.comment, n.attempts FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2 ORDER BY u.userid");
+  $result = db_query("SELECT u.name, u.real_email, n.node, n.comment, n.attempts FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2 ORDER BY u.name");
   print "<table border=\"1\" cellpadding=\"2\" cellspacing=\"2\">\n";
   printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>", "username", "e-mail address", "content notify", "comment notify", "failed attempts");
   while ($notify = db_fetch_object($result)) {
-    printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>", $notify->userid, $notify->real_email, t($notify->node ? "Enabled" : "Disabled"), t($notify->comment ? "Enabled" : "Disabled"), $notify->attempts);
+    printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>", $notify->name, $notify->real_email, t($notify->node ? "Enabled" : "Disabled"), t($notify->comment ? "Enabled" : "Disabled"), $notify->attempts);
   }
   print "</table>";
 }
