@@ -1,3 +1,9 @@
+6. Aug. 2001
+------------
+notify.module
+- greeting now shows the name correctly.
+- nodes/comments submitted by anonymous users are now displayed correctly.
+
 25. July 2001
 -------------
 notify.module
