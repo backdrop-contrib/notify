@@ -6,10 +6,10 @@ function notify_send() {
   $nresult = db_query("SELECT n.nid, n.title, COUNT(c.cid) AS count FROM comments c LEFT JOIN node n ON n.nid = c.lid WHERE n.status = '". node_status("posted") ."' AND c.timestamp > ". (time() - $period) ." GROUP BY c.lid ORDER BY count DESC");
   if (db_num_rows($nresult)) {
     while ($node = db_fetch_object($nresult)) {
-      $output[comments] .= format_plural($node->count, "comment", "comments") ." ". t("attached to") ." ". check_output($node->title) ." (". path_uri() ."node.php?id=$node->nid):\n";
+      $output[comments] .= strtr(t("%comments attached to %title"), array("%title" => check_output($node->title), "%comments" => format_plural($node->count, "comment", "comments"))) ."\n". path_uri() ."node.php?id=$node->nid\n";
       $cresult = db_query("SELECT c.subject, c.cid, c.pid, u.userid FROM comments c LEFT JOIN users u ON u.id = c.author WHERE c.lid = $node->nid ORDER BY c.timestamp DESC LIMIT $node->count");
       while ($comment = db_fetch_object($cresult)) {
-        $output[comments] .= "  * ". check_output($comment->subject) ." ". t("by") ." ". $comment->userid ."\n    (". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid)\n";
+        $output[comments] .= strtr(t("%title by %author"), array("%title" => check_output($node->title), "%author" => $node->author)) ."\n    ". path_uri() ."node.php?id=$node->nid&cid=$comment->cid&pid=$comment->pid#$comment->cid\n";
       }
       $output[comments] .= "\n";
     }
@@ -19,7 +19,7 @@ function notify_send() {
 
   if (db_num_rows($result)) {
     while ($node = db_fetch_object($result)) {
-      $output[nodes] .= check_output($node->type) .": ". check_output($node->title) ." ". t("by") ." ". $node->userid ." ". node_status($node->status) ."\n  (". path_uri() ."node.php?id=$node->nid)\n\n";
+      $output[nodes] .= strtr(t("%status %type by %author: %title"), array("%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => $node->author, "%status" => node_status($node->status))) ."\n  ". path_uri() ."node.php?id=$node->nid\n\n";
     }
   }
 

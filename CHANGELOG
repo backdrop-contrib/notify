@@ -1,3 +1,9 @@
+25. July 2001
+-------------
+notify.module
+- the mail is now a lot more configurable using the locale.module if you need
+  translations.
+
 17. July 2001
 -------------
 notify.module
