@@ -14,9 +14,9 @@ function notify_send() {
   $nodez = count($nodes);
 
   // Fetch new comments
-  $cresult = db_query("SELECT c.cid, c.lid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.timestamp > $period ORDER BY c.lid, c.timestamp");
+  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.timestamp > $period ORDER BY c.nid, c.timestamp");
   while ($comment = db_fetch_object($cresult)) {
-    $comments[$comment->lid][] = $comment;
+    $comments[$comment->nid][] = $comment;
   }
 
   // Fetch users with notify enabled
