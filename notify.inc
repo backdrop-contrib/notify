@@ -93,7 +93,7 @@ function _notify_send() {
   $period = variable_get('notify_send_last', time() - variable_get('notify_send', 86400));
 
   // Fetch users with notify enabled
-  $uresult = db_query("SELECT u.uid, u.name, n.status, n.node, n.teasers, n.comment FROM {notify} n INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 ". (($notify_attempts = variable_get('notify_attempts', 5)) ? ' AND n.attempts <= %d' : ''), $notify_attempts);
+  $uresult = db_query("SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {notify} n INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 ". (($notify_attempts = variable_get('notify_attempts', 5)) ? ' AND n.attempts <= %d' : ''), $notify_attempts);
   while ($user = db_fetch_object($uresult)) {
     // Fetch all new nodes
     $nresult = db_query('SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM {node} n '. node_access_join_sql() .' INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND n.created > %d AND '. node_access_where_sql('view', 'na', $user->uid) .' ORDER BY n.created', $period);
@@ -148,20 +148,18 @@ function _notify_send() {
       }
     }
     if ($body) {
-      $to = $user->mail;
-  
       $body = t('Greetings') .' '. $user->name .",\n\n$body";
-  
+
       $body .= "\n-- \n";
       $body .= t('This is an automatic mail from') .' '. variable_get('site_name', 'drupal') ."\n";
       $body .= t('To stop receiving these mails go to') ." $base_url/notify\n";
 
-      if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
+      if (!user_mail($user->mail, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
         db_query('UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d', $user->uid);
-        watchdog('error', t('Notify: User %name (%uid) could not be notified. Mail error.', array('%name' => '<em>'. $user->name .'</em>', '%uid' => $user->uid)));
+        watchdog('error', t('Notify: User %name (%mail) could not be notified. Mail error.', array('%name' => '<em>'. $user->name .'</em>', '%mail' => $user->mail)));
       }
       else {
-        watchdog('user', t('Notify: User %name (%uid) notified successfully.', array('%name' => '<em>'. $user->name .'</em>', '%uid' => $user->uid)));
+        watchdog('user', t('Notify: User %name (%mail) notified successfully.', array('%name' => '<em>'. $user->name .'</em>', '%mail' => $user->mail)));
       }
     }
   }
