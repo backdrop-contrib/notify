@@ -58,7 +58,12 @@ function _notify_admin($op, $edit) {
   }
 }
 
+/**
+ * Formatting of outgoing mail, taken from mail.inc, part of project.module
+ */
 function _notify_content($node, $notify) {
+  static $i = 0;
+
   switch ($notify->teasers) {
     case 0:
       return;
@@ -68,24 +73,19 @@ function _notify_content($node, $notify) {
     case 2:
       $txt = check_output($node->body);
   }
-  $txt = ereg_replace ("(<br />|<br/>|<p>)", _notify_lb(), $txt);
-  $txt = html_entity_decode($txt);
-  $txt = strip_tags($txt);
-  return $txt;
-}
 
-function _notify_lb() {
-  $os = php_uname();
-  switch ($os) {
-    case strstr($os, 'Windows'):
-      return "\r\n";
-    case strstr($os, 'nix'):
-      return "\n";
-    case strstr($os, 'Mac'):
-      return "\r";
-    default:
-      return "\n";
+  $pattern = '@(<a href="(.+?)">(.+?)</a>)@ei';
+  $txt = preg_replace($pattern, "'\\3 ['. _notify_mail_urls('\\2') .']'", $txt);
+  $urls = _notify_mail_urls();
+  if (count($urls)) {
+      $txt .= "\n";
+      for ($max = count($urls); $i < $max; $i++) {
+        $txt .= '['. ($i + 1) .'] '. $urls[$i] ."\n";
+      }
   }
+  $txt = strip_tags($txt);
+  $txt = entities_to_utf8($txt);
+  return wordwrap($txt, 72);
 }
 
 function _notify_send() {
@@ -163,5 +163,53 @@ function _notify_send() {
       }
     }
   }
+}
+
+function entities_to_utf8($text) {
+  static $table;
+  // We store named entities in a table for quick processing.  
+  if (!isset($table)) {
+    // Get all named HTML entities.
+    $table = array_flip(get_html_translation_table(HTML_ENTITIES, $special));
+    // PHP gives us Windows-1252/ISO-8859-1 data, we need UTF-8.
+    $table = array_map('utf8_encode', $table);
+  }
+  $text = strtr($text, $table);
+
+  // Any remaining entities are numerical. Use a regexp to replace them.
+  return preg_replace('/&#(x?)([A-Za-z0-9]+);/e', '_entity_to_utf8("$1", "$2")', $text);
+}
+
+function _entity_to_utf8($hex, $codepoint) {
+  if ($hex != '') {
+    $codepoint = base_convert($codepoint, 16, 10);
+  }
+  if ($codepoint < 0x80) {
+    return chr($codepoint);
+  }
+  else if ($codepoint < 0x800) {
+    return chr(0xC0 | ($codepoint >> 6))
+         . chr(0x80 | ($codepoint & 0x3F));
+  }
+  else if ($codepoint < 0x10000) {
+    return chr(0xE0 | ( $codepoint >> 12))
+         . chr(0x80 | (($codepoint >> 6) & 0x3F))
+         . chr(0x80 | ( $codepoint       & 0x3F));
+  }
+  else if ($codepoint < 0x200000) {
+    return chr(0xF0 | ( $codepoint >> 18))
+         . chr(0x80 | (($codepoint >> 12) & 0x3F))
+         . chr(0x80 | (($codepoint >> 6)  & 0x3F))
+         . chr(0x80 | ( $codepoint        & 0x3F));
+  }
+}
+
+function _notify_mail_urls($url = 0) {
+  static $urls = array();
+  if ($url) {
+    $urls[] = strpos($url, '://') ? $url : url($url, NULL, NULL, 1);
+    return count($urls);
+  }
+  return $urls;
 }
 ?>
