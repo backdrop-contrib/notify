@@ -23,6 +23,7 @@ function notify_cron() {
     include_once 'modules/notify/notify.inc';
     _notify_send();
     variable_set('notify_send_last', time());
+    cache_clear_all('variables');
   }
 }
 
