@@ -45,8 +45,8 @@ function notify_send() {
   $period = variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
 
   // Fetch all new nodes
-  $nresult = db_query("SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM {node} n LEFT JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND n.created > %d ORDER BY n.created", $period);
-  $php_node_types = array("book", "page");
+  $nresult = db_query("SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM {node} n ". node_access_join_sql() ." INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND n.created > %d AND ". node_access_where_sql() ". ORDER BY n.created", $period);
+  $php_node_types = array('book', 'page');
   while ($node = db_fetch_object($nresult)) {
     // 030312AX: do not notify / show nodes containing php code
     // TODO: should these be eval'ed?
@@ -56,7 +56,7 @@ function notify_send() {
   }
 
   // Fetch new comments
-  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM {comments} c LEFT JOIN {users} u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d ORDER BY c.nid, c.timestamp", $period);
+  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM {comments} c INNER JOIN {node} n ON n.nid = c.nid ". node_access_join_sql() ." INNER JOIN {users} u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d AND ". node_access_where_sql() " ORDER BY c.nid, c.timestamp", $period);
   while ($comment = db_fetch_object($cresult)) {
     $comments[$comment->nid][] = $comment;
   }
@@ -76,12 +76,12 @@ function notify_send() {
         if ($notify->moderate) {
           $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => $node->type, "%title" => $node->title, "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
           $body .= notify_content($node, $notify);
-          $body .= "  [ ". url("queue/view/$node->nid") ." ]\n\n";
+          $body .= "  [ ". url("queue/$node->nid") ." ]\n\n";
         }
         elseif (!$notify->moderate && $node->nid) {
           $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => $node->type, "%title" => $node->title, "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
           $body .= notify_content($node, $notify);
-          $body .= "  [ ". url("node/view/$node->nid") ." ]\n\n";
+          $body .= "  [ ". url("node/$node->nid") ." ]\n\n";
         }
       }
     }
@@ -100,7 +100,7 @@ function notify_send() {
         }
         foreach ($comment as $c) {
           $body .= "  ". strtr(t("%title by %author"), array("%title" => $c->subject, "%author" => ($c->name ? $c->name : variable_get(anonymous, "Anonymous")))) ."\n"
-                .  "    ". url("node/view/$nid/$c->cid#$c->cid") ."\n\n";
+                .  "    ". url("node/$nid/$c->cid#$c->cid") ."\n\n";
         }
       }
     }
