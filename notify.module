@@ -38,7 +38,7 @@ function notify_send() {
   if ($body) {
     $body[footer] .= "-- \n";
     $body[footer] .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
-    $body[footer] .= t("To stop reveiving these mails go to") ." ". path_uri() ."\n";
+    $body[footer] .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
     
     $result = db_query("SELECT n.id, u.name, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2". (variable_get(notify_attempts, 5) ? " AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
     while ($account = db_fetch_object($result)) {
