@@ -124,13 +124,14 @@ function notify_page() {
         break;
       case t("Save settings"):
         db_query(sprintf("REPLACE notify (uid, status, node, teasers, comment) VALUES (%s, %s, %s, %s, %s)", $user->uid, check_input($edit["status"]), check_input($edit["node"]), check_input($edit["teasers"]), check_input($edit["comment"])));
+        $form .= status("Settings saved");
       default:
         $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = $user->uid AND u.status = 1 ORDER BY u.name");
         $notify = db_fetch_object($result);
 
-        $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"));
+        $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"), t("Do you wish to receive periodic emails when new content is posted?"));
         $form .= form_select(t("Notify new content"), "node", $notify->node, array("Disabled", "Enabled"), t("Include new content in the notification mail."));
-        $form .= form_select(t("Include teasers"), "teasers", $notify->teasers, array("Disabled", "Enabled"), t("Include a teaser of the content when avaiable."));
+        $form .= form_select(t("Include teasers"), "teasers", $notify->teasers, array("Disabled", "Enabled"), t("Include a brief teaser of the content when available."));
         $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array("Disabled", "Enabled"), t("Include new comments in the notification mail."));
         $form .= form_submit(t("Save settings"));
 
