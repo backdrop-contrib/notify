@@ -20,22 +20,28 @@ function notify_content($node, $notify) {
 }  
 
 function notify_send() {
+  global $base_url;
   $period = variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
 
   // Fetch all new nodes
-  $nresult = db_query("SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND n.created > $period ORDER BY n.created");
+  $nresult = db_query("SELECT n.body, n.nid, n.type, n.title, n.promote, n.moderate, n.teaser, n.created, n.changed, u.name FROM node n LEFT JOIN users u ON n.uid = u.uid WHERE n.status = 1 AND n.created > %d ORDER BY n.created", $period);
+  $php_node_types = array("book", "page");
   while ($node = db_fetch_object($nresult)) {
-    $nodes[$node->nid] = $node;
+    // 030312AX: do not notify / show nodes containing php code
+    // TODO: should these be eval'ed?
+    if (!(in_array($node->type, $php_node_types) && db_fetch_object(db_query("SELECT nid FROM $node->type WHERE nid = %d AND format = 1", $node->nid)))) {
+      $nodes[$node->nid] = $node;
+    }
   }
 
   // Fetch new comments
-  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > $period ORDER BY c.nid, c.timestamp");
+  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d ORDER BY c.nid, c.timestamp", $period);
   while ($comment = db_fetch_object($cresult)) {
     $comments[$comment->nid][] = $comment;
   }
 
   // Fetch users with notify enabled
-  $uresult = db_query("SELECT uid, status, node, teasers, comment FROM notify WHERE status = 1". (variable_get(notify_attempts, 5) ? " AND attempts <= ". variable_get(notify_attempts, 5) : ""));
+  $uresult = db_query("SELECT uid, status, node, teasers, comment FROM notify WHERE status = 1". (($notify_attempts = variable_get(notify_attempts, 5)) ? " AND attempts <= %d" : ""), $notify_attempts);
   global $user;
   $from = variable_get("site_mail", ini_get("sendmail_from"));
   while ($notify = db_fetch_object($uresult)) {
@@ -48,14 +54,14 @@ function notify_send() {
         $body .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
         foreach ($nodes as $node) {
           if ($notify->moderate && user_access("access submission queue")) {
-            $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
+            $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => $node->type, "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
             $body .= notify_content($node, $notify);
-            $body .= "  [ ". path_uri() . url("queue/view/$node->nid") ." ]\n\n";
+            $body .= "  [ ". url("queue/view/$node->nid") ." ]\n\n";
           }
           elseif (!$notify->moderate && $node->nid) {
-            $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
+            $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => $node->type, "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
             $body .= notify_content($node, $notify);
-            $body .= "  [ ". path_uri() . url("node/view/$node->nid") ." ]\n\n";
+            $body .= "  [ ". url("node/view/$node->nid") ." ]\n\n";
           }
         }
       }
@@ -66,7 +72,7 @@ function notify_send() {
         foreach ($comments as $nid => $comment) {
           if ($nid != $nid_old) {
             if (strlen($nodes[$nid]->title) < 2) {
-              $result = db_query("SELECT title FROM node WHERE nid = '$nid'");
+              $result = db_query("SELECT title FROM node WHERE nid = %d", $nid);
               $nodes[$nid] = db_fetch_object($result);
             }
             $body .= strtr(t("%count new comments attached to %title"), array("%count" => count($comment), "%title" => $nodes[$nid]->title)) ."\n";
@@ -74,7 +80,7 @@ function notify_send() {
           }
           foreach ($comment as $c) {
             $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($c->subject), "%author" => ($c->name ? $c->name : variable_get(anonymous, "Anonymous")))) ."\n"
-                  .  "    ". path_uri() . url("node/view/$nid/$c->cid#$c->cid") ."\n\n";
+                  .  "    ". url("node/view/$nid/$c->cid#$c->cid") ."\n\n";
           }
         }
       }
@@ -86,10 +92,10 @@ function notify_send() {
 
         $body .= "\n-- \n";
         $body .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
-        $body .= t("To stop receiving these mails go to") ." ". path_uri() ."\n";
+        $body .= t("To stop receiving these mails go to") ." $base_url/\n";
 
         if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
-          db_query("UPDATE notify SET attempts = attempts + 1 WHERE uid = $user->uid");
+          db_query("UPDATE notify SET attempts = attempts + 1 WHERE uid = %d", $user->uid);
         }
       }
     }
@@ -136,10 +142,10 @@ function notify_page() {
         notify_send();
         break;
       case t("Save settings"):
-        db_query(sprintf("REPLACE notify (uid, status, node, teasers, comment) VALUES (%s, %s, %s, %s, %s)", $user->uid, check_input($edit["status"]), check_input($edit["node"]), check_input($edit["teasers"]), check_input($edit["comment"])));
+        db_query("REPLACE notify (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)", $user->uid, $edit["status"], $edit["node"], $edit["teasers"], $edit["comment"]);
         $form .= status("Settings saved");
       default:
-        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = $user->uid AND u.status = 1 ORDER BY u.name");
+        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
         $notify = db_fetch_object($result);
 
         $form .= form_select(t("Notify status"), "status", $notify->status, array("Disabled", "Enabled"), t("Do you wish to receive periodic emails when new content is posted?"));
@@ -165,21 +171,27 @@ function notify_admin() {
   switch ($op) {
     case "Save":
       global $edit;
-      db_query("UPDATE notify SET node = '0', teasers = '0', comment = '0'");
-      if (is_array($edit)) {
-        foreach ($edit as $uid=>$settings) {
-          db_query("UPDATE notify SET status = '1', node = '". ($settings["node"] ? 1 : 0) ."', teasers = '". ($settings["teasers"] ? 1 : 0) ."', comment = '". ($settings["comment"] ? 1 : 0) ."' WHERE uid = '". check_input($uid) ."'");
-        }
+      foreach ($edit as $uid=>$settings) {
+        db_query("UPDATE notify SET node = %d, teasers = %d, comment = %d WHERE uid = %d", $settings['node'], $settings['teasers'], $settings['comment'], $uid);
       }
     default:
-      $result = db_query("SELECT u.uid, u.name, u.mail, n.node, n.comment, n.teasers, n.attempts FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 && u.status = 1 ORDER BY u.name");
-      $header = array (t("username"), t("email address"), t("content"), t("comment"), t("failed attempts"));
+      $result = db_query("SELECT u.uid, u.name, u.mail, n.* FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name");
+      $header = array (t("username"), t("email address"), t("content"), t("teasers"), t("comment"), t("failed attempts"));
       $i = 0;
       while ($notify = db_fetch_object($result)) {
         $rows[$i][] = format_name($notify);
         $rows[$i][] = $notify->mail;
-        $rows[$i][] = "<input type=\"checkbox\" name=\"edit[$notify->uid][node]\"". ($notify->node ? " checked=\"checked\"" : "") .">";
-        $rows[$i][] = "<input type=\"checkbox\" name=\"edit[$notify->uid][comment]\"". ($notify->comment ? " checked=\"checked\"" : "") .">";
+        // 030312AX TODO: it really is a shame that we cannot use form_* functions 
+        // here (as they wrap everything into <p>title description</p>). implement 
+        // this once (see mailing list)!
+        //$rows[$i][] = form_hidden("$notify->uid][status", 0) ."<input type=\"checkbox\" name=\"edit[$notify->uid][status]\"". ($notify->status ? " checked=\"checked\"" : "") .">";
+        $rows[$i][] = form_hidden("$notify->uid][node", 0) .'<input type="checkbox" name="edit['. $notify->uid .'][node]" value="1"'. ($notify->node ? ' checked="checked"' : '') .'>';
+        $select = "";
+        foreach (array("Title only", "Title + Teaser", "Title + Body") as $key => $choice) {
+          $select .= '<option value="'. $key .'"'. ($key == $notify->teasers ? " selected=\"selected\"" : "") .">$choice</option>";
+        }
+        $rows[$i][] = '<select name="edit['. $notify->uid .'][teasers]">'. $select .'</select>';
+        $rows[$i][] = form_hidden("$notify->uid][comment", 0) .'<input type="checkbox" name="edit['. $notify->uid .'][comment]" value="1"'. ($notify->comment ? ' checked="checked"' : '') .">";
         $rows[$i][] = $notify->attempts;
         $i++;
       }
