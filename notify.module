@@ -41,7 +41,7 @@ function notify_send() {
   }
 
   // Fetch users with notify enabled
-  $uresult = db_query("SELECT uid, status, node, teasers, comment FROM notify WHERE status = 1". (($notify_attempts = variable_get(notify_attempts, 5)) ? " AND attempts <= %d" : ""), $notify_attempts);
+  $uresult = db_query("SELECT uid, status, node, teasers, comment FROM {notify} WHERE status = 1". (($notify_attempts = variable_get(notify_attempts, 5)) ? " AND attempts <= %d" : ""), $notify_attempts);
   global $user;
   $from = variable_get("site_mail", ini_get("sendmail_from"));
   while ($notify = db_fetch_object($uresult)) {
@@ -95,7 +95,7 @@ function notify_send() {
         $body .= t("To stop receiving these mails go to") ." $base_url/\n";
 
         if (!user_mail($to, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
-          db_query("UPDATE notify SET attempts = attempts + 1 WHERE uid = %d", $user->uid);
+          db_query("UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d", $user->uid);
         }
       }
     }
@@ -122,15 +122,17 @@ function notify_perm() {
 }
 
 function notify_link($type) {
-  if ($type == "menu.settings" && user_access("access notify")) {
-    $links[] = l(t("notification settings"), "notify");
+  if ($type == "system") {
+    global $user;
+    if ($user->uid) {
+      menu("notify", t("my notify settings"), "notify_page", 0);
+    }
+    if (user_access("administer notify")) {
+      menu("admin/user/notify", "notifications", "notify_admin", NULL, 8);
+    }
   }
 
-  if ($type == "admin" && user_access("administer notify")) {
-    menu("admin/user/notify", "notifications", "notify_admin", NULL, 8);
-  }
-
-  return $links ? $links : array();
+  return array();
 }
 
 function notify_page() {
@@ -145,10 +147,10 @@ function notify_page() {
         notify_send();
         break;
       case t("Save settings"):
-        db_query("REPLACE notify (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)", $user->uid, $edit["status"], $edit["node"], $edit["teasers"], $edit["comment"]);
+        db_query("REPLACE {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)", $user->uid, $edit["status"], $edit["node"], $edit["teasers"], $edit["comment"]);
         $form .= status(t("Settings saved"));
       default:
-        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
+        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM users u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
         $notify = db_fetch_object($result);
 
         $form .= form_select(t("Notify status"), "status", $notify->status, array(t("Disabled"), t("Enabled")), t("Do you wish to receive periodic emails when new content is posted?"));
@@ -175,10 +177,10 @@ function notify_admin() {
     case "Save":
       $edit = $_POST["edit"];
       foreach ($edit as $uid=>$settings) {
-        db_query("UPDATE notify SET node = %d, teasers = %d, comment = %d WHERE uid = %d", $settings['node'], $settings['teasers'], $settings['comment'], $uid);
+        db_query("UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d", $settings['node'], $settings['teasers'], $settings['comment'], $uid);
       }
     default:
-      $result = db_query("SELECT u.uid, u.name, u.mail, n.* FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name");
+      $result = db_query("SELECT u.uid, u.name, u.mail, n.* FROM users u LEFT JOIN {notify} n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name");
       $header = array (t("username"), t("email address"), t("content"), t("teasers"), t("comment"), t("failed attempts"));
       $i = 0;
       while ($notify = db_fetch_object($result)) {
@@ -199,7 +201,7 @@ function notify_admin() {
         $i++;
       }
       $rows[$i][] = form_submit("Save");
-      $output = theme("table", $header, $rows);
+      $output = table($header, $rows);
       print form($output);
   }
 }
