@@ -121,7 +121,7 @@ function notify_link($type) {
   }
 
   if ($type == "admin" && user_access("administer notify")) {
-    menu_add("notifications", url("admin/notify"), "Configure user notifications.", NULL, "user management", 6);
+    menu("admin/user/notify", "notifications", "notify_admin", NULL, 8);
   }
 
   return $links ? $links : array();
