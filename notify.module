@@ -29,7 +29,7 @@ function notify_send() {
   }
 
   // Fetch new comments
-  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.timestamp > $period ORDER BY c.nid, c.timestamp");
+  $cresult = db_query("SELECT c.cid, c.nid, c.subject, c.pid, u.name FROM comments c LEFT JOIN users u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > $period ORDER BY c.nid, c.timestamp");
   while ($comment = db_fetch_object($cresult)) {
     $comments[$comment->nid][] = $comment;
   }
