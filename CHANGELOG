@@ -1,3 +1,14 @@
+17. July 2001
+-------------
+notify.module
+- cleaned up the code a little.
+- added a failed attempts counter.
+- added a config setting to not send mails to users that have more then X
+  failed attempts, this can also be disabled.
+
+notify.mysql
+- added attempts field. SQL update required.
+
 16. July 2001
 -------------
 notify.mysql

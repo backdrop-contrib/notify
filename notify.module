@@ -23,9 +23,6 @@ function notify_send() {
     }
   }
 
-  $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
-  $from = variable_get("site_mail", "root@localhost");
-
   if (count($output[comments])) {
     $body[comments] .= t("Recent comments") ."\n". str_repeat("-", strlen(t("Recent comments"))) ."\n\n";
     $body[comments] .= wordwrap($output[comments], 72);
@@ -43,11 +40,15 @@ function notify_send() {
     $body[footer] .= t("This is an automatic mail from") ." ". variable_get("site_name", "drupal") ."\n";
     $body[footer] .= t("To stop reveiving these mails go to") ." ". path_uri() ."\n";
     
-    $result = db_query("SELECT u.userid, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2;");
+    $result = db_query("SELECT n.id, u.userid, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2". (variable_get(notify_attempts, 5) ? "AND n.attempts <= ". variable_get(notify_attempts, 5) : ""));
     while ($account = db_fetch_object($result)) {
-      $body[header] .= t("Greetings") ." $account->userid,\n\n";
       $to = "$account->userid <$account->real_email>";
-      mail($to, $subject, $body[header] . ($account->node ? $body[nodes] : "") . ($account->comment ? $body[comments] : "") . $body[footer], "From: $from\nReply-to: $from\nX-Mailer: Drupal\n");
+      $subject = variable_get("site_name", "drupal") ." ". t("notification for") ." ". format_date(time(), "custom", "Y/m/d - H:i");
+      $from = variable_get("site_mail", "root@localhost");
+      $body[header] .= t("Greetings") ." $account->userid,\n\n";
+      if (!mail($to, $subject, $body[header] . ($account->node ? $body[nodes] : "") . ($account->comment ? $body[comments] : "") . $body[footer], "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from")) {
+        db_query("UPDATE notify SET attempts = attempts + 1 WHERE id = $account->id");
+      }
     }
   }
 }
@@ -55,6 +56,7 @@ function notify_send() {
 function notify_conf_options() {
   $period = array(900 => format_interval(900), 1800 => format_interval(1800), 3600 => format_interval(3600), 10800 => format_interval(10800), 21600 => format_interval(21600), 32400 => format_interval(32400), 43200 => format_interval(43200), 86400 => format_interval(86400), 172800 => format_interval(172800), 259200 => format_interval(259200), 604800 => format_interval(604800), 1209600 => format_interval(1209600), 2419200 => format_interval(2419200), 1000000000 => "Never");
   $output .= form_select("Send notifications every", "notify_send", variable_get("notify_send", 86400), $period, "Requires crontab.");
+  $output .= form_select("Number of failed sends after which notifications are disabled:", "notify_attempts", variable_get("notify_attempts", 5), array("Disabled", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20));
 
   return $output;
 }
@@ -87,9 +89,6 @@ function notify_page() {
   
   if (user_access("access notify") && $user) {
     switch ($op) {
-      case "test":
-        notify_send();
-        break;
       case "Save settings":
         db_query(sprintf("REPLACE notify (id, status, node, comment) VALUES (%s, %s, %s, %s)", $user->id, check_input($edit[status]), check_input($edit[node]), check_input($edit[comment])));
       default:
@@ -113,11 +112,13 @@ function notify_page() {
 }
 
 function notify_admin() {
-  $result = db_query("SELECT u.userid, u.real_email, n.node, n.comment FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2 ORDER BY u.userid");
+  global $op;
+  print "<SMALL><A HREF=\"admin.php?mod=notify\">overview</A> | <A HREF=\"admin.php?mod=system#notify\">settings</A></SMALL><HR>\n";
+  $result = db_query("SELECT u.userid, u.real_email, n.node, n.comment, n.attempts FROM users u LEFT JOIN notify n ON u.id = n.id WHERE n.status = 1 AND u.status = 2 ORDER BY u.userid");
   print "<table border=\"1\" cellpadding=\"2\" cellspacing=\"2\">\n";
-  printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>", "username", "e-mail address", "content notify", "comment notify");
+  printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>", "username", "e-mail address", "content notify", "comment notify", "failed attempts");
   while ($notify = db_fetch_object($result)) {
-    printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>", $notify->userid, $notify->real_email, t($notify->node ? "Enabled" : "Disabled"), t($notify->comment ? "Enabled" : "Disabled"));
+    printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>", $notify->userid, $notify->real_email, t($notify->node ? "Enabled" : "Disabled"), t($notify->comment ? "Enabled" : "Disabled"), $notify->attempts);
   }
   print "</table>";
 }
