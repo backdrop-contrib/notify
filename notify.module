@@ -10,6 +10,106 @@ function notify_help($section) {
   return $output;
 }
 
+function notify_settings() {
+  $period = array(900 => format_interval(900), 1800 => format_interval(1800), 3600 => format_interval(3600), 10800 => format_interval(10800), 21600 => format_interval(21600), 32400 => format_interval(32400), 43200 => format_interval(43200), 86400 => format_interval(86400), 172800 => format_interval(172800), 259200 => format_interval(259200), 604800 => format_interval(604800), 1209600 => format_interval(1209600), 2419200 => format_interval(2419200), 1000000000 => "Never");
+  $output .= form_select(t("Send notifications every"), "notify_send", variable_get("notify_send", 86400), $period, t("Requires crontab."));
+  $output .= form_select(t("Number of failed sends after which notifications are disabled"), "notify_attempts", variable_get("notify_attempts", 5), array(t("Disabled"), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20));
+
+  return $output;
+}
+
+function notify_cron() {
+  if (time() - variable_get('notify_send_last', 0) > variable_get('notify_send', 86400)) {
+    notify_send();
+    variable_set('notify_send_last', time());
+  }
+}
+
+function notify_perm() {
+  return array('access notify', 'administer notify');
+}
+
+function notify_menu($may_cache) {
+  global $user;
+
+  $items = array();
+
+  if ($may_cache) {
+    $items[] = array('path' => "user/$user->uid/notify", 'title' => t('my notify settings'), 'callback' => 'notify_page', 'access' => user_access('access notify'), 'type' => MENU_LOCAL_TASK);
+    $items[] = array('path' => "admin/user/notify", 'title' => t("notifications"), 'callback' => 'notify_admin', 'access' => user_access('administer notify'), 'type' => MENU_LOCAL_TASK);
+  }
+
+  return $items;
+}
+
+function notify_page() {
+  global $user;
+
+  $op = $_POST['op'];
+  $edit = $_POST['edit'];
+
+  if (user_access('access notify') && $user) {
+    switch ($op) {
+      case 'cron':
+        notify_send();
+        break;
+      case t('Save settings'):
+        db_query("REPLACE {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)", $user->uid, $edit["status"], $edit["node"], $edit["teasers"], $edit["comment"]);
+        drupal_set_message(t('Notify settings saved'));
+      default:
+        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
+        $notify = db_fetch_object($result);
+
+        $form .= form_select(t('Notify status'), 'status', $notify->status, array(t('Disabled'), t('Enabled')), t('Do you wish to receive periodic emails when new content is posted?'));
+        $form .= form_select(t('Notify new content'), 'node', $notify->node, array(t('Disabled'), t('Enabled')), t('Include new content in the notification mail.'));
+        $form .= form_select(t('Content'), 'teasers', $notify->teasers, array(t("Title only"), t("Title + Teaser"), t("Title + Body")), t('Select the amount of each post that you would like to see in your notification emails.'));
+        $form .= form_select(t('Notify new comments'), 'comment', $notify->comment, array(t('Disabled'), t('Enabled')), t('Include new comments in the notification mail.'));
+        $form .= form_submit(t('Save settings'));
+
+        print theme('page', form($form));
+    }
+  }
+  else {
+    print message_access();
+  }
+}
+
+function notify_admin() {
+  $op = $_POST['op'];
+
+  switch ($op) {
+    case t('Save'):
+      $edit = $_POST['edit'];
+      foreach ($edit as $uid=>$settings) {
+        db_query("UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d", $settings['node'], $settings['teasers'], $settings['comment'], $uid);
+      }
+    default:
+      $result = db_query("SELECT u.uid, u.name, u.mail, n.* FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name");
+      $header = array (t("username"), t("email address"), t("content"), t("teasers"), t("comment"), t("failed attempts"));
+      $i = 0;
+      while ($notify = db_fetch_object($result)) {
+        $rows[$i][] = format_name($notify);
+        $rows[$i][] = $notify->mail;
+        // 030312AX TODO: it really is a shame that we cannot use form_* functions
+        // here (as they wrap everything into <p>title description</p>). implement
+        // this once (see mailing list)!
+        //$rows[$i][] = form_hidden("$notify->uid][status", 0) ."<input type=\"checkbox\" name=\"edit[$notify->uid][status]\"". ($notify->status ? " checked=\"checked\"" : "") .">";
+        $rows[$i][] = form_hidden("$notify->uid][node", 0) .'<input type="checkbox" name="edit['. $notify->uid .'][node]" value="1"'. ($notify->node ? ' checked="checked"' : '') .'>';
+        $select = "";
+        foreach (array(t("Title only"), t("Title + Teaser"), t("Title + Body")) as $key => $choice) {
+          $select .= '<option value="'. $key .'"'. ($key == $notify->teasers ? " selected=\"selected\"" : "") .">$choice</option>";
+        }
+        $rows[$i][] = '<select name="edit['. $notify->uid .'][teasers]">'. $select .'</select>';
+        $rows[$i][] = form_hidden("$notify->uid][comment", 0) .'<input type="checkbox" name="edit['. $notify->uid .'][comment]" value="1"'. ($notify->comment ? ' checked="checked"' : '') .">";
+        $rows[$i][] = $notify->attempts;
+        $i++;
+      }
+      $output = theme('table', $header, $rows);
+      $output.= form_submit(t('Save'));
+      print theme('page', form($output));
+  }
+}
+
 function notify_content($node, $notify) {
   switch ($notify->teasers) {
     case 0:
@@ -67,8 +167,8 @@ function notify_send() {
   $from = variable_get("site_mail", ini_get("sendmail_from"));
   while ($notify = db_fetch_object($uresult)) {
     $user = user_load(array("uid" => $notify->uid));
-    $subject = variable_get("site_name", "drupal") ." ". t("notification for %name", array ("%name" =>$user->name));
-    $body = "";
+    $subject = variable_get('site_name', 'drupal') .' '. t('notification for %name', array ('%name' =>$user->name));
+    $body = '';
     // New content
     if ($notify->node && count($nodes)) {
       $body .= t("Recent content") ."\n". str_repeat("-", strlen(t("Recent content"))) ."\n\n";
@@ -119,102 +219,4 @@ function notify_send() {
     }
   }
 }
-
-function notify_settings() {
-  $period = array(900 => format_interval(900), 1800 => format_interval(1800), 3600 => format_interval(3600), 10800 => format_interval(10800), 21600 => format_interval(21600), 32400 => format_interval(32400), 43200 => format_interval(43200), 86400 => format_interval(86400), 172800 => format_interval(172800), 259200 => format_interval(259200), 604800 => format_interval(604800), 1209600 => format_interval(1209600), 2419200 => format_interval(2419200), 1000000000 => "Never");
-  $output .= form_select(t("Send notifications every"), "notify_send", variable_get("notify_send", 86400), $period, t("Requires crontab."));
-  $output .= form_select(t("Number of failed sends after which notifications are disabled"), "notify_attempts", variable_get("notify_attempts", 5), array(t("Disabled"), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20));
-
-  return $output;
-}
-
-function notify_cron() {
-  if (time() - variable_get("notify_send_last", 0) > variable_get("notify_send", 86400)) {
-    notify_send();
-    variable_set("notify_send_last", time());
-  }
-}
-
-function notify_perm() {
-  return array("access notify", "administer notify");
-}
-
-function notify_menu() {
-  global $user;
-  $items = array();
-  
-  $items[] = array('path' => "user/$user->uid/notify", 'title' => t("my notify settings"), 'callback' => 'notify_page', 'access' => user_access("access notify"), 'type' => MENU_LOCAL_TASK);
-  $items[] = array('path' => "admin/user/notify", 'title' => t("notifications"), 'callback' => 'notify_admin', 'access' => user_access("administer notify"), 'type' => MENU_LOCAL_TASK);
-
-  return $items;
-}
-
-function notify_page() {
-  global $user;
-
-  $op = $_POST["op"];
-  $edit = $_POST["edit"];
-
-  if (user_access("access notify") && $user) {
-    switch ($op) {
-      case "cron":
-        notify_send();
-        break;
-      case t("Save settings"):
-        db_query("REPLACE {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)", $user->uid, $edit["status"], $edit["node"], $edit["teasers"], $edit["comment"]);
-        drupal_set_message(t("Notify settings saved"));
-      default:
-        $result = db_query("SELECT u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name", $user->uid);
-        $notify = db_fetch_object($result);
-
-        $form .= form_select(t("Notify status"), "status", $notify->status, array(t("Disabled"), t("Enabled")), t("Do you wish to receive periodic emails when new content is posted?"));
-        $form .= form_select(t("Notify new content"), "node", $notify->node, array(t("Disabled"), t("Enabled")), t("Include new content in the notification mail."));
-        $form .= form_select(t("Content"), "teasers", $notify->teasers, array(t("Title only"), t("Title + Teaser"), t("Title + Body")), t("Select the amount of each post that you would like to see in your notification emails."));
-        $form .= form_select(t("Notify new comments"), "comment", $notify->comment, array(t("Disabled"), t("Enabled")), t("Include new comments in the notification mail."));
-        $form .= form_submit(t("Save settings"));
-
-        print theme("page", form($form));
-    }
-  }
-  else {
-    print message_access();
-  }
-}
-
-function notify_admin() {
-  $op = $_POST["op"];
-
-  switch ($op) {
-    case "Save":
-      $edit = $_POST["edit"];
-      foreach ($edit as $uid=>$settings) {
-        db_query("UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d", $settings['node'], $settings['teasers'], $settings['comment'], $uid);
-      }
-    default:
-      $result = db_query("SELECT u.uid, u.name, u.mail, n.* FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name");
-      $header = array (t("username"), t("email address"), t("content"), t("teasers"), t("comment"), t("failed attempts"));
-      $i = 0;
-      while ($notify = db_fetch_object($result)) {
-        $rows[$i][] = format_name($notify);
-        $rows[$i][] = $notify->mail;
-        // 030312AX TODO: it really is a shame that we cannot use form_* functions
-        // here (as they wrap everything into <p>title description</p>). implement
-        // this once (see mailing list)!
-        //$rows[$i][] = form_hidden("$notify->uid][status", 0) ."<input type=\"checkbox\" name=\"edit[$notify->uid][status]\"". ($notify->status ? " checked=\"checked\"" : "") .">";
-        $rows[$i][] = form_hidden("$notify->uid][node", 0) .'<input type="checkbox" name="edit['. $notify->uid .'][node]" value="1"'. ($notify->node ? ' checked="checked"' : '') .'>';
-        $select = "";
-        foreach (array(t("Title only"), t("Title + Teaser"), t("Title + Body")) as $key => $choice) {
-          $select .= '<option value="'. $key .'"'. ($key == $notify->teasers ? " selected=\"selected\"" : "") .">$choice</option>";
-        }
-        $rows[$i][] = '<select name="edit['. $notify->uid .'][teasers]">'. $select .'</select>';
-        $rows[$i][] = form_hidden("$notify->uid][comment", 0) .'<input type="checkbox" name="edit['. $notify->uid .'][comment]" value="1"'. ($notify->comment ? ' checked="checked"' : '') .">";
-        $rows[$i][] = $notify->attempts;
-        $i++;
-      }
-      $output = theme("table", $header, $rows);
-      $output.= form_submit("Save");
-      print theme('page', form($output));
-  }
-}
-
 ?>
