@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+function notify_system($field) {
+  $system["description"] = t("Enables notifications by email");
+  return $system[$field];
+}
+
 function notify_send() {
   $period = variable_get("notify_send_last", time() - variable_get("notify_send", 86400));
 
