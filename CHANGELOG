@@ -1,0 +1,14 @@
+16. July 2001
+-------------
+notify.mysql
+- update the SQL definition.
+
+notify.module
+- added some more options to "Your notifications".
+- added an administrative page to see active notifications.
+- fixed a minor bug which could cause nodes/comments to not be included in the
+  notification e-mail.
+
+11. July 2001
+-------------
+- initial release.
