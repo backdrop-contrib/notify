@@ -37,12 +37,12 @@ function notify_send() {
           if ($notify->moderate && user_access("access submission queue")) {
             $body .= strtr(t("%status %type by %author: %title"), array("%status" => "queued", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
             $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
-            $body .= "  [ ". path_uri() ."module.php?mod=queue&op=view&id=$node->nid ]\n\n";
+            $body .= "  [ ". path_uri() . url("queue/view/$node->nid") ." ]\n\n";
           }
           elseif (!$notify->moderate && $node->nid) {
             $body .= strtr(t("%status %type by %author: %title"), array("%status" => "published", "%type" => check_output($node->type), "%title" => check_output($node->title), "%author" => ($node->name ? $node->name : variable_get(anonymous, "Anonymous")))) ."\n";
             $body .= ($notify->teasers && $node->teaser) ? strip_tags("$node->teaser\n") : "";
-            $body .= "  [ ". path_uri() ."node.php?id=$node->nid ]\n\n";
+            $body .= "  [ ". path_uri() . url("node/view/$node->nid") ." ]\n\n";
           }
         }
       }
@@ -60,7 +60,8 @@ function notify_send() {
             $nid_old = $nid;
           }
           foreach ($comment as $c) {
-            $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($c->subject), "%author" => ($c->name ? $c->name : variable_get(anonymous, "Anonymous")))) ."\n    ". path_uri() ."node.php?id=$nid&cid=$c->cid&pid=$c->pid#$c->cid\n\n";
+            $body .= "  ". strtr(t("%title by %author"), array("%title" => check_output($c->subject), "%author" => ($c->name ? $c->name : variable_get(anonymous, "Anonymous")))) ."\n"
+                  .  "    ". path_uri() . url("node/view/$nid/$c->cid#$c->cid") ."\n\n";
           }
         }
       }
@@ -103,11 +104,11 @@ function notify_perm() {
 
 function notify_link($type) {
   if ($type == "menu.settings" && user_access("access notify")) {
-    $links[] = lm(t("notification settings"), array("mod" => "notify"));
+    $links[] = l(t("notification settings"), "notify");
   }
 
   if ($type == "admin" && user_access("administer notify")) {
-    $links[] = la(t("notifications"), array("mod" => "notify"));
+    menu_add("notifications", url("admin/notify"), "Configure user notifications.", NULL, "user management", 6);
   }
 
   return $links ? $links : array();
@@ -157,7 +158,6 @@ function notify_admin() {
         }
       }
     default:
-      print "\n<small>". la(t("overview"), array("mod" => "notify")) ." | ". la(t("settings"), array("mod" => "system"), "notify") ."</small><hr />\n";
       $result = db_query("SELECT u.uid, u.name, u.mail, n.node, n.comment, n.teasers, n.attempts FROM users u LEFT JOIN notify n ON u.uid = n.uid WHERE n.status = 1 && u.status = 1 ORDER BY u.name");
       $output = "<table border=\"1\" cellpadding=\"2\" cellspacing=\"2\">\n";
       $output .= sprintf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>", "username", "e-mail address", "content", "teaser", "comment", "failed attempts");
