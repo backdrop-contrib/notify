@@ -199,7 +199,7 @@ function notify_admin() {
         $i++;
       }
       $rows[$i][] = form_submit("Save");
-      $output = table($header, $rows);
+      $output = theme("table", $header, $rows);
       print form($output);
   }
 }
