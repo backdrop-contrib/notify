@@ -152,7 +152,7 @@ function _notify_send() {
 
       $body .= "\n-- \n";
       $body .= t('This is an automatic mail from') .' '. variable_get('site_name', 'drupal') ."\n";
-      $body .= t('To stop receiving these mails go to') ." $base_url/notify\n";
+      $body .= t('To stop receiving these mails go to') ." $base_url/user/$user->uid/notify\n";
 
       if (!user_mail($user->mail, $subject, wordwrap($body, 72), "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: <$from>\nErrors-to: $from\n")) {
         db_query('UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d', $user->uid);
