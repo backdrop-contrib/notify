@@ -1,9 +1,12 @@
 <?php
 // $Id$
 
-function notify_system($field) {
-  $system["description"] = t("Enables notifications by email");
-  return $system[$field];
+function notify_help($section) {
+  switch ($section) {
+    case 'admin/system/modules#description':
+      $output = t("Enables notifications by email.");
+      break;
+  }
 }
 
 function notify_content($node, $notify) {
@@ -16,8 +19,8 @@ function notify_content($node, $notify) {
     case 2:
       $output = $node->body ? strip_tags("$node->body\n") : "";
   }
-  return $output;    
-}  
+  return $output;
+}
 
 function notify_send() {
   global $base_url;
@@ -185,8 +188,8 @@ function notify_admin() {
       while ($notify = db_fetch_object($result)) {
         $rows[$i][] = format_name($notify);
         $rows[$i][] = $notify->mail;
-        // 030312AX TODO: it really is a shame that we cannot use form_* functions 
-        // here (as they wrap everything into <p>title description</p>). implement 
+        // 030312AX TODO: it really is a shame that we cannot use form_* functions
+        // here (as they wrap everything into <p>title description</p>). implement
         // this once (see mailing list)!
         //$rows[$i][] = form_hidden("$notify->uid][status", 0) ."<input type=\"checkbox\" name=\"edit[$notify->uid][status]\"". ($notify->status ? " checked=\"checked\"" : "") .">";
         $rows[$i][] = form_hidden("$notify->uid][node", 0) .'<input type="checkbox" name="edit['. $notify->uid .'][node]" value="1"'. ($notify->node ? ' checked="checked"' : '') .'>';
