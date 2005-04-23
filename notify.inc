@@ -105,7 +105,7 @@ function _notify_send() {
     }
 
     // Fetch new comments
-    $cresult = db_query(db_rewrite_sql('SELECT DISTINCT(c.cid), c.nid, c.subject, c.pid, u.name FROM {comments} c INNER JOIN {users} u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d ORDER BY c.nid, c.timestamp', 'c'), $period);
+    $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.pid, u.name FROM {comments} c INNER JOIN {users} u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d ORDER BY c.nid, c.timestamp', 'c'), $period);
     $comments = array();
     while ($comment = db_fetch_object($cresult)) {
       $comments[$comment->nid][] = $comment;
