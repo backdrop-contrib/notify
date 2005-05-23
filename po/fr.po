@@ -1,0 +1,150 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Notify module\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2005-05-22 17:48+0100\n"
+"Last-Translator: Damien COLA <damiencola@wanadoo.fr>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: French\n"
+"X-Poedit-Country: FRANCE\n"
+
+#: notify.inc:10
+#: ;21
+msgid "Save settings"
+msgstr "Sauvegarder les paramètres"
+
+#: notify.inc:12
+msgid "Notify settings saved"
+msgstr "Paramètres de notification sauvegardés"
+
+#: notify.inc:17
+msgid "Notify status"
+msgstr "Status de notification"
+
+#: notify.inc:17
+#: ;18;20
+msgid "Enabled"
+msgstr "Activé"
+
+#: notify.inc:17
+msgid "Do you wish to receive periodic emails when new content is posted?"
+msgstr "Souhaitez-vous recevoir des e-mails périodiques lorsque du contenu nouveau est posté ?"
+
+#: notify.inc:18
+msgid "Notify new content"
+msgstr "Notifier le nouveau contenu"
+
+#: notify.inc:18
+msgid "Include new content in the notification mail."
+msgstr "Inclure le nouveau contenu dans l'e-mail de notification."
+
+#: notify.inc:19
+msgid "Content"
+msgstr "Contenu"
+
+#: notify.inc:19
+#: ;47
+msgid "Title only"
+msgstr "Seulement le titre"
+
+#: notify.inc:19
+#: ;47
+msgid "Title + Teaser"
+msgstr "Titre + version abrégée"
+
+#: notify.inc:19
+#: ;47
+msgid "Title + Body"
+msgstr "Titre + Corps"
+
+#: notify.inc:19
+msgid "Select the amount of each post that you would like to see in your notification emails."
+msgstr "Sélectionnez le montant de chaque contribution que vous aimeriez voir dans vos e-mails de notification."
+
+#: notify.inc:20
+msgid "Notify new comments"
+msgstr "Notifier les nouveaux commentaires"
+
+#: notify.inc:20
+msgid "Include new comments in the notification mail."
+msgstr "Inclure les nouveaux commentaires dans l'e-mail de notification."
+
+#: notify.inc:30
+#: ;56
+msgid "Save"
+msgstr "Sauvegarder"
+
+#: notify.inc:36
+msgid "username"
+msgstr "nom d'utilisateur"
+
+#: notify.inc:36
+msgid "email address"
+msgstr "adresse e-mail"
+
+#: notify.inc:36
+msgid "content"
+msgstr "contenu"
+
+#: notify.inc:36
+msgid "teasers"
+msgstr "versions abrégées"
+
+#: notify.inc:36
+msgid "comment"
+msgstr "commentaire"
+
+#: notify.inc:36
+msgid "failed attempts"
+msgstr "tentatives ratées"
+
+#: notify.inc:113
+msgid "notification for %name"
+msgstr "notification pour %name"
+
+#: notify.inc:117
+#: ;117
+msgid "Recent content"
+msgstr "Contenu récent"
+
+#: notify.inc:120
+#: ;125
+msgid "%status %type by %author: %title"
+msgstr "%status %type par %author : %title"
+
+#: notify.inc:134
+#: ;134
+msgid "Recent comments"
+msgstr "Commentaires récents"
+
+#: notify.inc:141
+msgid "%count new comments attached to: %title"
+msgstr "%count nouveaux commentaires attachés à : %title"
+
+#: notify.inc:145
+msgid "%title by %author"
+msgstr "%title par %author"
+
+#: notify.inc:151
+msgid "Greetings"
+msgstr "Salutations"
+
+#: notify.inc:154
+msgid "This is an automatic mail from"
+msgstr "Ceci est un e-mail automatique de"
+
+#: notify.inc:155
+msgid "To stop receiving these mails go to"
+msgstr "Pour ne plus recevoir ces e-mails allez à"
+
+#: notify.inc:159
+msgid "Notify: User %name (%mail) could not be notified. Mail error."
+msgstr "Notification : L'utilisateur %name (%mail) n'a pas pu être notifié. Erreur d'e-mail."
+
+#: notify.inc:162
+msgid "Notify: User %name (%mail) notified successfully."
+msgstr "Notification : L'utilisateur %name (%mail) a été notifié avec succès."
+
