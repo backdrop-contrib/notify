@@ -1,0 +1,138 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Notify : Drupal 4.6.0\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2005-06-08 15:20+0100\n"
+"Last-Translator: maca <miroslav.macek@csobpoj.cz>\n"
+"Language-Team: Czech <miroslav.macek@csobpoj.cz>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: notify.inc:10;21
+msgid "Save settings"
+msgstr "Uložit nastavení"
+
+#: notify.inc:12
+msgid "Notify settings saved"
+msgstr "Nastavení upozornění uloženo"
+
+#: notify.inc:17
+msgid "Notify status"
+msgstr "Stav upozornění"
+
+#: notify.inc:17;18;20
+msgid "Enabled"
+msgstr "Povoleno"
+
+#: notify.inc:17
+msgid "Do you wish to receive periodic emails when new content is posted?"
+msgstr "Přejete si opakovaně dostávat email pokud je vložen nový obsah?"
+
+#: notify.inc:18
+msgid "Notify new content"
+msgstr "Upozornit na nový obsah"
+
+#: notify.inc:18
+msgid "Include new content in the notification mail."
+msgstr "Vlož nový obsah do emailu s upozorněním."
+
+#: notify.inc:19
+msgid "Content"
+msgstr "Obsah"
+
+#: notify.inc:19;47
+msgid "Title only"
+msgstr "Pouze nadpis"
+
+#: notify.inc:19;47
+msgid "Title + Teaser"
+msgstr "Nadpis + Ukázka"
+
+#: notify.inc:19;47
+msgid "Title + Body"
+msgstr "Nadpis + Příspěvek"
+
+#: notify.inc:19
+msgid "Select the amount of each post that you would like to see in your notification emails."
+msgstr "Zvolte si co má být součástí emailu s upozorněním."
+
+#: notify.inc:20
+msgid "Notify new comments"
+msgstr "Upozornit na nový komentář"
+
+#: notify.inc:20
+msgid "Include new comments in the notification mail."
+msgstr "Vlož komentář do emailu s upozorněním."
+
+#: notify.inc:30;56
+msgid "Save"
+msgstr "Uložit"
+
+#: notify.inc:36
+msgid "username"
+msgstr "uživatelské jméno"
+
+#: notify.inc:36
+msgid "email address"
+msgstr "emailová adresa"
+
+#: notify.inc:36
+msgid "content"
+msgstr "obsah"
+
+#: notify.inc:36
+msgid "teasers"
+msgstr "upoutávka"
+
+#: notify.inc:36
+msgid "comment"
+msgstr "komentář"
+
+#: notify.inc:36
+msgid "failed attempts"
+msgstr "selhání upozornění"
+
+#: notify.inc:113
+msgid "notification for %name"
+msgstr "upozornění pro uživatele %name"
+
+#: notify.inc:117;117
+msgid "Recent content"
+msgstr "Poslední obsah"
+
+#: notify.inc:120;125
+msgid "%status %type by %author: %title"
+msgstr "%status %type %author: %title"
+
+#: notify.inc:134;134
+msgid "Recent comments"
+msgstr "Poslední komentáře"
+
+#: notify.inc:141
+msgid "%count new comments attached to: %title"
+msgstr "%count nových komentářů přidáno k: %title"
+
+#: notify.inc:145
+msgid "%title by %author"
+msgstr "%title od uživatele %author"
+
+#: notify.inc:151
+msgid "Greetings"
+msgstr "Zpráva pro uživatele"
+
+#: notify.inc:154
+msgid "This is an automatic mail from"
+msgstr "Toto je automaticky generovaná zpráva z"
+
+#: notify.inc:155
+msgid "To stop receiving these mails go to"
+msgstr "Zasílání těchto upozornění lze nastavit na"
+
+#: notify.inc:159
+msgid "Notify: User %name (%mail) could not be notified. Mail error."
+msgstr "Notify: Uživatel %name (%mail) nemohl být upozorněn. Chyba při odesílání."
+
+#: notify.inc:162
+msgid "Notify: User %name (%mail) notified successfully."
+msgstr "Notify: Uživatel %name (%mail) upozorněn."
