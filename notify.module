@@ -27,6 +27,18 @@ function notify_cron() {
   }
 }
 
+/**
+ * Implementation of hook_user().
+ */
+function notify_user($type, &$edit, &$user, $category = NULL) {
+  switch ($type) {
+    case 'delete':
+      db_query('DELETE FROM {notify} WHERE uid = %d', $user->uid);
+      break;
+  }
+}
+
+
 function notify_perm() {
   return array('access notify', 'administer notify');
 }
