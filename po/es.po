@@ -1,0 +1,216 @@
+# Traducción al español del módulo notify.
+# Esta traducción ha sido financiada por interactors. <http://interactors.coop>.
+# Gerard Farràs <gerard.farras@km103.com>, 2005.
+# Interactors <info@interactors.coop>, 2005.
+# 
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: Drupal 4.6\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2005-08-02 13:17+0200\n"
+"PO-Revision-Date: 2005-08-24 21:51+0200\n"
+"Last-Translator: Gerard Farràs <gerard.farras@km103.com>\n"
+"Language-Team: Spanish <info@interactors.coop>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit"
+
+#: notify.inc:17 ;19;21 notify.module:16
+msgid "Disabled"
+msgstr "Deshabilitado"
+
+#: notify.module:7
+msgid "Enables notifications by email."
+msgstr "Habilita las notificaciones por correo electrónico."
+
+#: notify.module:15
+msgid "Send notifications every"
+msgstr "Envía notificaciones cada"
+
+#: notify.module:15
+msgid "Requires crontab."
+msgstr "Requiere el crontab."
+
+#: notify.module:16
+msgid "Number of failed sends after which notifications are disabled"
+msgstr "Número de intentos fallidos desde que se dehabilitaron las notificaciones"
+
+#: notify.module:40
+msgid "my notify settings"
+msgstr "mis parámetros de notificación"
+
+#: notify.module:41
+msgid "notifications"
+msgstr "notificaciones"
+
+#: notify.module:31
+msgid "access notify"
+msgstr "notificación de acceso"
+
+#: notify.module:31
+msgid "administer notify"
+msgstr "administra el notificador"
+
+#: notify.module:0
+msgid "notify"
+msgstr "notificador"
+
+#: notify.inc:10 ;23
+msgid "Save settings"
+msgstr "Guardar parámetros"
+
+#: notify.inc:12
+msgid "Notify settings saved"
+msgstr "Parámetros del notificador guardados"
+
+#: notify.inc:17
+msgid "Notify status"
+msgstr "Estado del notificador"
+
+#: notify.inc:17 ;19;21
+msgid "Enabled"
+msgstr "Habilitado"
+
+#: notify.inc:17
+msgid "Do you wish to receive periodic emails when new content is posted?"
+msgstr "Quereis recibir periódicamente correos electrónicos cuando se mande nuevo "
+"contenido?"
+
+#: notify.inc:18
+msgid "Master switch"
+msgstr "Commutador principal"
+
+#: notify.inc:19
+msgid "Notify new content"
+msgstr "Notificar nuevo contenido"
+
+#: notify.inc:19
+msgid "Include new content in the notification mail."
+msgstr "Incluir el nuevo contenido en el correo de notificación."
+
+#: notify.inc:20
+msgid "Content"
+msgstr "Contenido"
+
+#: notify.inc:20 ;49
+msgid "Title only"
+msgstr "Solo el título"
+
+#: notify.inc:20 ;49
+msgid "Title + Teaser"
+msgstr "Título + Resumen"
+
+#: notify.inc:20 ;49
+msgid "Title + Body"
+msgstr "Título + Cuerpo"
+
+#: notify.inc:20
+msgid ""
+"Select the amount of each post that you would like to see in your "
+"notification emails."
+msgstr ""
+"Seleccionar la cantidad de cada envío que deseais visualitzar en los correos "
+"de notificación."
+
+#: notify.inc:21
+msgid "Notify new comments"
+msgstr "Notifica nuevos comentarios"
+
+#: notify.inc:21
+msgid "Include new comments in the notification mail."
+msgstr "Incluye los nuevos comentarios en el correo de notificación."
+
+#: notify.inc:22
+msgid "Detailed settings"
+msgstr "Parámetros en detalle"
+
+#: notify.inc:32 ;58
+msgid "Save"
+msgstr "Guardar"
+
+#: notify.inc:38
+msgid "username"
+msgstr "nombre de usuario"
+
+#: notify.inc:38
+msgid "email address"
+msgstr "dirección de correo electrónico"
+
+#: notify.inc:38
+msgid "content"
+msgstr "contenido"
+
+#: notify.inc:38
+msgid "teasers"
+msgstr "resúmenes"
+
+#: notify.inc:38
+msgid "comment"
+msgstr "comentario"
+
+#: notify.inc:38
+msgid "failed attempts"
+msgstr "intentos fallidos"
+
+#: notify.inc:115
+msgid "%sitename notification for %username"
+msgstr "notificación de %sitename para %username"
+
+#: notify.inc:119
+msgid "Recent content"
+msgstr "Contenido reciente"
+
+#: notify.inc:122 ;127
+msgid "%status %type by %author: %title"
+msgstr "%status %type para %author: %title"
+
+#: notify.inc:122
+msgid "queued"
+msgstr "en cola"
+
+#: notify.inc:127
+msgid "published"
+msgstr "publicado"
+
+#: notify.inc:136
+msgid "Recent comments"
+msgstr "Comentarios recientes"
+
+#: notify.inc:143
+msgid "%count new comments attached to: %title"
+msgstr "%count nuevos comentarios adjuntos a: %title"
+
+#: notify.inc:147
+msgid "%title by %author"
+msgstr "%title para %author"
+
+#: notify.inc:153
+msgid "Greetings %user,"
+msgstr "Felicidades %usuario,"
+
+#: notify.inc:156
+msgid "This is an automatic mail from %sitename"
+msgstr "Éste es un correo electrónico automático de %sitename"
+
+#: notify.inc:157
+msgid "To stop receiving these mails go to %notify-url"
+msgstr "Para parar la recepción de estos correos ir a %notify-url"
+
+#: notify.inc:161
+msgid "Notify: User %name (%mail) could not be notified. Mail error."
+msgstr "Notificador: No se ha podido notificar al usuario %name (%mail). Error en el "
+"correo."
+
+#: notify.inc:164
+msgid "Notify: User %name (%mail) notified successfully."
+msgstr "Notificador: Se ha podido notificar con éxito el usuario %name (%mail)"
+
+#: notify.inc:161
+msgid "error"
+msgstr "error"
+
+#: notify.inc:164
+msgid "user"
+msgstr "usuario"
+
