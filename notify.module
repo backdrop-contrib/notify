@@ -12,15 +12,15 @@ function notify_help($section) {
 
 function notify_settings() {
   $period = array(900 => format_interval(900), 1800 => format_interval(1800), 3600 => format_interval(3600), 10800 => format_interval(10800), 21600 => format_interval(21600), 32400 => format_interval(32400), 43200 => format_interval(43200), 86400 => format_interval(86400), 172800 => format_interval(172800), 259200 => format_interval(259200), 604800 => format_interval(604800), 1209600 => format_interval(1209600), 2419200 => format_interval(2419200), 1000000000 => "Never");
-  $output .= form_select(t("Send notifications every"), "notify_send", variable_get("notify_send", 86400), $period, t("Requires crontab."));
-  $output .= form_select(t("Number of failed sends after which notifications are disabled"), "notify_attempts", variable_get("notify_attempts", 5), array(t("Disabled"), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20));
+  $form['notify_send'] = array('#type' => 'select', '#title' => t('Send notifications every'), '#default_value' => variable_get('notify_send', 86400), '#options' => $period, '#description' => t("Requires crontab."));
+  $form['notify_attempts'] = array('#type' => 'select', '#title' => t('Number of failed sends after which notifications are disabled.'), '#default_value' => variable_get('notify_attempts', 5), '#options' => array(t("Disabled"), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20));
 
-  return $output;
+  return $form;
 }
 
 function notify_cron() {
   if (time() - variable_get('notify_send_last', 0) > variable_get('notify_send', 86400)) {
-    include_once 'modules/notify/notify.inc';
+    include_once drupal_get_path('module', 'notify') . '/notify.inc';
     _notify_send();
     variable_set('notify_send_last', time());
     cache_clear_all('variables');
@@ -57,22 +57,13 @@ function notify_menu($may_cache) {
 }
 
 function notify_page() {
-  include_once 'modules/notify/notify.inc';
-
-  $op = $_POST['op'];
-  $edit = $_POST['edit'];
-
-  _notify_page($op, $edit);
+  include_once drupal_get_path('module', 'notify') . '/notify.inc';
+  return _notify_page();
 }
 
 function notify_admin() {
-  include_once 'modules/notify/notify.inc';
+  include_once drupal_get_path('module', 'notify') . '/notify.inc';
 
-  $op = $_POST['op'];
-  $edit = $_POST['edit'];
-
-  $output = _notify_admin($op, $edit);
-
-  print theme('page', form($output));
+  return _notify_admin();
 }
 ?>
