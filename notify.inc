@@ -1,6 +1,6 @@
 <?php
 // $Id$
-function _notify_page($op, $edit) {
+function _notify_page($op = '', $edit = array()) {
   global $user;
   if (user_access('access notify') && $user) {
     switch ($op) {
