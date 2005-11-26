@@ -139,13 +139,13 @@ function _notify_send() {
     if ($user->node && count($nodes)) {
       $body .= t('Recent content') ."\n". str_repeat('-', 78) ."\n\n";
       foreach ($nodes as $node) {
-        if ($user->moderate) {
-          $body .= strtr(t('%status %type by %author: %title'), array('%status' => t('queued'), '%type' => node_invoke($node, 'node_name'), '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
+        if ($node->moderate && module_exist('queue')) {
+          $body .= t('%status %type by %author: %title', array('%status' => t('queued'), '%type' => node_invoke($node, 'node_name'), '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
           $body .= _notify_content($node, $user);
           $body .= '  [ '. url("queue/$node->nid", NULL, NULL, TRUE) ." ]\n\n";
         }
-        elseif (!$user->moderate && $node->nid) {
-          $body .= strtr(t('%status %type by %author: %title'), array('%status' => t('published'), '%type' => node_invoke($node, 'node_name'), '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
+        elseif (!$node->moderate && $node->nid) {
+          $body .= t('%status %type by %author: %title', array('%status' => t('published'), '%type' => node_invoke($node, 'node_name'), '%title' => $node->title, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
           $body .= _notify_content($node, $user);
           $body .= '  [ '. url("node/$node->nid", NULL, NULL, TRUE) ." ]\n\n";
         }
@@ -161,11 +161,11 @@ function _notify_send() {
             $result = db_query("SELECT title FROM {node} WHERE nid = %d", $nid);
             $nodes[$nid] = db_fetch_object($result);
           }
-          $body .= strtr(t('%count new comments attached to: %title'), array('%count' => count($comment), '%title' => $nodes[$nid]->title)) ."\n";
+          $body .= t('%count new comments attached to: %title', array('%count' => count($comment), '%title' => $nodes[$nid]->title)) ."\n";
           $nid_old = $nid;
         }
         foreach ($comment as $c) {
-          $body .= '  '. strtr(t('%title by %author'), array('%title' => $c->subject, '%author' => ($c->name ? $c->name : variable_get(anonymous, 'Anonymous')))) ."\n"
+          $body .= '  '. t('%title by %author', array('%title' => $c->subject, '%author' => ($c->name ? $c->name : variable_get(anonymous, 'Anonymous')))) ."\n"
                 .  '    '. url("node/$nid/$c->cid#$c->cid", NULL, NULL, TRUE) ."\n\n";
         }
       }
