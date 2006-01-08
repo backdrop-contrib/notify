@@ -1,0 +1,217 @@
+# LANGUAGE translation of Drupal (contributions-HEAD\modules\notify\notify.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from file: notify.module,v 2.57 2005/10/26 12:01:28 killes
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2006-01-08 20:42+0100\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: contributions-HEAD\modules\notify\notify.module:7
+msgid "Enables notifications by email."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.module:15
+msgid "Send notifications every"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.module:15
+msgid "Requires crontab."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.module:16
+msgid "Number of failed sends after which notifications are disabled."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.module:52
+msgid "my notify settings"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.module:53
+msgid "notifications"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.module:43
+msgid "access notify"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.module:43
+msgid "administer notify"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.module:0
+msgid "notify"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:10;25
+msgid "Save settings"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:12
+msgid "Notify settings saved"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:18
+msgid "Master switch"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:19
+msgid "Notify status"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:19;22;24
+msgid "Disabled"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:19;22;24
+msgid "Enabled"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:19
+msgid "Do you wish to receive periodic emails when new content is posted?"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:21
+msgid "Detailed settings"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:22
+msgid "Notify new content"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:22
+msgid "Include new content in the notification mail."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:23
+msgid "Content"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:23;54
+msgid "Title only"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:23;54
+msgid "Title + Teaser"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:23;54
+msgid "Title + Body"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:23
+msgid "Select the amount of each post that you would like to see in your notification emails."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:24
+msgid "Notify new comments"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:24
+msgid "Include new comments in the notification mail."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:28
+msgid "You need to set a email address on your <a href=\"%url\">my account</a> page."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:38;58
+msgid "Save"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:48
+msgid "The following table shows all users that have notifications enabled."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:65
+msgid "username"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:65
+msgid "email address"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:65
+msgid "content"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:65
+msgid "teasers"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:65
+msgid "comment"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:65
+msgid "failed attempts"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:136
+msgid "%sitename notification for %username"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:140
+msgid "Recent content"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:143;148
+msgid "%status %type by %author: %title"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:143
+msgid "queued"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:148
+msgid "published"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:157
+msgid "Recent comments"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:164
+msgid "%count new comments attached to: %title"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:168
+msgid "%title by %author"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:174
+msgid "Greetings %user,"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:177
+msgid "This is an automatic mail from %sitename"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:178
+msgid "To stop receiving these mails go to %notify-url"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:182
+msgid "Notify: User %name (%mail) could not be notified. Mail error."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:185
+msgid "Notify: User %name (%mail) notified successfully."
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:182
+msgid "error"
+msgstr ""
+
+#: contributions-HEAD\modules\notify\notify.inc:185
+msgid "user"
+msgstr ""
+
