@@ -1,10 +1,10 @@
 # Danish translation of Drupal (members.module)
-# Copyright 2005 Morten Wulff <wulff@psyke.org>
+# Copyright 2005-2006 Morten Wulff <wulff@psyke.org>
 msgid ""
 msgstr ""
 "Project-Id-Version: Danish translation of $Id$\n"
 "POT-Creation-Date: 2004-09-21 15:47+0200\n"
-"PO-Revision-Date: 2006-01-08 20:45+0100\n"
+"PO-Revision-Date: 2006-01-13 13:49+0100\n"
 "Last-Translator: Morten Wulff <wulff@tem.dtu.dk>\n"
 "Language-Team: Danish <danish@psyke.org>\n"
 "MIME-Version: 1.0\n"
@@ -161,6 +161,10 @@ msgstr "kommentarer"
 msgid "failed attempts"
 msgstr "mislykkede forsøg"
 
+#: notify.inc:113
+msgid "notification for %name"
+msgstr "%name's påmindelser"
+
 #: contributions-HEAD\modules\notify\notify.inc:136
 msgid "%sitename notification for %username"
 msgstr "%sitename påmindelse for %username"
@@ -181,6 +185,18 @@ msgstr "i kø"
 #: contributions-HEAD\modules\notify\notify.inc:148
 msgid "published"
 msgstr "udgivet"
+
+#: notify.inc:151
+msgid "Greetings"
+msgstr "Hej"
+
+#: notify.inc:154
+msgid "This is an automatic mail from"
+msgstr "Dette er en automatisk besked fra"
+
+#: notify.inc:155
+msgid "To stop receiving these mails go to"
+msgstr "Hvis du ikke ønsker at modtage disse beskeder, skal du gå til"
 
 #: contributions-HEAD\modules\notify\notify.inc:157
 msgid "Recent comments"
