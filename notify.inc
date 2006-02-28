@@ -7,9 +7,6 @@ function _notify_page($op = '', $edit = array()) {
       case 'cron':
         _notify_send();
         break;
-      case t('Save settings'):
-        db_query('REPLACE {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $user->uid, $edit['status'], $edit['node'], $edit['teasers'], $edit['comment']);
-        drupal_set_message(t('Notify settings saved'));
       default:
         $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name', $user->uid);
         $notify = db_fetch_object($result);
@@ -33,6 +30,12 @@ function _notify_page($op = '', $edit = array()) {
   }
 }
 
+function notify_page_submit($form_id, $edit) {
+  global $user;
+  db_query('REPLACE {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $user->uid, $edit['status'], $edit['node'], $edit['teasers'], $edit['comment']);
+  drupal_set_message(t('Notify settings saved'));
+}
+
 function _notify_admin() {
   switch ($op) {
     case t('Save'):
@@ -53,7 +56,7 @@ function _notify_admin() {
         $form['notify_admin']['users'][$notify->uid]['node'] = array('#type' => 'checkbox', '#default_value' => $notify->node);
         $form['notify_admin']['users'][$notify->uid]['teasers'] = array('#type' => 'select', '#default_value' => $notify->teasers, '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body')));
         $form['notify_admin']['users'][$notify->uid]['comment'] = array('#type' => 'checkbox', '#default_value' => $notify->comment);
-        $form['notify_admin']['users'][$notify->uid]['attempts'] = array('#type' => 'markup', '#value' => $notify->attempts);
+        $form['notify_admin']['users'][$notify->uid]['attempts'] = array('#type' => 'markup', '#value' => intval($notify->attempts));
       }
       $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
       return drupal_get_form('notify_admin', $form);
@@ -68,6 +71,9 @@ function theme_notify_admin_default($form) {
   foreach (element_children($form['users']) as $key) {
     $row = array();
     foreach ($form['users'][$key] as $entry_key => $entry) {
+      if (substr($entry_key, 0, 1) == '#') {
+        continue;
+      }
       unset($form['users'][$key][$entry_key]['#title']);
       $row[] = form_render($form['users'][$key][$entry_key]);
     }
@@ -89,10 +95,10 @@ function _notify_content($node, $notify) {
     case 0:
       return;
     case 1:
-      $txt = check_output($node->teaser);
+      $txt = check_markup($node->teaser, $node->format, false);
       break;
     case 2:
-      $txt = check_output($node->body);
+      $txt = check_markup($node->body, $node->format, false);
   }
 
   $pattern = '@(<a href="(.+?)">(.+?)</a>)@ei';
