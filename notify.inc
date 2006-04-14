@@ -219,7 +219,7 @@ function _notify_send() {
         $body .= ++$node_count.'. '.t('%title', array('%title' => $node->title)) ."\n";
         $body .= t('%status %type by %author', array('%status' => $status, '%type' => $node->type_name, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
         $body .= '[ '. url($link .'/'.$node->nid, NULL, NULL, TRUE) ." ]\n\n";
-        $body .= _notify_content($node, $user);
+        $body .= _notify_content($node, $user). "\n\n";
         //$body .= $mini_separator . "\n\n";
       }
     }
@@ -243,7 +243,7 @@ function _notify_send() {
           $body .= t('%count new comments attached to %type posted by author: %title', 
             array('%count' => count($comment), '%title' => $nodes[$nid]->title, 
               '%type' => $node->type_name, '%author' => 
-              ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))."\n");
+              ($node->name ? $node->name : variable_get('anonymous', 'Anonymous'))))."\n";
 
           $nid_old = $nid;
         }
