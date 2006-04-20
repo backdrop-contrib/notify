@@ -207,6 +207,7 @@ function _notify_send() {
         $node->type_name = $temp[$node->type]['name'];
         $nodes[$node->nid] = $node;
         
+        // TODO: Add functionality to hook into new 4.7 moderation modules
         if ($node->moderate) {
           $status = t('Queued');
           $link = 'node';
@@ -216,11 +217,13 @@ function _notify_send() {
           $link = 'node';
         }
         
+        if ($node_count > 0) {
+          $body .= $mini_separator . "\n\n";
+        }
         $body .= ++$node_count.'. '.t('%title', array('%title' => $node->title)) ."\n";
         $body .= t('%status %type by %author', array('%status' => $status, '%type' => $node->type_name, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
         $body .= '[ '. url($link .'/'.$node->nid, NULL, NULL, TRUE) ." ]\n\n";
         $body .= _notify_content($node, $user). "\n\n";
-        //$body .= $mini_separator . "\n\n";
       }
     }
 
@@ -262,8 +265,8 @@ function _notify_send() {
       $body = t('Greetings %user,', array("%user" => $user->name))."\n\n$body";
 
       $body .= "\n-- \n";
-      $body .= t('This is an automatic mail from %sitename', array('%sitename' => variable_get('site_name', 'drupal')))."\n";
-      $body .= t('To stop receiving these mails go to %notify-url', array('%notify-url' => url("user/$user->uid/notify" , NULL, NULL, TRUE)))."\n";
+      $body .= t('This is an automatic e-mail from %sitename.', array('%sitename' => variable_get('site_name', 'drupal')))."\n";
+      $body .= t('To stop receiving these e-mails, change your notification preferences at %notify-url', array('%notify-url' => url("user/$user->uid/notify" , NULL, NULL, TRUE)))."\n";
 
       if (!user_mail($user->mail, $subject, wordwrap($body, 72), "From: $from_name <$from>\nX-Mailer: Drupal Notify module (http://drupal.org/project/notify)\nReturn-path: <$from>\nErrors-to: $from\n")) {
         $ret['failed']++;
