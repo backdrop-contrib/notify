@@ -15,7 +15,7 @@ msgstr ""
 "X-Poedit-Country: DENMARK\n"
 
 #: contributions-HEAD\modules\notify\notify.module:7
-msgid "Enables notifications by email."
+msgid "Enables notifications by e-mail."
 msgstr "Muliggør påmindelser via e-post."
 
 #: contributions-HEAD\modules\notify\notify.module:15
@@ -78,7 +78,7 @@ msgid "Enabled"
 msgstr "Aktiveret"
 
 #: contributions-HEAD\modules\notify\notify.inc:19
-msgid "Do you wish to receive periodic emails when new content is posted?"
+msgid "Do you wish to receive periodic e-mails when new content is posted?"
 msgstr "Ønsker du at modtage regelmæssige e-mail når nye indlæg offentliggøres?"
 
 #: contributions-HEAD\modules\notify\notify.inc:21
@@ -113,7 +113,7 @@ msgid "Title + Body"
 msgstr "Titel + indhold"
 
 #: contributions-HEAD\modules\notify\notify.inc:23
-msgid "Select the amount of each post that you would like to see in your notification emails."
+msgid "Select the amount of each post that you would like to see in your notification e-mails."
 msgstr "Vælg hvor stor en del af hvert indlæg der skal medtages i e-mails."
 
 #: contributions-HEAD\modules\notify\notify.inc:24
@@ -125,7 +125,7 @@ msgid "Include new comments in the notification mail."
 msgstr "Medtag nye kommentarer i e-mailen."
 
 #: contributions-HEAD\modules\notify\notify.inc:28
-msgid "You need to set a email address on your <a href=\"%url\">my account</a> page."
+msgid "You need to set a e-mail address on your <a href=\"%url\">my account</a> page."
 msgstr "Du skal angive en e-mail adresse på siden <a href=\"%url\">min konto</a>."
 
 #: contributions-HEAD\modules\notify\notify.inc:38
@@ -142,7 +142,7 @@ msgid "username"
 msgstr "brugernavn"
 
 #: contributions-HEAD\modules\notify\notify.inc:65
-msgid "email address"
+msgid "e-mail address"
 msgstr "e-mail adresse"
 
 #: contributions-HEAD\modules\notify\notify.inc:65

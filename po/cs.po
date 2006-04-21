@@ -26,8 +26,8 @@ msgid "Enabled"
 msgstr "Povoleno"
 
 #: notify.inc:17
-msgid "Do you wish to receive periodic emails when new content is posted?"
-msgstr "Přejete si opakovaně dostávat email pokud je vložen nový obsah?"
+msgid "Do you wish to receive periodic e-mails when new content is posted?"
+msgstr "Přejete si opakovaně dostávat e-mail pokud je vložen nový obsah?"
 
 #: notify.inc:18
 msgid "Notify new content"
@@ -35,7 +35,7 @@ msgstr "Upozornit na nový obsah"
 
 #: notify.inc:18
 msgid "Include new content in the notification mail."
-msgstr "Vlož nový obsah do emailu s upozorněním."
+msgstr "Vlož nový obsah do e-mailu s upozorněním."
 
 #: notify.inc:19
 msgid "Content"
@@ -54,8 +54,8 @@ msgid "Title + Body"
 msgstr "Nadpis + Příspěvek"
 
 #: notify.inc:19
-msgid "Select the amount of each post that you would like to see in your notification emails."
-msgstr "Zvolte si co má být součástí emailu s upozorněním."
+msgid "Select the amount of each post that you would like to see in your notification e-mails."
+msgstr "Zvolte si co má být sou�?ástí e-mailu s upozorněním."
 
 #: notify.inc:20
 msgid "Notify new comments"
@@ -63,7 +63,7 @@ msgstr "Upozornit na nový komentář"
 
 #: notify.inc:20
 msgid "Include new comments in the notification mail."
-msgstr "Vlož komentář do emailu s upozorněním."
+msgstr "Vlož komentář do e-mailu s upozorněním."
 
 #: notify.inc:30;56
 msgid "Save"
@@ -74,8 +74,8 @@ msgid "username"
 msgstr "uživatelské jméno"
 
 #: notify.inc:36
-msgid "email address"
-msgstr "emailová adresa"
+msgid "e-mail address"
+msgstr "e-mailová adresa"
 
 #: notify.inc:36
 msgid "content"

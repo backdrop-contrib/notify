@@ -24,11 +24,11 @@ function _notify_page($uid) {
 
         if ($notify->mail) {
           $form['notify_page_master'] = array('#type' => 'fieldset','#title' => t('Master switch'));
-          $form['notify_page_master']['status'] = array('#type' => 'radios', '#title' => t('Notify status'), '#default_value' => $notify->status, '#options' =>  array(t('Disabled'), t('Enabled')), '#description' => t('Do you wish to receive periodic emails when new content is posted?'));
+          $form['notify_page_master']['status'] = array('#type' => 'radios', '#title' => t('Notify status'), '#default_value' => $notify->status, '#options' =>  array(t('Disabled'), t('Enabled')), '#description' => t('Do you wish to receive periodic e-mails when new content is posted?'));
 
           $form['notify_page_detailed'] = array('#type' => 'fieldset', '#title' => t('Detailed settings'));
           $form['notify_page_detailed']['node'] = array('#type' => 'radios', '#title' => t('Notify new content'), '#default_value' => $notify->node, '#options' => array(t('Disabled'), t('Enabled')), '#description' => t('Include new content in the notification mail.'));
-          $form['notify_page_detailed']['teasers'] = array('#type' => 'radios', '#title' => t('Content'), '#default_value' => $notify->teasers, '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body')), '#description' => t('Select the amount of each post that you would like to see in your notification emails.'));
+          $form['notify_page_detailed']['teasers'] = array('#type' => 'radios', '#title' => t('Content'), '#default_value' => $notify->teasers, '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body')), '#description' => t('Select the amount of each post that you would like to see in your notification e-mails.'));
           $form['notify_page_detailed']['comment'] = array('#type' => 'radios', '#title' => t('Notify new comments'), '#default_value' => $notify->comment, '#options' => array(t('Disabled'), t('Enabled')), '#description' => t('Include new comments in the notification mail.'));
           $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
         }

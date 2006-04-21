@@ -32,7 +32,7 @@ msgid "Enabled"
 msgstr ""
 
 #: notify.inc:17
-msgid "Do you wish to receive periodic emails when new content is posted?"
+msgid "Do you wish to receive periodic e-mails when new content is posted?"
 msgstr ""
 
 #: notify.inc:18
@@ -60,7 +60,7 @@ msgid "Title + Body"
 msgstr ""
 
 #: notify.inc:19
-msgid "Select the amount of each post that you would like to see in your notification emails."
+msgid "Select the amount of each post that you would like to see in your notification e-mails."
 msgstr ""
 
 #: notify.inc:20
@@ -80,7 +80,7 @@ msgid "username"
 msgstr ""
 
 #: notify.inc:36
-msgid "email address"
+msgid "e-mail address"
 msgstr ""
 
 #: notify.inc:36

@@ -16,7 +16,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 #: contributions-HEAD\modules\notify\notify.module:7
-msgid "Enables notifications by email."
+msgid "Enables notifications by e-mail."
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.module:15
@@ -76,7 +76,7 @@ msgid "Enabled"
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.inc:19
-msgid "Do you wish to receive periodic emails when new content is posted?"
+msgid "Do you wish to receive periodic e-mails when new content is posted?"
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.inc:21
@@ -108,7 +108,7 @@ msgid "Title + Body"
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.inc:23
-msgid "Select the amount of each post that you would like to see in your notification emails."
+msgid "Select the amount of each post that you would like to see in your notification e-mails."
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.inc:24
@@ -120,7 +120,7 @@ msgid "Include new comments in the notification mail."
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.inc:28
-msgid "You need to set a email address on your <a href=\"%url\">my account</a> page."
+msgid "You need to set a e-mail address on your <a href=\"%url\">my account</a> page."
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.inc:38;58
@@ -136,7 +136,7 @@ msgid "username"
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.inc:65
-msgid "email address"
+msgid "e-mail address"
 msgstr ""
 
 #: contributions-HEAD\modules\notify\notify.inc:65

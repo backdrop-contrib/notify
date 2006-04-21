@@ -7,13 +7,13 @@
 function notify_help($section) {
   switch ($section) {
     case 'admin/help#notify':
-      $output = '<p>'. t('The notification module allows users to subscribe to periodic emails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') .'</p>';
-      $output .= '<p>'. t('The administrator sets the frequency of the emails in the notify administration interface. They can also set how many email failures should occur before notify stops sending notifications.  Note that cron must be enabled for notifications to be sent out.') .'</p>';
+      $output = '<p>'. t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') .'</p>';
+      $output .= '<p>'. t('The administrator sets the frequency of the e-mails in the notify administration interface. They can also set how many e-mail failures should occur before notify stops sending notifications.  Note that cron must be enabled for notifications to be sent out.') .'</p>';
       $output .= t('<p>You can</p><ul><li>set up your site to run tasks automatically at required intervals. For more information, see <a href="%admin-help-system">cron</a>.</li><li>administer notify <a href="%admin-settings-notify">administer &gt;&gt; settings &gt;&gt; notify</a>.</li></ul>', array('%admin-help-system' => url('admin/help/system'), '%admin-settings-notify' => url('admin/settings/notify')));
       $output .= '<p>'. t('For more information please read the configuration and customization handbook <a href="%notify">Notify page</a>.', array('%notify' => 'http://www.drupal.org/handbook/modules/notify/')) .'</p>';
       return $output;
     case 'admin/modules#description':
-      return t('Enables notifications by email.');
+      return t('Enables notifications by e-mail.');
   }
 }
 

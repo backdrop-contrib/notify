@@ -21,7 +21,7 @@ msgid "Disabled"
 msgstr "Deshabilitado"
 
 #: notify.module:7
-msgid "Enables notifications by email."
+msgid "Enables notifications by e-mail."
 msgstr "Habilita las notificaciones por correo electrónico."
 
 #: notify.module:15
@@ -73,7 +73,7 @@ msgid "Enabled"
 msgstr "Habilitado"
 
 #: notify.inc:17
-msgid "Do you wish to receive periodic emails when new content is posted?"
+msgid "Do you wish to receive periodic e-mails when new content is posted?"
 msgstr "Quereis recibir periódicamente correos electrónicos cuando se mande nuevo "
 "contenido?"
 
@@ -108,7 +108,7 @@ msgstr "Título + Cuerpo"
 #: notify.inc:20
 msgid ""
 "Select the amount of each post that you would like to see in your "
-"notification emails."
+"notification e-mails."
 msgstr ""
 "Seleccionar la cantidad de cada envío que deseais visualitzar en los correos "
 "de notificación."
@@ -134,7 +134,7 @@ msgid "username"
 msgstr "nombre de usuario"
 
 #: notify.inc:38
-msgid "email address"
+msgid "e-mail address"
 msgstr "dirección de correo electrónico"
 
 #: notify.inc:38

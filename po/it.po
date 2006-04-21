@@ -28,8 +28,8 @@ msgid "Enabled"
 msgstr "Abilitato"
 
 #: notify.inc:17
-msgid "Do you wish to receive periodic emails when new content is posted?"
-msgstr "Vuoi ricevere email periodiche ogni qual volta vengono pubblicati nuovi contenuti sul sito?"
+msgid "Do you wish to receive periodic e-mails when new content is posted?"
+msgstr "Vuoi ricevere e-mail periodiche ogni qual volta vengono pubblicati nuovi contenuti sul sito?"
 
 #: notify.inc:18
 msgid "Notify new content"
@@ -37,7 +37,7 @@ msgstr "Notifica i nuovi contenuti:"
 
 #: notify.inc:18
 msgid "Include new content in the notification mail."
-msgstr "Includi i nuovi contenuti pubblicati nell'email di notifica."
+msgstr "Includi i nuovi contenuti pubblicati nell'e-mail di notifica."
 
 #: notify.inc:19
 msgid "Content"
@@ -56,8 +56,8 @@ msgid "Title + Body"
 msgstr " Il titolo + il corpo dell'articolo"
 
 #: notify.inc:19
-msgid "Select the amount of each post that you would like to see in your notification emails."
-msgstr "Seleziona cosa vuoi ricevere via email"
+msgid "Select the amount of each post that you would like to see in your notification e-mails."
+msgstr "Seleziona cosa vuoi ricevere via e-mail"
 
 #: notify.inc:20
 msgid "Notify new comments"
@@ -65,7 +65,7 @@ msgstr "Notifica nuovi commenti:"
 
 #: notify.inc:20
 msgid "Include new comments in the notification mail."
-msgstr "Includi i nuovi commenti nell'email di notifica."
+msgstr "Includi i nuovi commenti nell'e-mail di notifica."
 
 #: notify.inc:30;56
 msgid "Save"
@@ -76,8 +76,8 @@ msgid "username"
 msgstr "nome utente"
 
 #: notify.inc:36
-msgid "email address"
-msgstr "indirizzo email"
+msgid "e-mail address"
+msgstr "indirizzo e-mail"
 
 #: notify.inc:36
 msgid "content"
@@ -129,7 +129,7 @@ msgstr "Questo è un messaggio automatico da"
 
 #: notify.inc:155
 msgid "To stop receiving these mails go to"
-msgstr "Per non ricevere più queste email clicca su"
+msgstr "Per non ricevere più queste e-mail clicca su"
 
 #: notify.inc:159
 msgid "Notify: User %name (%mail) could not be notified. Mail error."
