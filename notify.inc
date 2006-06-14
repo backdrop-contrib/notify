@@ -84,7 +84,7 @@ function _notify_admin() {
       drupal_set_message(t('Notify settings saved.'));
     
     default:
-      $result = db_query('SELECT u.uid, u.name, u.mail, n.* FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name LIMIT 5');
+      $result = db_query('SELECT u.uid, u.name, u.mail, n.* FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name');
 
       $form = array();
       $form['notify_admin'] = array();
@@ -97,7 +97,7 @@ function _notify_admin() {
         $form['notify_admin']['users'][$notify->uid]['node'] = array('#type' => 'checkbox', '#default_value' => $notify->node);
         $form['notify_admin']['users'][$notify->uid]['teasers'] = array('#type' => 'select', '#default_value' => $notify->teasers, '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body')));
         $form['notify_admin']['users'][$notify->uid]['comment'] = array('#type' => 'checkbox', '#default_value' => $notify->comment);
-        $form['notify_admin']['users'][$notify->uid]['attempts'] = array('#type' => 'markup', '#value' => intval($notify->attempts));
+        $form['notify_admin']['users'][$notify->uid]['attempts'] = array('#type' => 'markup', '#value' => $notify->attempts ? intval($notify->attempts) : 0);
       }
       $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
       $form['submitandsendnow'] = array('#type' => 'submit', '#value' => t('Save and send now'));
@@ -171,95 +171,116 @@ function _notify_send() {
   _notify_switch_user(); // Store current user
   
   // Fetch users with notify enabled
-  $uresult = db_query("SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {notify} n INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 ". (($notify_attempts = variable_get('notify_attempts', 5)) ? ' AND n.attempts <= %d' : ''), $notify_attempts);
+  $uresult = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {notify} n ' .
+    'INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 AND n.attempts <= %d', 
+    variable_get('notify_attempts', 5));
   
   while ($user = db_fetch_object($uresult)) {
+    // Switch current user to this account to use node_access functions, etc.
     _notify_switch_user($user->uid);
     
-    // Fetch all new nodes
-    $nresult = db_query(db_rewrite_sql('SELECT n.nid, r.body, n.type, n.title, n.promote, n.moderate, r.teaser, n.created, n.changed, u.name FROM {node} n INNER JOIN {node_revisions} r ON n.vid = r.vid INNER JOIN {users} u ON n.uid = u.uid WHERE (n.status = 1 OR n.moderate = 1) AND n.created > %d ORDER BY n.created'), $period);
+    // Fetch all new nodes and 'load' it to get proper body, etc.
+    $nresult = db_query(db_rewrite_sql('SELECT n.nid FROM {node} n WHERE (n.status = 1 OR n.moderate = 1) ' .
+      'AND n.created > %d ORDER BY n.created'), $period);
     $nodes = array();
     while ($node = db_fetch_object($nresult)) {
-      $nodes[$node->nid] = $node;
+      $nodes[$node->nid] = node_load($node->nid);
     }
 
     // Fetch new comments
-    $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.pid, u.name FROM {comments} c INNER JOIN {users} u ON u.uid = c.uid WHERE c.status = 0 AND c.timestamp > %d ORDER BY c.nid, c.timestamp', 'c'), $period);
+    $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.pid, u.name FROM {comments} c ' .
+      'INNER JOIN {users} u ON u.uid = c.uid WHERE c.status = %d AND c.timestamp > %d ' .
+      'ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period);
     $comments = array();
     while ($comment = db_fetch_object($cresult)) {
       $comments[$comment->nid][] = $comment;
     }
 
+    // Set up initial values for e-mail
     $from = variable_get('site_mail', ini_get('sendmail_from'));
     $from_name = mime_header_encode(variable_get('site_name', 'drupal'));
     $subject = t('%sitename new content notification for %username', array('%username' => $user->name, '%sitename' => variable_get('site_name', 'drupal')));
-    $body = '';
+    $node_body = '';
+    $comment_body = '';
     
-    // Write new node content to e-mail
-    if ($user->node && count($nodes)) {
-      $body .= $separator . "\n"
-        . t('Recent content - %count', array('%count' => format_plural(count($nodes), '1 new node', '%count new nodes'))) ."\n"
-        . $separator . "\n\n";
+    // Write new node content to e-mail if user has permissions and nodes are ready to be sent
+    if ($user->node && user_access('access content') && count($nodes)) {
       
       $node_count = 0;
       foreach ($nodes as $node) {
-        $temp = node_invoke($node, 'node_info');
-        $node->type_name = $temp[$node->type]['name'];
-        $nodes[$node->nid] = $node;
-        
+        // Skip to next if this user is NOT allowed to view this node
+        if (!node_access('view', $node)) {
+          continue;
+        }
+                     
         // TODO: Add functionality to hook into new 4.7 moderation modules
         if ($node->moderate) {
           $status = t('Queued');
-          $link = 'node';
         }
-        else {
+        elseif ($node->status == 1) {
           $status = t('Published');
-          $link = 'node';
+        }
+        elseif ($node->status == 0) {
+          $status = t('Unpublished');
         }
         
         if ($node_count > 0) {
-          $body .= $mini_separator . "\n\n";
+          $node_body .= $mini_separator . "\n\n";
         }
-        $body .= ++$node_count.'. '.t('%title', array('%title' => $node->title)) ."\n";
-        $body .= t('%status %type by %author', array('%status' => $status, '%type' => $node->type_name, '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
-        $body .= '[ '. url($link .'/'.$node->nid, NULL, NULL, TRUE) ." ]\n\n";
-        $body .= _notify_content($node, $user). "\n\n";
+        $node_body .= ++$node_count.'. '.t('%title', array('%title' => $node->title)) ."\n";
+        $node_body .= t('%status %type by %author', array('%status' => $status, '%type' => _node_names('name', $node), '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
+        $node_body .= '[ '. url('node/'.$node->nid, NULL, NULL, TRUE) ." ]\n\n";
+        $node_body .= _notify_content($node, $user). "\n";
       }
+      
+      //Prepend node e-mail header as long as user could access at least one node
+      if ($node_count > 0) {
+        $node_body = $separator . "\n"
+          . t('Recent content - %count', array('%count' => format_plural(count($nodes), '1 new node', '%count new nodes'))) ."\n"
+          . $separator . "\n\n" . $node_body;  
+      }      
     }
 
-    // Write new comments to e-mail
-    if ($user->comment && count($comments)) {
-      $body .= $separator . "\n"
-        . t('Recent comments - %count', array('%count' => format_plural(count($comments), '1 new comment', '%count new comments'))) ."\n"
-        . $separator ."\n\n";
-      
+    // Write new comments to e-mail if user has permissions and there are comments to be sent
+    if ($user->comment && user_access('access comments') && count($comments)) {      
+      $total_comment_count = 0;
       $nid_old = 0;
       foreach ($comments as $nid => $comment) {
         if ($nid != $nid_old) {
           // If we don't already have the node, fetch it.
-          if (!array_key_exists($nid, $nodes)) {
-            $nodes[$nid] = node_load(array('nid' => $nid));
-            $temp = node_invoke($node, 'node_info');
-            $node->type_name = $temp[$node->type]['name'];
-            $nodes[$node->nid] = $node;
+          if (!array_key_exists($nid, $nodes)) {            
+            $nodes[$node->nid] = node_load($nid);
           }
-          $body .= t('%count new comments attached to %type posted by author: %title', 
+          
+          if ($nid_old > 0) {
+            $comment_body .= $mini_separator . "\n\n"; 
+          }
+          
+          $comment_body .= t('%count new comments attached to %type posted by %author: %title', 
             array('%count' => count($comment), '%title' => $nodes[$nid]->title, 
-              '%type' => $node->type_name, '%author' => 
-              ($node->name ? $node->name : variable_get('anonymous', 'Anonymous'))))."\n";
+              '%type' => _node_names('name', $nodes[$nid]), '%author' => 
+              ($nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))))."\n";
 
           $nid_old = $nid;
         }
         
         $comment_count = 0;
         foreach ($comment as $c) {
-          $body .= '  '. t('%title by %author', array('%title' => $c->subject, '%author' => ($c->name ? $c->name : variable_get(anonymous, 'Anonymous')))) ."\n"
-                .  '    '. url('node/'.$nid, NULL, 'comment-'.$c->cid, TRUE) ."\n\n";
+          $comment_body .= '   '. ++$comment_count .'. '.t('%title by %author', array('%title' => $c->subject, '%author' => ($c->name ? $c->name : variable_get(anonymous, 'Anonymous')))) ."\n"
+            .  '     '. url('node/'.$nid, NULL, 'comment-'.$c->cid, TRUE) ."\n\n";
+          $total_comment_count++;
         }
-        //$body .= $mini_separator . "\n\n";
+      }
+      
+      if ($total_comment_count > 0) {
+        $comment_body = $separator . "\n"
+          . t('Recent comments - %count', array('%count' => format_plural($total_comment_count, '1 new comment', '%count new comments'))) ."\n"
+          . $separator ."\n\n" . $comment_body;
       }
     }
-
+    
+    $body = $node_body . $comment_body;
+    
     // If there was anything new, send mail
     if ($body) {
       $body = t('Greetings %user,', array("%user" => $user->name))."\n\n$body";
@@ -268,7 +289,7 @@ function _notify_send() {
       $body .= t('This is an automatic e-mail from %sitename.', array('%sitename' => variable_get('site_name', 'drupal')))."\n";
       $body .= t('To stop receiving these e-mails, change your notification preferences at %notify-url', array('%notify-url' => url("user/$user->uid/notify" , NULL, NULL, TRUE)))."\n";
 
-      if (!user_mail($user->mail, $subject, wordwrap($body, 72), "From: $from_name <$from>\nX-Mailer: Drupal Notify module (http://drupal.org/project/notify)\nReturn-path: <$from>\nErrors-to: $from\n")) {
+      if (!user_mail($user->mail, $subject, wordwrap($body, 72), "From: $from_name <$from>\nReply-to: $from_name <$from>\nReturn-path: $from_name <$from>\nX-Mailer: Drupal\nErrors-to: $from\n")) {
         $ret['failed']++;
         db_query('UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d', $user->uid);
         watchdog('error', t('Notify: User %name (%mail) could not be notified. Mail error.', array('%name' => '<em>'. $user->name .'</em>', '%mail' => $user->mail)));
