@@ -3,15 +3,15 @@
 
 function _notify_page($uid) {
   global $user;
-  
+
   $account = user_load(array('uid' => $uid));
   if ($account === FALSE) {
     return drupal_not_found();
   }
-  
+
   $op = $_POST['op'];
   $edit = $_POST['edit'];
-  
+
   // If user is logged in and either has admin privileges or is the editing account
   if ($user && (user_access('administer notify') || (user_access('access notify') && $user->uid == $account->uid))) {
     switch ($op) {
@@ -43,12 +43,12 @@ function _notify_page($uid) {
 
 function notify_page_submit($form_id, $edit) {
   global $user;
-  
+
   $account = user_load(array('uid' => arg(1)));
   if ($account === FALSE) {
     return drupal_not_found();
   }
-  
+
   if ($user && (user_access('administer notify') || (user_access('access notify') && $user->uid == $account->uid))) {
     db_query('DELETE FROM {notify} WHERE uid = %d', $account->uid);
     db_query('INSERT INTO {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $account->uid, $edit['status'], $edit['node'], $edit['teasers'], $edit['comment']);
@@ -59,13 +59,13 @@ function notify_page_submit($form_id, $edit) {
 function _notify_admin() {
   $op = $_POST['op'];
   $edit = $_POST['edit'];
-  
+
   switch ($op) {
     case t('Save and send now'):
       $status = _notify_send();
       variable_set('notify_send_last', time());
       cache_clear_all('variables');
-      
+
       if ($status['sent'] > 0) {
         drupal_set_message(t('%count pending notification e-mails have been sent.', array('%count' => $status['sent'])));
       }
@@ -75,14 +75,14 @@ function _notify_admin() {
       else {
         drupal_set_message(t('No notification e-mails needed to be sent.'));
       }
-    
+
     case t('Save'):
       foreach ($edit['users'] as $uid => $settings) {
-        db_query('UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d', 
+        db_query('UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d',
           $settings['node'], $settings['teasers'], $settings['comment'], $uid);
       }
       drupal_set_message(t('Notify settings saved.'));
-    
+
     default:
       $result = db_query('SELECT u.uid, u.name, u.mail, n.* FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE n.status = 1 AND u.status = 1 ORDER BY u.name');
 
@@ -108,7 +108,7 @@ function _notify_admin() {
 function theme_notify_admin_default($form) {
   $output = form_render($form['info']);
   $header = array (t('username'), t('e-mail address'), t('content'), t('teasers'), t('comment'), t('failed attempts'));
-  
+
   $rows = array();
   foreach (element_children($form['users']) as $uid) {
     $row = array();
@@ -117,10 +117,10 @@ function theme_notify_admin_default($form) {
         continue;
       }
       unset($form['users'][$uid][$entry_key]['#title']);
-       
+
       // Manually get the correct form field name. Is this the right way?
       $form['users'][$uid][$entry_key]['#name'] = 'edit[users]['.$uid.']['.$entry_key.']';
-      
+
       $row[] = form_render($form['users'][$uid][$entry_key]);
     }
     $rows[] = $row;
@@ -165,20 +165,20 @@ function _notify_send() {
   $period = variable_get('notify_send_last', time() - variable_get('notify_send', 86400));
   $separator = '------------------------------------------------------------------------------';
   $mini_separator = '---';
-  
+
   $ret = array('sent' => 0, 'failed' => 0);
-  
+
   _notify_switch_user(); // Store current user
-  
+
   // Fetch users with notify enabled
   $uresult = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {notify} n ' .
-    'INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 AND n.attempts <= %d', 
+    'INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 AND n.attempts <= %d',
     variable_get('notify_attempts', 5));
-  
+
   while ($user = db_fetch_object($uresult)) {
     // Switch current user to this account to use node_access functions, etc.
     _notify_switch_user($user->uid);
-    
+
     // Fetch all new nodes and 'load' it to get proper body, etc.
     $nresult = db_query(db_rewrite_sql('SELECT n.nid FROM {node} n WHERE (n.status = 1 OR n.moderate = 1) ' .
       'AND n.created > %d ORDER BY n.created'), $period);
@@ -202,17 +202,17 @@ function _notify_send() {
     $subject = t('%sitename new content notification for %username', array('%username' => $user->name, '%sitename' => variable_get('site_name', 'drupal')));
     $node_body = '';
     $comment_body = '';
-    
+
     // Write new node content to e-mail if user has permissions and nodes are ready to be sent
     if ($user->node && user_access('access content') && count($nodes)) {
-      
+
       $node_count = 0;
       foreach ($nodes as $node) {
         // Skip to next if this user is NOT allowed to view this node
         if (!node_access('view', $node)) {
           continue;
         }
-                     
+
         // TODO: Add functionality to hook into new 4.7 moderation modules
         if ($node->moderate) {
           $status = t('Queued');
@@ -223,7 +223,7 @@ function _notify_send() {
         elseif ($node->status == 0) {
           $status = t('Unpublished');
         }
-        
+
         if ($node_count > 0) {
           $node_body .= $mini_separator . "\n\n";
         }
@@ -232,38 +232,38 @@ function _notify_send() {
         $node_body .= '[ '. url('node/'.$node->nid, NULL, NULL, TRUE) ." ]\n\n";
         $node_body .= _notify_content($node, $user). "\n";
       }
-      
+
       //Prepend node e-mail header as long as user could access at least one node
       if ($node_count > 0) {
         $node_body = $separator . "\n"
           . t('Recent content - %count', array('%count' => format_plural(count($nodes), '1 new node', '%count new nodes'))) ."\n"
-          . $separator . "\n\n" . $node_body;  
-      }      
+          . $separator . "\n\n" . $node_body;
+      }
     }
 
     // Write new comments to e-mail if user has permissions and there are comments to be sent
-    if ($user->comment && user_access('access comments') && count($comments)) {      
+    if ($user->comment && user_access('access comments') && count($comments)) {
       $total_comment_count = 0;
       $nid_old = 0;
       foreach ($comments as $nid => $comment) {
         if ($nid != $nid_old) {
           // If we don't already have the node, fetch it.
-          if (!array_key_exists($nid, $nodes)) {            
+          if (!array_key_exists($nid, $nodes)) {
             $nodes[$node->nid] = node_load($nid);
           }
-          
+
           if ($nid_old > 0) {
-            $comment_body .= $mini_separator . "\n\n"; 
+            $comment_body .= $mini_separator . "\n\n";
           }
-          
-          $comment_body .= t('%count new comments attached to %type posted by %author: %title', 
-            array('%count' => count($comment), '%title' => $nodes[$nid]->title, 
-              '%type' => _node_names('name', $nodes[$nid]), '%author' => 
+
+          $comment_body .= t('%count new comments attached to %type posted by %author: %title',
+            array('%count' => count($comment), '%title' => $nodes[$nid]->title,
+              '%type' => _node_names('name', $nodes[$nid]), '%author' =>
               ($nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))))."\n";
 
           $nid_old = $nid;
         }
-        
+
         $comment_count = 0;
         foreach ($comment as $c) {
           $comment_body .= '   '. ++$comment_count .'. '.t('%title by %author', array('%title' => $c->subject, '%author' => ($c->name ? $c->name : variable_get(anonymous, 'Anonymous')))) ."\n"
@@ -271,16 +271,16 @@ function _notify_send() {
           $total_comment_count++;
         }
       }
-      
+
       if ($total_comment_count > 0) {
         $comment_body = $separator . "\n"
           . t('Recent comments - %count', array('%count' => format_plural($total_comment_count, '1 new comment', '%count new comments'))) ."\n"
           . $separator ."\n\n" . $comment_body;
       }
     }
-    
+
     $body = $node_body . $comment_body;
-    
+
     // If there was anything new, send mail
     if ($body) {
       $body = t('Greetings %user,', array("%user" => $user->name))."\n\n$body";
@@ -306,7 +306,7 @@ function _notify_send() {
 
 function notify_entities_to_utf8($text) {
   static $table;
-  // We store named entities in a table for quick processing.  
+  // We store named entities in a table for quick processing.
   if (!isset($table)) {
     // Get all named HTML entities.
     $table = array_flip(get_html_translation_table(HTML_ENTITIES));

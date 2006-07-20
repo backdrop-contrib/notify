@@ -23,14 +23,14 @@ INSTALLATION
 
 2. Enable the notify module on the administer >> modules page. The database tables
    will be created automagically for you at this point.
-   
+
 3. Modify permissions on the administer >> access control page.
 
 4. Go to administer >> settings >> notify and modify the settings to your liking.
-   Note: e-mail updates can only happen as frequently as the crontab is setup 
+   Note: e-mail updates can only happen as frequently as the crontab is setup
    to. Check your crontab settings.
 
-5. To enable your notification preferences, click on the "my notify settings" on 
+5. To enable your notification preferences, click on the "my notify settings" on
    the "my account page". Or, similarly go to another user's account page at
    user/<user_id_here> to modify his or her personal settings.
 

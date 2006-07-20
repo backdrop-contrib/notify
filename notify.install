@@ -9,25 +9,26 @@ function notify_install() {
     case 'mysql':
     case 'mysqli':
       $created = db_query("CREATE TABLE IF NOT EXISTS {notify} (
-	      uid INT(10) UNSIGNED NOT NULL DEFAULT '0',
-	      status TINYINT(2) NOT NULL DEFAULT '0',
-	      node TINYINT(2) NOT NULL DEFAULT '0',
-	      comment TINYINT(2) NOT NULL DEFAULT '0',
-	      attempts TINYINT(4) NOT NULL DEFAULT '0',
-	      teasers TINYINT(4) NOT NULL DEFAULT '0',
-	      PRIMARY KEY (uid)
-	    ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+        uid INT(10) UNSIGNED NOT NULL DEFAULT '0',
+        status TINYINT(2) NOT NULL DEFAULT '0',
+        node TINYINT(2) NOT NULL DEFAULT '0',
+        comment TINYINT(2) NOT NULL DEFAULT '0',
+        attempts TINYINT(4) NOT NULL DEFAULT '0',
+        teasers TINYINT(4) NOT NULL DEFAULT '0',
+        PRIMARY KEY (uid)
+      ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
       break;
       
     case 'pgsql':
       $created = db_query("CREATE TABLE {notify} (
         uid integer NOT NULL DEFAULT '0',
-		status integer NOT NULL DEFAULT '0',
-		node integer NOT NULL DEFAULT '0',
-		comment integer NOT NULL DEFAULT '0',
-		attempts integer NOT NULL DEFAULT '0',
-		teasers integer NOT NULL DEFAULT '0',
-		PRIMARY KEY (uid));");
+        status integer NOT NULL DEFAULT '0',
+        node integer NOT NULL DEFAULT '0',
+        comment integer NOT NULL DEFAULT '0',
+        attempts integer NOT NULL DEFAULT '0',
+        teasers integer NOT NULL DEFAULT '0',
+        PRIMARY KEY (uid)
+      );");
       break;
   }
 

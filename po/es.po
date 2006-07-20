@@ -2,8 +2,8 @@
 # Esta traducción ha sido financiada por interactors. <http://interactors.coop>.
 # Gerard Farràs <gerard.farras@km103.com>, 2005.
 # Interactors <info@interactors.coop>, 2005.
-# 
-# 
+#
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: Drupal 4.6\n"
