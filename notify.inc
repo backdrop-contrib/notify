@@ -141,10 +141,10 @@ function _notify_content($node, $notify) {
     case 0:
       return;
     case 1:
-      $txt = check_markup($node->teaser, $node->format, false);
+      $txt = check_markup($node->teaser, $node->format, FALSE);
       break;
     case 2:
-      $txt = check_markup($node->body, $node->format, false);
+      $txt = check_markup($node->body, $node->format, FALSE);
   }
 
   $pattern = '@(<a href="(.+?)">(.+?)</a>)@ei';
