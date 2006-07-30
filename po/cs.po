@@ -1,138 +1,220 @@
+# LANGUAGE translation of Drupal (contributions-HEAD\modules\notify\notify.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from file: notify.module,v 2.57 2005/10/26 12:01:28 killes
+#
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Notify : Drupal 4.6.0\n"
-"POT-Creation-Date: \n"
-"PO-Revision-Date: 2005-06-08 15:20+0100\n"
-"Last-Translator: maca <miroslav.macek@csobpoj.cz>\n"
-"Language-Team: Czech <miroslav.macek@csobpoj.cz>\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2006-01-08 20:42+0100\n"
+"PO-Revision-Date: 2006-07-28 15:27+0100\n"
+"Last-Translator: Jiri Pavlik <pavlik@herme.net>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
+"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: notify.inc:10;21
+#: contributions-HEAD\modules\notify\notify.module:7
+msgid "Enables notifications by email."
+msgstr "Povolí upozorňování emailem."
+
+#: contributions-HEAD\modules\notify\notify.module:15
+msgid "Send notifications every"
+msgstr "Posílat upozornění jednou za"
+
+#: contributions-HEAD\modules\notify\notify.module:15
+msgid "Requires crontab."
+msgstr "Vyžaduje crontab"
+
+#: contributions-HEAD\modules\notify\notify.module:16
+msgid "Number of failed sends after which notifications are disabled."
+msgstr "Počet nezdařených pokusů o odeslání, po kterém se upozorňování vypne."
+
+#: contributions-HEAD\modules\notify\notify.module:52
+msgid "my notify settings"
+msgstr "nastavení upozorňování"
+
+#: contributions-HEAD\modules\notify\notify.module:53
+msgid "notifications"
+msgstr "upozorňování"
+
+#: contributions-HEAD\modules\notify\notify.module:43
+msgid "access notify"
+msgstr "přístup k modulu"
+
+#: contributions-HEAD\modules\notify\notify.module:43
+msgid "administer notify"
+msgstr "administrace upozorňování"
+
+#: contributions-HEAD\modules\notify\notify.module:0
+msgid "notify"
+msgstr "upozorňování"
+
+#: contributions-HEAD\modules\notify\notify.inc:10;25
 msgid "Save settings"
 msgstr "Uložit nastavení"
 
-#: notify.inc:12
+#: contributions-HEAD\modules\notify\notify.inc:12
 msgid "Notify settings saved"
-msgstr "Nastavení upozornění uloženo"
+msgstr "Nastavení upozorňování bylo uloženo"
 
-#: notify.inc:17
+#: contributions-HEAD\modules\notify\notify.inc:18
+msgid "Master switch"
+msgstr "Hlavní spínač"
+
+#: contributions-HEAD\modules\notify\notify.inc:19
 msgid "Notify status"
-msgstr "Stav upozornění"
+msgstr "Stav upozorňování"
 
-#: notify.inc:17;18;20
+#: contributions-HEAD\modules\notify\notify.inc:19;22;24
+msgid "Disabled"
+msgstr "Vypnuto"
+
+#: contributions-HEAD\modules\notify\notify.inc:19;22;24
 msgid "Enabled"
-msgstr "Povoleno"
+msgstr "Zapnuto"
 
-#: notify.inc:17
-msgid "Do you wish to receive periodic e-mails when new content is posted?"
-msgstr "Přejete si opakovaně dostávat e-mail pokud je vložen nový obsah?"
+#: contributions-HEAD\modules\notify\notify.inc:19
+msgid "Do you wish to receive periodic emails when new content is posted?"
+msgstr "Přejete si dostávat periodické emaily, kdykoli bude vložen nový příspěvek?"
 
-#: notify.inc:18
+#: contributions-HEAD\modules\notify\notify.inc:21
+msgid "Detailed settings"
+msgstr "Podrobné nastavení"
+
+#: contributions-HEAD\modules\notify\notify.inc:22
 msgid "Notify new content"
 msgstr "Upozornit na nový obsah"
 
-#: notify.inc:18
+#: contributions-HEAD\modules\notify\notify.inc:22
 msgid "Include new content in the notification mail."
-msgstr "Vlož nový obsah do e-mailu s upozorněním."
+msgstr "Zahrnout nový obsah do emailu s upozorněním."
 
-#: notify.inc:19
+#: contributions-HEAD\modules\notify\notify.inc:23
 msgid "Content"
 msgstr "Obsah"
 
-#: notify.inc:19;47
+#: contributions-HEAD\modules\notify\notify.inc:23;54
 msgid "Title only"
 msgstr "Pouze nadpis"
 
-#: notify.inc:19;47
+#: contributions-HEAD\modules\notify\notify.inc:23;54
 msgid "Title + Teaser"
 msgstr "Nadpis + Ukázka"
 
-#: notify.inc:19;47
+#: contributions-HEAD\modules\notify\notify.inc:23;54
 msgid "Title + Body"
 msgstr "Nadpis + Příspěvek"
 
-#: notify.inc:19
-msgid "Select the amount of each post that you would like to see in your notification e-mails."
-msgstr "Zvolte si co má být sou�?ástí e-mailu s upozorněním."
+#: contributions-HEAD\modules\notify\notify.inc:23
+msgid "Select the amount of each post that you would like to see in your notification emails."
+msgstr "Zvolte si, která část každého příspěvku má být součástí emailu s upozorněním."
 
-#: notify.inc:20
+#: contributions-HEAD\modules\notify\notify.inc:24
 msgid "Notify new comments"
-msgstr "Upozornit na nový komentář"
+msgstr "Upozornit na nové komentáře"
 
-#: notify.inc:20
+#: contributions-HEAD\modules\notify\notify.inc:24
 msgid "Include new comments in the notification mail."
-msgstr "Vlož komentář do e-mailu s upozorněním."
+msgstr "Zahrnout nové komentáře do emailu s upozorněním."
 
-#: notify.inc:30;56
+#: contributions-HEAD\modules\notify\notify.inc:28
+msgid "You need to set a email address on your <a href=\"%url\">my account</a> page."
+msgstr "Musíte na stránce \"<a href=\"%url\">můj účet</a>\" nastavit emailovou adresu."
+
+#: contributions-HEAD\modules\notify\notify.inc:38;58
 msgid "Save"
 msgstr "Uložit"
 
-#: notify.inc:36
+#: contributions-HEAD\modules\notify\notify.inc:48
+msgid "The following table shows all users that have notifications enabled."
+msgstr "Následující tabulka ukazuje všechny uživatele, kteří mají zapnuté upozorňování."
+
+#: contributions-HEAD\modules\notify\notify.inc:65
 msgid "username"
 msgstr "uživatelské jméno"
 
-#: notify.inc:36
-msgid "e-mail address"
-msgstr "e-mailová adresa"
+#: contributions-HEAD\modules\notify\notify.inc:65
+msgid "email address"
+msgstr "emailová adresa"
 
-#: notify.inc:36
+#: contributions-HEAD\modules\notify\notify.inc:65
 msgid "content"
 msgstr "obsah"
 
-#: notify.inc:36
+#: contributions-HEAD\modules\notify\notify.inc:65
 msgid "teasers"
 msgstr "upoutávka"
 
-#: notify.inc:36
+#: contributions-HEAD\modules\notify\notify.inc:65
 msgid "comment"
 msgstr "komentář"
 
-#: notify.inc:36
+#: contributions-HEAD\modules\notify\notify.inc:65
 msgid "failed attempts"
-msgstr "selhání upozornění"
+msgstr "neúspěšné pokusy"
 
-#: notify.inc:113
-msgid "notification for %name"
-msgstr "upozornění pro uživatele %name"
+#: contributions-HEAD\modules\notify\notify.inc:136
+msgid "%sitename notification for %username"
+msgstr "upozornění ze stránek %sitename pro %username"
 
-#: notify.inc:117;117
+#: contributions-HEAD\modules\notify\notify.inc:140
 msgid "Recent content"
-msgstr "Poslední obsah"
+msgstr "Nový obsah"
 
-#: notify.inc:120;125
+#: contributions-HEAD\modules\notify\notify.inc:143;148
 msgid "%status %type by %author: %title"
-msgstr "%status %type %author: %title"
+msgstr "%type %title od uživatele %author: %status"
 
-#: notify.inc:134;134
+#: contributions-HEAD\modules\notify\notify.inc:143
+msgid "queued"
+msgstr "zařazeno do fronty"
+
+#: contributions-HEAD\modules\notify\notify.inc:148
+msgid "published"
+msgstr "publikováno"
+
+#: contributions-HEAD\modules\notify\notify.inc:157
 msgid "Recent comments"
 msgstr "Poslední komentáře"
 
-#: notify.inc:141
+#: contributions-HEAD\modules\notify\notify.inc:164
 msgid "%count new comments attached to: %title"
-msgstr "%count nových komentářů přidáno k: %title"
+msgid_plural "%count new comments attached to: %title"
+msgstr[0] "%count nový komentář přidán k: %title"
+msgstr[1] "%count nové komentáře přidány k: %title"
+msgstr[2] "%count nových komentářů přidáno k: %title"
 
-#: notify.inc:145
+#: contributions-HEAD\modules\notify\notify.inc:168
 msgid "%title by %author"
 msgstr "%title od uživatele %author"
 
-#: notify.inc:151
-msgid "Greetings"
-msgstr "Zpráva pro uživatele"
+#: contributions-HEAD\modules\notify\notify.inc:174
+msgid "Greetings %user,"
+msgstr "Zdravím,"
 
-#: notify.inc:154
-msgid "This is an automatic mail from"
-msgstr "Toto je automaticky generovaná zpráva z"
+#: contributions-HEAD\modules\notify\notify.inc:177
+msgid "This is an automatic mail from %sitename"
+msgstr "Toto je automaticky generovaná zpráva z %sitename"
 
-#: notify.inc:155
-msgid "To stop receiving these mails go to"
-msgstr "Zasílání těchto upozornění lze nastavit na"
+#: contributions-HEAD\modules\notify\notify.inc:178
+msgid "To stop receiving these mails go to %notify-url"
+msgstr "Zasílání těchto upozornění lze zrušit na stránce %notify-url"
 
-#: notify.inc:159
+#: contributions-HEAD\modules\notify\notify.inc:182
 msgid "Notify: User %name (%mail) could not be notified. Mail error."
-msgstr "Notify: Uživatel %name (%mail) nemohl být upozorněn. Chyba při odesílání."
+msgstr "Modul upozorňování: Uživatel %name (%mail) nemohl být upozorněn. Chyba při odesílání."
 
-#: notify.inc:162
+#: contributions-HEAD\modules\notify\notify.inc:185
 msgid "Notify: User %name (%mail) notified successfully."
-msgstr "Notify: Uživatel %name (%mail) upozorněn."
+msgstr "Modul upozorňování: Uživatel %name (%mail) byl upozorněn."
+
+#: contributions-HEAD\modules\notify\notify.inc:182
+msgid "error"
+msgstr "chyba"
+
+#: contributions-HEAD\modules\notify\notify.inc:185
+msgid "user"
+msgstr "uživatel"
+
