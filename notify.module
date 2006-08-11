@@ -35,13 +35,13 @@ function notify_settings() {
     604800      => format_interval(604800),
     1209600     => format_interval(1209600),
     2419200     => format_interval(2419200),
-    1000000000  => 'Never'
+    1000000000  => t('Never'),
     );
 
   $form['notify_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('E-mail notification settings'),
-    '#collapsible' => TRUE
+    '#collapsible' => TRUE,
     );
 
   $form['notify_settings']['notify_send'] = array(
@@ -49,14 +49,14 @@ function notify_settings() {
     '#title' => t('Send notifications every'),
     '#default_value' => variable_get('notify_send', 86400),
     '#options' => $period,
-    '#description' => t('Requires crontab.')
+    '#description' => t('Requires crontab.'),
     );
 
   $form['notify_settings']['notify_attempts'] = array(
     '#type' => 'select',
     '#title' => t('Number of failed sends after which notifications are disabled'),
     '#default_value' => variable_get('notify_attempts', 5),
-    '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20)
+    '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
     );
 
   return $form;
