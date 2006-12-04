@@ -69,7 +69,6 @@ function notify_cron() {
   if (time() - variable_get('notify_send_last', 0) > variable_get('notify_send', 86400)) {
     _notify_send();
     variable_set('notify_send_last', time());
-    cache_clear_all('variables');
   }
 }
 
@@ -137,7 +136,6 @@ function notify_admin() {
 
   $form = array();
   $form['#tree'] = TRUE;
-  $form['#theme'] = 'notify_admin_default';
   $form['info'] = array('#type' => 'markup', '#value' => '<em>'. t('The following table shows all users that have notifications enabled.') .'</em>');
 
   while ($notify = db_fetch_object($result)) {
@@ -149,8 +147,14 @@ function notify_admin() {
     $form['users'][$notify->uid]['attempts'] = array('#type' => 'markup', '#value' => $notify->attempts ? intval($notify->attempts) : 0);
   }
   
-  $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
-  $form['submitandsendnow'] = array('#type' => 'submit', '#value' => t('Save and send now'));
+  $form['flush'] = array(
+    '#title' => t('Flush e-mail queue'),
+    '#type' => 'checkbox',
+    '#default_value' => FALSE,
+    '#description' => t('Send out any pending notification e-mails currently in queue.'),
+  );
+  
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
   
   return drupal_get_form('notify_admin', $form);
 }
@@ -159,7 +163,7 @@ function notify_admin() {
  * Submit for the notify_admin form.
  */
 function notify_admin_submit($form_id, $form_values) {
-  if ($form_values['submitandsendnow'] == t('Save and send now')) {
+  if ($form_values['flush']) {
     $status = _notify_send();
     variable_set('notify_send_last', time());
     cache_clear_all('variables');
@@ -186,7 +190,7 @@ function notify_admin_submit($form_id, $form_values) {
 /**
  * Theme function to theme the admin user settings form in a table format.
  */
-function theme_notify_admin_default($form) {
+function theme_notify_admin($form) {
   $output = form_render($form['info']);
   $header = array (t('username'), t('e-mail address'), t('content'), t('teasers'), t('comment'), t('failed attempts'));
 
@@ -242,7 +246,6 @@ function _notify_page($uid) {
         }
 
         return drupal_get_form('notify_page', $form);
-        break;
     }
   }
 }
