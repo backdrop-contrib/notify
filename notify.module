@@ -95,19 +95,28 @@ function notify_perm() {
  */
 function notify_menu($may_cache) {
   global $user;
-
   $items = array();
 
   if ($may_cache) {
-    $items[] = array('path' => "user/$user->uid/notify", 'title' => t('my notify settings'), 'callback' => 'notify_page', 'access' => user_access('access notify'), 'type' => MENU_LOCAL_TASK);
-    $items[] = array('path' => "admin/user/notify", 'title' => t("notifications"), 'callback' => 'notify_admin', 'access' => user_access('administer notify'), 'type' => MENU_LOCAL_TASK);
+    $items[] = array('path' => "user/$user->uid/notify",
+      'title' => t('my notify settings'),
+      'callback' => 'notify_page',
+      'access' => user_access('access notify'),
+      'type' => MENU_LOCAL_TASK,
+    );
+    $items[] = array('path' => 'admin/user/notify',
+      'title' => t('notifications'),
+      'callback' => 'notify_admin',
+      'access' => user_access('administer notify'),
+      'type' => MENU_LOCAL_TASK,
+    );
   }
   else {
-    if (arg(0) == 'user' && is_numeric(arg(1))) {
+    if (arg(0) == 'user' && is_numeric(arg(1)) && arg(2) == 'notify') {
       $account = user_load(array('uid' => arg(1)));
-      if ($user !== FALSE && $account->uid) {
+      if ($user->uid && $account->uid) {
         $items[] = array(
-          'path' => 'user/'.$account->uid.'/notify',
+          'path' => 'user/'. $account->uid .'/notify',
           'title' => t('notify settings'),
           'callback' => 'notify_page',
           'callback arguments' => array(arg(1)),
@@ -125,7 +134,64 @@ function notify_menu($may_cache) {
  * Implementation of hook_page().
  */
 function notify_page($uid = 0) {
-  return _notify_page($uid);
+  global $user;
+
+  $account = user_load(array('uid' => $uid));
+  if ($account === FALSE) {
+    drupal_not_found();
+    return;
+  }
+
+  // If user is logged in and either has admin privileges or is the editing
+  // his own account.
+  if ($user->uid && (user_access('administer notify') || (user_access('access notify') && $user->uid == $account->uid))) {  
+    drupal_access_denied();
+    return;
+  }
+  $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name', $account->uid);
+  $notify = db_fetch_object($result);
+
+  if ($notify->mail) {
+    $form['notify_page_master'] = array('#type' => 'fieldset', '#title' => t('Master switch'));
+    $form['notify_page_master']['status'] = array('#type' => 'radios',
+      '#title' => t('Notify status'),
+      '#default_value' => $notify->status,
+      '#options' =>  array(t('Disabled'), t('Enabled')),
+      '#description' => t('Do you wish to receive periodic e-mails when new content is posted?'),
+    );
+
+    $form['notify_page_detailed'] = array('#type' => 'fieldset', '#title' => t('Detailed settings'));
+    $form['notify_page_detailed']['node'] = array('#type' => 'radios',
+      '#title' => t('Notify new content'),
+      '#default_value' => $notify->node,
+      '#options' => array(t('Disabled'), t('Enabled')),
+      '#description' => t('Include new content in the notification mail.'),
+    );
+    $form['notify_page_detailed']['teasers'] = array('#type' => 'radios',
+      '#title' => t('Content'),
+      '#default_value' => $notify->teasers,
+      '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body')),
+      '#description' => t('Select the amount of each post that you would like to see in your notification e-mails.'),
+    );
+    $form['notify_page_detailed']['comment'] = array('#type' => 'radios',
+      '#title' => t('Notify new comments'),
+      '#default_value' => $notify->comment,
+      '#options' => array(t('Disabled'), t('Enabled')),
+      '#description' => t('Include new comments in the notification mail.'),
+    );
+    $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
+  }
+  else {
+    drupal_set_message(t('Your e-mail address must be specified on your <a href="%url">my account</a> page.', array('%url' => url('user/'. $notify->uid .'/edit'))), 'error');
+  }
+
+  return drupal_get_form('notify_page', $form);
+}
+
+function notify_page_submit($form_id, $form_values) {
+  db_query('DELETE FROM {notify} WHERE uid = %d', $account->uid);
+  db_query('INSERT INTO {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $account->uid, $form_values['status'], $form_values['node'], $form_values['teasers'], $form_values['comment']);
+  drupal_set_message(t('Notify settings saved.'));
 }
 
 /**
@@ -210,61 +276,6 @@ function theme_notify_admin($form) {
   return $output;
 }
 
-function _notify_page($uid) {
-  global $user;
-
-  $account = user_load(array('uid' => $uid));
-  if ($account === FALSE) {
-    return drupal_not_found();
-  }
-
-  $op = $_POST['op'];
-  $edit = $_POST['edit'];
-
-  // If user is logged in and either has admin privileges or is the editing account
-  if ($user && (user_access('administer notify') || (user_access('access notify') && $user->uid == $account->uid))) {
-    switch ($op) {
-      case 'cron':
-        _notify_send();
-        break;
-      default:
-        $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name', $account->uid);
-        $notify = db_fetch_object($result);
-
-        if ($notify->mail) {
-          $form['notify_page_master'] = array('#type' => 'fieldset','#title' => t('Master switch'));
-          $form['notify_page_master']['status'] = array('#type' => 'radios', '#title' => t('Notify status'), '#default_value' => $notify->status, '#options' =>  array(t('Disabled'), t('Enabled')), '#description' => t('Do you wish to receive periodic e-mails when new content is posted?'));
-
-          $form['notify_page_detailed'] = array('#type' => 'fieldset', '#title' => t('Detailed settings'));
-          $form['notify_page_detailed']['node'] = array('#type' => 'radios', '#title' => t('Notify new content'), '#default_value' => $notify->node, '#options' => array(t('Disabled'), t('Enabled')), '#description' => t('Include new content in the notification mail.'));
-          $form['notify_page_detailed']['teasers'] = array('#type' => 'radios', '#title' => t('Content'), '#default_value' => $notify->teasers, '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body')), '#description' => t('Select the amount of each post that you would like to see in your notification e-mails.'));
-          $form['notify_page_detailed']['comment'] = array('#type' => 'radios', '#title' => t('Notify new comments'), '#default_value' => $notify->comment, '#options' => array(t('Disabled'), t('Enabled')), '#description' => t('Include new comments in the notification mail.'));
-          $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
-        }
-        else {
-          drupal_set_message(t('Your e-mail address must be specified on your <a href="%url">my account</a> page.', array('%url' => url('user/'.$notify->uid.'/edit'))), 'error');
-        }
-
-        return drupal_get_form('notify_page', $form);
-    }
-  }
-}
-
-function notify_page_submit($form_id, $edit) {
-  global $user;
-
-  $account = user_load(array('uid' => arg(1)));
-  if ($account === FALSE) {
-    return drupal_not_found();
-  }
-
-  if ($user && (user_access('administer notify') || (user_access('access notify') && $user->uid == $account->uid))) {
-    db_query('DELETE FROM {notify} WHERE uid = %d', $account->uid);
-    db_query('INSERT INTO {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $account->uid, $edit['status'], $edit['node'], $edit['teasers'], $edit['comment']);
-    drupal_set_message(t('Notify settings saved.'));
-  }
-}
-
 /**
  * Formatting of outgoing mail, taken from mail.inc, part of project.module
  */
@@ -321,9 +332,9 @@ function _notify_send() {
       $nodes[$node->nid] = node_load($node->nid);
     }
 
-    // Fetch new comments
-    $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.pid, u.name FROM {comments} c ' .
-      'INNER JOIN {users} u ON u.uid = c.uid WHERE c.status = %d AND c.timestamp > %d ' .
+    // Fetch new comments.
+    $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name FROM {comments} c ' .
+      'WHERE c.status = %d AND c.timestamp > %d ' .
       'ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period);
     $comments = array();
     while ($comment = db_fetch_object($cresult)) {
@@ -333,17 +344,18 @@ function _notify_send() {
     $node_body = '';
     $comment_body = '';
 
-    // Write new node content to e-mail if user has permissions and nodes are ready to be sent
+    // Write new node content to e-mail if user has permissions and nodes are
+    // ready to be sent.
     if ($user->node && user_access('access content') && count($nodes)) {
 
       $node_count = 0;
       foreach ($nodes as $node) {
-        // Skip to next if this user is NOT allowed to view this node
+        // Skip to next if this user is NOT allowed to view this node.
         if (!node_access('view', $node)) {
           continue;
         }
 
-        // TODO: Add functionality to hook into new 4.7 moderation modules
+        // TODO: Add functionality to hook into new 4.7 moderation modules.
         if ($node->moderate) {
           $status = t('Queued');
         }
@@ -355,54 +367,46 @@ function _notify_send() {
         }
 
         if ($node_count > 0) {
-          $node_body .= $mini_separator . "\n\n";
+          $node_body .= $mini_separator ."\n\n";
         }
-        $node_body .= ++$node_count.'. '.t('%title', array('%title' => $node->title)) ."\n";
+        $node_body .= ++$node_count .'. '. t('%title', array('%title' => $node->title)) ."\n";
         $node_body .= t('%status %type by %author', array('%status' => $status, '%type' => _node_names('name', $node), '%author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
-        $node_body .= '[ '. url('node/'.$node->nid, NULL, NULL, TRUE) ." ]\n\n";
-        $node_body .= _notify_content($node, $user). "\n";
+        $node_body .= '[ '. url('node/'. $node->nid, NULL, NULL, TRUE) ." ]\n\n";
+        $node_body .= _notify_content($node, $user) ."\n";
       }
 
-      // Prepend node e-mail header as long as user could access at least one node
+      // Prepend node e-mail header as long as user could access at least one node.
       if ($node_count > 0) {
         $node_body = $separator . "\n"
           . t('Recent content - %count', array('%count' => format_plural(count($nodes), '1 new post', '%count new posts'))) ."\n"
-          . $separator . "\n\n" . $node_body;
+          . $separator ."\n\n". $node_body;
       }
     }
 
-    // Write new comments to e-mail if user has permissions and there are comments to be sent
+    // Write new comments to e-mail if user has permissions and there are
+    // comments to be sent.
     if ($user->comment && user_access('access comments') && count($comments)) {
       $total_comment_count = 0;
-      $nid_old = 0;
       foreach ($comments as $nid => $comment) {
-        if ($nid != $nid_old) {
-          // If we don't already have the node, fetch it.
-          if (!isset($nodes[$nid])) {
-            $nodes[$nid] = node_load($nid);
-          }
-
-          // Don't show comments if we're not allowed to view this node.
-          if (!node_access('view', $nodes[$nid], $user->uid)) {
-            continue;
-          }
-
-          if ($nid_old > 0) {
-            $comment_body .= $mini_separator . "\n\n";
-          }
-
-          $comment_body .= t('%count new comments attached to %type posted by %author: %title',
-            array('%count' => count($comment), '%title' => $nodes[$nid]->title,
-              '%type' => _node_names('name', $nodes[$nid]), '%author' =>
-              ($nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))))."\n";
-
-          $nid_old = $nid;
+        // If we don't already have the node, fetch it.
+        if (!isset($nodes[$nid])) {
+          $nodes[$nid] = node_load($nid);
         }
+
+        // Don't show comments if we're not allowed to view this node.
+        if (!node_access('view', $nodes[$nid], $user->uid)) {
+          continue;
+        }
+
+        if ($comment_body) {
+          $comment_body .= $mini_separator ."\n\n";
+        }
+        $comment_body .= t('%count attached to %type posted by %author: %title', array('%count' => format_plural(count($comment), '1 new comment', '%count new comments'), '%title' => $nodes[$nid]->title, '%type' => _node_names('name', $nodes[$nid]), '%author' => $nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))) ."\n";
 
         $comment_count = 0;
         foreach ($comment as $c) {
-          $comment_body .= '   '. ++$comment_count .'. '.t('%title by %author', array('%title' => $c->subject, '%author' => ($c->name ? $c->name : variable_get(anonymous, 'Anonymous')))) ."\n"
-            .  '     '. url('node/'.$nid, NULL, 'comment-'.$c->cid, TRUE) ."\n\n";
+          $comment_body .= '   '. ++$comment_count .'. '. t('%title by %author', array('%title' => $c->subject, '%author' => ($c->name ? $c->name : variable_get(anonymous, 'Anonymous')))) ."\n"
+            .'     '. url('node/'. $nid, NULL, 'comment-'. $c->cid, TRUE) ."\n\n";
           $total_comment_count++;
         }
       }
@@ -410,15 +414,15 @@ function _notify_send() {
       if ($total_comment_count > 0) {
         $comment_body = $separator . "\n"
           . t('Recent comments - %count', array('%count' => format_plural($total_comment_count, '1 new comment', '%count new comments'))) ."\n"
-          . $separator ."\n\n" . $comment_body;
+          . $separator ."\n\n". $comment_body;
       }
     }
 
     $body = $node_body . $comment_body;
 
-    // If there was anything new, send mail
+    // If there was anything new, send mail.
     if ($body) {
-      // Set up initial values for e-mail
+      // Set up initial values for e-mail.
       $from = variable_get('site_mail', ini_get('sendmail_from'));
       $from_name = mime_header_encode(variable_get('site_name', 'drupal'));
       $subject = t('%sitename new content notification for %username', array('%username' => $user->name, '%sitename' => variable_get('site_name', 'drupal')));
@@ -440,7 +444,8 @@ function _notify_send() {
       }
     }
   }
-  _notify_switch_user(); // Restore user
+  // Restore user.
+  _notify_switch_user(); 
   return $ret;
 }
 
@@ -502,7 +507,6 @@ function _notify_mail_urls($url = 0) {
  * without argument to set the user back to the original user.
  *
  * @param $uid The user ID to switch to
- *
  */
 function _notify_switch_user($uid = NULL) {
   global $user;
@@ -511,12 +515,12 @@ function _notify_switch_user($uid = NULL) {
   if (isset($uid)) {
     $user = user_load(array('uid' => $uid));
   }
-  // retrieve the initial user, can be called multiple times
+  // Retrieve the initial user, can be called multiple times.
   else if (count($orig_user)) {
     $user = array_shift($orig_user);
     array_unshift($orig_user, $user);
   }
-  // store the initial user
+  // Store the initial user.
   else {
     $orig_user[] = $user;
   }
