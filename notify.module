@@ -233,6 +233,13 @@ function notify_admin() {
  * Submit for the notify_admin form.
  */
 function notify_admin_submit($form_id, $form_values) {
+  if ($form_values['users']) {
+    foreach ($form_values['users'] as $uid => $settings) {
+      db_query('UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d', $settings['node'], $settings['teasers'], $settings['comment'], $uid);
+    }
+  }
+  drupal_set_message(t('Notify settings saved.'));
+
   if ($form_values['flush']) {
     $status = _notify_send();
     variable_set('notify_send_last', time());
@@ -248,13 +255,6 @@ function notify_admin_submit($form_id, $form_values) {
       drupal_set_message(t('No notification e-mails needed to be sent.'));
     }
   }
-  if ($form_values['users']) {
-    foreach ($form_values['users'] as $uid => $settings) {
-      db_query('UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d', $settings['node'], $settings['teasers'], $settings['comment'], $uid);
-    }
-  }
-
-  drupal_set_message(t('Notify settings saved.'));
 }
 
 /**
