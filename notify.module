@@ -101,6 +101,7 @@ function notify_menu($may_cache) {
     $items[] = array('path' => "user/$user->uid/notify",
       'title' => t('my notify settings'),
       'callback' => 'notify_page',
+      'callback arguments' => array($user->uid),
       'access' => user_access('access notify'),
       'type' => MENU_LOCAL_TASK,
     );
@@ -112,9 +113,9 @@ function notify_menu($may_cache) {
     );
   }
   else {
-    if (arg(0) == 'user' && is_numeric(arg(1)) && arg(2) == 'notify') {
+    if (arg(0) == 'user' && is_numeric(arg(1)) && arg(1) != $user->uid) {
       $account = user_load(array('uid' => arg(1)));
-      if ($user->uid && $account->uid) {
+      if ($account->uid) {
         $items[] = array(
           'path' => 'user/'. $account->uid .'/notify',
           'title' => t('notify settings'),
@@ -131,7 +132,7 @@ function notify_menu($may_cache) {
 }
 
 /**
- * Implementation of hook_page().
+ * Menu callback; show user notification options.
  */
 function notify_page($uid = 0) {
   global $user;
@@ -144,11 +145,11 @@ function notify_page($uid = 0) {
 
   // If user is logged in and either has admin privileges or is the editing
   // his own account.
-  if ($user->uid && (user_access('administer notify') || (user_access('access notify') && $user->uid == $account->uid))) {  
+  /*if (!$user->uid || (!user_access('administer notify') && !(user_access('access notify') && $user->uid == $account->uid))) {  
     drupal_access_denied();
     return;
-  }
-  $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1 ORDER BY u.name', $account->uid);
+  }*/
+  $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1', $account->uid);
   $notify = db_fetch_object($result);
 
   if ($notify->mail) {
@@ -179,6 +180,7 @@ function notify_page($uid = 0) {
       '#options' => array(t('Disabled'), t('Enabled')),
       '#description' => t('Include new comments in the notification mail.'),
     );
+    $form['uid'] = array('#type' => 'value', '#value' => $account->uid);
     $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
   }
   else {
@@ -189,8 +191,8 @@ function notify_page($uid = 0) {
 }
 
 function notify_page_submit($form_id, $form_values) {
-  db_query('DELETE FROM {notify} WHERE uid = %d', $account->uid);
-  db_query('INSERT INTO {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $account->uid, $form_values['status'], $form_values['node'], $form_values['teasers'], $form_values['comment']);
+  db_query('DELETE FROM {notify} WHERE uid = %d', $form_values['uid']);
+  db_query('INSERT INTO {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $form_values['uid'], $form_values['status'], $form_values['node'], $form_values['teasers'], $form_values['comment']);
   drupal_set_message(t('Notify settings saved.'));
 }
 
@@ -204,7 +206,9 @@ function notify_admin() {
   $form['#tree'] = TRUE;
   $form['info'] = array('#type' => 'markup', '#value' => '<em>'. t('The following table shows all users that have notifications enabled.') .'</em>');
 
+  $form['users'] = array();
   while ($notify = db_fetch_object($result)) {
+    $form['users'][$notify->uid] = array();
     $form['users'][$notify->uid]['name'] = array('#type' => 'markup', '#value' => theme('username', $notify));
     $form['users'][$notify->uid]['mail'] = array('#type' => 'markup', '#value' => $notify->mail);
     $form['users'][$notify->uid]['node'] = array('#type' => 'checkbox', '#default_value' => $notify->node);
@@ -244,13 +248,13 @@ function notify_admin_submit($form_id, $form_values) {
       drupal_set_message(t('No notification e-mails needed to be sent.'));
     }
   }
-
-  foreach ($form_values['users'] as $uid => $settings) {
-    db_query('UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d', $settings['node'], $settings['teasers'], $settings['comment'], $uid);
+  if ($form_values['users']) {
+    foreach ($form_values['users'] as $uid => $settings) {
+      db_query('UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d', $settings['node'], $settings['teasers'], $settings['comment'], $uid);
+    }
   }
 
   drupal_set_message(t('Notify settings saved.'));
-  return '';
 }
 
 /**
@@ -269,6 +273,10 @@ function theme_notify_admin($form) {
       $row[] = form_render($form['users'][$uid][$entry_key]);
     }
     $rows[] = $row;
+  }
+
+  if (!$rows) {
+    $rows[] = array(array('data' => t('No users have notifications enabled.') .'</em>', 'colspan' => 6));
   }
   $output .= theme('table', $header, $rows);
 
@@ -326,7 +334,7 @@ function _notify_send() {
 
     // Fetch all new nodes and 'load' it to get proper body, etc.
     $nresult = db_query(db_rewrite_sql('SELECT n.nid FROM {node} n WHERE (n.status = 1 OR n.moderate = 1) ' .
-      'AND n.created > %d ORDER BY n.created'), $period);
+      'AND n.created > %d AND n.created <= %d ORDER BY n.created'), $period, time());
     $nodes = array();
     while ($node = db_fetch_object($nresult)) {
       $nodes[$node->nid] = node_load($node->nid);
@@ -334,8 +342,8 @@ function _notify_send() {
 
     // Fetch new comments.
     $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name FROM {comments} c ' .
-      'WHERE c.status = %d AND c.timestamp > %d ' .
-      'ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period);
+      'WHERE c.status = %d AND c.timestamp > %d AND c.timestamp <= %d ' .
+      'ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period, time());
     $comments = array();
     while ($comment = db_fetch_object($cresult)) {
       $comments[$comment->nid][] = $comment;
@@ -433,7 +441,7 @@ function _notify_send() {
       $body .= t('This is an automatic e-mail from %sitename.', array('%sitename' => variable_get('site_name', 'drupal')))."\n";
       $body .= t('To stop receiving these e-mails, change your notification preferences at %notify-url', array('%notify-url' => url("user/$user->uid/notify" , NULL, NULL, TRUE)))."\n";
 
-      if (!user_mail($user->mail, $subject, wordwrap($body, 72), "From: $from_name <$from>\nReply-to: $from_name <$from>\nReturn-path: $from_name <$from>\nX-Mailer: Drupal\nErrors-to: $from\n")) {
+      if (!user_mail($user->mail, $subject, wordwrap($body, 72), "From: $from_name <$from>\nReply-to: $from\nReturn-path: $from\nX-Mailer: Drupal\nErrors-to: $from\n")) {
         $ret['failed']++;
         db_query('UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d', $user->uid);
         watchdog('error', t('Notify: User %name (%mail) could not be notified. Mail error.', array('%name' => '<em>'. $user->name .'</em>', '%mail' => $user->mail)));
