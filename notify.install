@@ -38,4 +38,23 @@ function notify_install() {
   else {
     drupal_set_message(t('Table installation for the Notify module was unsuccessful. The tables may need to be installed by hand.'), 'error');
   }
+
+  // Set the module weight so that the cron job will be executed after
+  // scheduler if it is installed.
+  $weight = (int)db_result(db_query("SELECT weight FROM {system} WHERE name = 'scheduler'"));
+  $weight += 10;
+  db_query("UPDATE {system} SET weight = %d WHERE name = 'notify'", $weight);
+}
+
+/**
+ * Alter weight of notify to run after scheduler.
+ */
+function notify_update_1() {
+  $ret = array();
+  $weight = (int)db_result(db_query("SELECT weight FROM {system} WHERE name = 'scheduler'"));
+  $weight += 10;
+  // update_sql() doesn't take other parameters, but this is safe, since $weight
+  // is guaranteed to be an integer.
+  $ret[] = update_sql("UPDATE {system} SET weight = $weight WHERE name = 'notify'");
+  return $ret;
 }
