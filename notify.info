@@ -1,5 +1,4 @@
 ; $Id$
 name = Notify
 description = "Enables notifications of new content and comments by e-mail."
-version = "$Name$"
 package = Mail
