@@ -176,10 +176,10 @@ function notify_perm() {
 /**
  * Menu callback; show user notification options.
  */
-function notify_user_settings_form($uid = 0) {
+function notify_user_settings_form(&$form_state, $account) {
   global $user;
 
-  $account = user_load(array('uid' => $uid));
+  $account = user_load(array('uid' => $account->uid));
   if ($account === FALSE) {
     drupal_not_found();
     return;
