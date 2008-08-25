@@ -2,3 +2,4 @@
 name = Notify
 description = "Enables notifications of new content and comments by e-mail."
 package = Mail
+core = 6.x
