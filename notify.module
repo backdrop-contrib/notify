@@ -176,11 +176,15 @@ function notify_perm() {
 /**
  * Menu callback; show user notification options.
  */
-function notify_user_settings_form(&$form_state, $account) {
+function notify_user_settings_form(&$form_state, $arg) {
   global $user;
-
-  $account = user_load(array('uid' => $account->uid));
-  if ($account === FALSE) {
+  if ($user->uid != $arg->uid) {
+    drupal_access_denied();
+    return;
+  }
+  
+  $account = user_load(array('uid' => $arg->uid));
+  if (!is_object($account)) {
     drupal_not_found();
     return;
   }
@@ -220,7 +224,7 @@ function notify_user_settings_form(&$form_state, $account) {
     $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
   }
   else {
-    drupal_set_message(t('Your e-mail address must be specified on your <a href="@url">my account</a> page.', array('@url' => url('user/'. $notify->uid .'/edit'))), 'error');
+    drupal_set_message(t('Your e-mail address must be specified on your <a href="@url">my account</a> page.', array('@url' => url('user/'. $user->uid .'/edit'))), 'error');
   }
 
   return $form;
