@@ -254,7 +254,7 @@ function notify_admin_users() {
     $form['users'][$notify->uid]['node'] = array('#type' => 'checkbox', '#default_value' => $notify->node);
     $form['users'][$notify->uid]['teasers'] = array('#type' => 'select', '#default_value' => $notify->teasers, '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body')));
     $form['users'][$notify->uid]['comment'] = array('#type' => 'checkbox', '#default_value' => $notify->comment);
-    $form['users'][$notify->uid]['attempts'] = array('#type' => 'markup', '#value' => $notify->attempts ? intval($notify->attempts) : 0);
+    $form['users'][$notify->uid]['attempts'] = array('#type' => 'textfield', '#size' => 2,  '#default_value' => $notify->attempts ? intval($notify->attempts) : 0);
   }
 
   $form['flush'] = array(
@@ -277,7 +277,7 @@ function notify_admin_users_submit($form, &$form_state) {
 
   if ($form_state['values']['users']) {
     foreach ($form_state['values']['users'] as $uid => $settings) {
-      db_query('UPDATE {notify} SET node = %d, teasers = %d, comment = %d WHERE uid = %d', $settings['node'], $settings['teasers'], $settings['comment'], $uid);
+      db_query('UPDATE {notify} SET node = %d, teasers = %d, comment = %d, attempts = %d WHERE uid = %d', $settings['node'], $settings['teasers'], $settings['comment'], $settings['attempts'], $uid);
     }
   }
   drupal_set_message(t('Notify settings saved.'));
