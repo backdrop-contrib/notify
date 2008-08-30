@@ -193,7 +193,7 @@ function notify_user_settings_form(&$form_state, $arg) {
   $notify = db_fetch_object($result);
   $form = array();
   if (!$notify->mail) {
-        drupal_set_message(t('Your e-mail address must be specified on your <a href="@url">my account</a> page.', array('@url' => url('user/'. $user->uid .'/edit'))), 'error');
+        drupal_set_message(t('Your e-mail address must be specified on your <a href="@url">my account</a> page.', array('@url' => url('user/'. $account->uid .'/edit'))), 'error');
   }
 
   $form['notify_page_master'] = array('#type' => 'fieldset', '#title' => 'Master switch');
