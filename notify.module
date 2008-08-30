@@ -192,7 +192,7 @@ function notify_user_settings_form(&$form_state, $arg) {
   $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = %d AND u.status = 1', $account->uid);
   $notify = db_fetch_object($result);
   $form = array();
-  if ($notify->mail) {
+  if (!$notify->mail) {
         drupal_set_message(t('Your e-mail address must be specified on your <a href="@url">my account</a> page.', array('@url' => url('user/'. $user->uid .'/edit'))), 'error');
   }
 
