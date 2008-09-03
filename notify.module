@@ -35,52 +35,49 @@ function notify_admin_settings() {
     604800      => format_interval(604800),
     1209600     => format_interval(1209600),
     2419200     => format_interval(2419200),
-    -1	        => t('Never'),
+    -1          => t('Never'),
   );
 
-
-
-    $form = array();
+  $form = array();
   
-   $form['notify_settings'] = array(
-     '#type' => 'fieldset',
-     '#title' => t('E-mail notification settings'),
-     '#collapsible' => TRUE,
-   );
- 
-   $form['notify_settings']['notify_send'] = array(
-      '#type' => 'select',
-     '#title' => 'Send notifications every',
-     '#default_value' => variable_get('notify_send', array(86400)),
-      '#options' => $period,
-     '#description' => 'How often should new content notifications be sent? Requires cron to be running.',
+  $form['notify_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('E-mail notification settings'),
+    '#collapsible' => TRUE,
+  );
+  
+  $form['notify_settings']['notify_send'] = array(
+    '#type' => 'select',
+    '#title' => 'Send notifications every',
+    '#default_value' => variable_get('notify_send', array(86400)),
+    '#options' => $period,
+    '#description' => 'How often should new content notifications be sent? Requires cron to be running.',
+  );
+  
+  $form['notify_settings']['notify_attempts'] = array(
+    '#type' => 'select',
+    '#title' => 'Number of failed sends after which notifications are disabled',
+    '#default_value' => variable_get('notify_attempts', array(5)),
+    '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
+  );
+  
+  $set = 'ntype';
+  $form[$set] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Notification by node type',
+    '#collapsible' => true,
+    '#collapsed' => false,
+    '#description' => 'Having nothing checked defaults to sending notifications about all node types.'
+  );
+  
+  foreach (node_get_types('types', array()) as $type => $object) {
+    $form[$set][NOTIFY_NODE_TYPE . $type] = array(
+      '#type' => 'checkbox',
+      '#title' => $object->name,
+      '#return_value' => 1,
+      '#default_value' => variable_get(NOTIFY_NODE_TYPE . $type, 0),
     );
-  
-   $form['notify_settings']['notify_attempts'] = array(
-      '#type' => 'select',
-     '#title' => 'Number of failed sends after which notifications are disabled',
-     '#default_value' => variable_get('notify_attempts', array(5)),
-      '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
-    );
-  
-   $set = 'ntype';
-   $form[$set] = array(
-     '#type' => 'fieldset',
-     '#title' => 'Notification by node type',
-     '#collapsible' => true,
-     '#collapsed' => false,
-     '#description' => 'Having nothing checked defaults to sending notifications about all node types.'
-   );
- 
-   foreach(node_get_types('types', array()) as $type => $object) {
-     $form[$set][NOTIFY_NODE_TYPE . $type] = array(
-       '#type' => 'checkbox',
-       '#title' => $object->name,
-       '#return_value' => 1,
-       '#default_value' => variable_get(NOTIFY_NODE_TYPE . $type, 0),
-     );
-   }
- 
+  }
 
   return system_settings_form($form);
 }
@@ -124,37 +121,37 @@ function notify_perm() {
  *
  * @return array
  */
- function notify_menu() {
-    $items = array();
+function notify_menu() {
+  $items = array();
   
-   $items['admin/settings/notify'] = array(
-     'title' => 'Notification settings',
-     'description' => 'Adjust settings for new content notifications sent by e-mail.',
-     'page callback' => 'drupal_get_form',
-     'page arguments' => array('notify_admin_settings'),
-     'access callback' => 'user_access',
-     'access arguments' => array('administer notify'),
-     'type' => MENU_NORMAL_ITEM,
-   );
-   $items['user/%user/notify'] = array(
-     'title' => 'Notification settings',
-     'page callback' => 'drupal_get_form',
-     'page arguments' => array('notify_user_settings_form', 1),
-     'access callback' => 'user_access',
-     'access arguments' => array('access notify'),
-     'type' => MENU_LOCAL_TASK
-   );
-   $items['admin/user/user/notify'] = array(
-     'title' => 'Notifications',
-     'page callback' => 'drupal_get_form',
-     'page arguments' => array('notify_admin_users'),
-     'access callback' => 'user_access',
-     'access arguments' => array('administer notify'),
-     'type' => MENU_LOCAL_TASK,
-   );
-  
-    return $items;
-  }
+  $items['admin/settings/notify'] = array(
+    'title' => 'Notification settings',
+    'description' => 'Adjust settings for new content notifications sent by e-mail.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('notify_admin_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer notify'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['user/%user/notify'] = array(
+    'title' => 'Notification settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('notify_user_settings_form', 1),
+    'access callback' => 'user_access',
+    'access arguments' => array('access notify'),
+    'type' => MENU_LOCAL_TASK
+  );
+  $items['admin/user/user/notify'] = array(
+    'title' => 'Notifications',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('notify_admin_users'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer notify'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
   
   /**
   * Register the themeing the form data into a table at
@@ -162,16 +159,13 @@ function notify_perm() {
   *
   * @return array
   */
-
- function notify_theme() {
-   return array(
-     'notify_admin_users' => array(
-       'arguments' => array('form' => NULL)
-     )
-   );
- }
-
-
+  function notify_theme() {
+    return array(
+      'notify_admin_users' => array(
+      'arguments' => array('form' => NULL)
+    )
+  );
+}
 
 /**
  * Menu callback; show user notification options.
@@ -287,10 +281,10 @@ function notify_admin_users_submit($form, &$form_state) {
     variable_set('notify_send_last', time());
 
     if ($num_sent > 0) {
-      drupal_set_message(t('@count pending notification e-mails have been sent.', array('@count' => $num_sent)));
+      drupal_set_message(t('!count pending notification e-mails have been sent.', array('!count' => $num_sent)));
     }
     elseif ($num_failed > 0) {
-      drupal_set_message(t('@count notification e-mails could not be sent.', array('@count' => $num_failed)), 'error');
+      drupal_set_message(t('!count notification e-mails could not be sent.', array('!count' => $num_failed)), 'error');
     }
     else {
       drupal_set_message(t('No notification e-mails needed to be sent.'));
@@ -341,18 +335,7 @@ function _notify_content($node, $notify) {
       $txt = check_markup($node->body, $node->format, FALSE);
   }
 
-  $pattern = '@(<a href="(.+?)">(.+?)</a>)@ei';
-  $txt = preg_replace($pattern, "'\\3 ['. _notify_mail_urls('\\2') .']'", $txt);
-  $urls = _notify_mail_urls();
-  if (count($urls)) {
-    $txt .= "\n";
-    for ($max = count($urls); $i < $max; $i++) {
-      $txt .= '['. ($i + 1) .'] '. $urls[$i] ."\n";
-    }
-  }
-  $txt = strip_tags($txt);
-  $txt = notify_entities_to_utf8($txt);
-  return wordwrap($txt, 72);
+  return drupal_html_to_text($txt);
 }
 
 /**
@@ -372,13 +355,14 @@ function _notify_send() {
 
   // Fetch all node type authorized by notify settings
   $ntype = array();
-  foreach(node_get_types() as $type => $name) {
+  foreach (node_get_types() as $type => $name) {
     if (variable_get(NOTIFY_NODE_TYPE . $type, 0)) {
       $ntype[] = $type;
     }
-    if (count($ntype) >= 1){
-      $reqntype = "AND (n.type = '" . implode("' OR n.type = '", $ntype) ."') ";
-    } else {
+    if (count($ntype) >= 1) {
+      $reqntype = "AND (n.type = '". implode("' OR n.type = '", $ntype) ."') ";
+    }
+    else {
       $reqntype = '';
     }
   }
@@ -409,7 +393,7 @@ function _notify_send() {
 
     // Write new node content to e-mail if user has permissions and nodes are
     // ready to be sent.
-    if ($user->node && user_access('access content', $user) && count($nodes)) {
+    if ($user->node && user_access('access content') && count($nodes)) {
 
       $node_count = 0;
       foreach ($nodes as $node) {
@@ -432,7 +416,7 @@ function _notify_send() {
         if ($node_count > 0) {
           $node_body .= $mini_separator ."\n\n";
         }
-        $node_body .= ++$node_count .'. '. check_plain($node->title) ."\n";
+        $node_body .= ++$node_count .'. '. $node->title ."\n";
         $node_body .= t('!status !type by !author', array('!status' => $status, '!type' => node_get_types('name', $node), '!author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
         $node_body .= '[ '. url('node/'. $node->nid, array('absolute' => TRUE)) ." ]\n\n";
         $node_body .= _notify_content($node, $user) ."\n";
@@ -507,60 +491,12 @@ function _notify_send() {
 function notify_mail($key, &$message, $params) {
   global $user;
 
-  $message['subject'] = t('@sitename new content notification for @username', array('@username' => $user->name, '@sitename' => variable_get('site_name', 'Drupal')));
-  $message['body'] = t('Greetings @user,', array('@user' => $user->name)) ."\n\n";
+  $message['subject'] = t('!sitename new content notification for !username', array('!username' => $user->name, '!sitename' => variable_get('site_name', 'Drupal')));
+  $message['body'] = t('Greetings !user,', array('!user' => $user->name)) ."\n\n";
   $message['body'] .= $params['content'];
   $message['body'] .= "\n-- \n";
-  $message['body'] .= t('This is an automatic e-mail from @sitename.', array('@sitename' => variable_get('site_name', 'Drupal')))."\n";
-  $message['body'] .= t('To stop receiving these e-mails, change your notification preferences at @notify-url', array('@notify-url' => url("user/$user->uid/notify" , array('absolute' => TRUE))))."\n";
-}
-
-function notify_entities_to_utf8($text) {
-  static $table;
-  // We store named entities in a table for quick processing.
-  if (!isset($table)) {
-    // Get all named HTML entities.
-    $table = array_flip(get_html_translation_table(HTML_ENTITIES));
-    // PHP gives us Windows-1252/ISO-8859-1 data, we need UTF-8.
-    $table = array_map('utf8_encode', $table);
-  }
-  $text = strtr($text, $table);
-
-  // Any remaining entities are numerical. Use a regexp to replace them.
-  return preg_replace('/&#(x?)([A-Za-z0-9]+);/e', '_notify_entity_to_utf8("$1", "$2")', $text);
-}
-
-function _notify_entity_to_utf8($hex, $codepoint) {
-  if ($hex != '') {
-    $codepoint = base_convert($codepoint, 16, 10);
-  }
-  if ($codepoint < 0x80) {
-    return chr($codepoint);
-  }
-  else if ($codepoint < 0x800) {
-    return chr(0xC0 | ($codepoint >> 6))
-         . chr(0x80 | ($codepoint & 0x3F));
-  }
-  else if ($codepoint < 0x10000) {
-    return chr(0xE0 | ( $codepoint >> 12))
-         . chr(0x80 | (($codepoint >> 6) & 0x3F))
-         . chr(0x80 | ( $codepoint       & 0x3F));
-  }
-  else if ($codepoint < 0x200000) {
-    return chr(0xF0 | ( $codepoint >> 18))
-         . chr(0x80 | (($codepoint >> 12) & 0x3F))
-         . chr(0x80 | (($codepoint >> 6)  & 0x3F))
-         . chr(0x80 | ( $codepoint        & 0x3F));
-  }
-}
-
-function _notify_mail_urls($url = 0) {
-  static $urls = array();
-  if ($url) {
-    $urls[] = strpos($url, '://') ? $url : url($url, array('absolute' => TRUE));
-    return count($urls);
-  }
-  return $urls;
+  $message['body'] .= t('This is an automatic e-mail from !sitename.', array('!sitename' => variable_get('site_name', 'Drupal'))) ."\n";
+  $message['body'] .= t('To stop receiving these e-mails, change your notification preferences at !notify-url', array('!notify-url' => url("user/$user->uid/notify" , array('absolute' => TRUE)))) ."\n";
 }
 
 /**
