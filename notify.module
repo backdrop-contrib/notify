@@ -432,7 +432,7 @@ function _notify_send() {
 
     // Write new comments to e-mail if user has permissions and there are
     // comments to be sent.
-    if ($user->comment && user_access('access comments', $user) && count($comments)) {
+    if ($user->comment && user_access('access comments') && count($comments)) {
       $total_comment_count = 0;
       foreach ($comments as $nid => $comment) {
         // If we don't already have the node, fetch it.
@@ -441,7 +441,7 @@ function _notify_send() {
         }
 
         // Don't show comments if we're not allowed to view this node.
-        if (!node_access('view', $nodes[$nid], $user)) {
+        if (!node_access('view', $nodes[$nid])) {
           continue;
         }
 
