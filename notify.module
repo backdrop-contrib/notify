@@ -425,7 +425,7 @@ function _notify_send() {
       // Prepend node e-mail header as long as user could access at least one node.
       if ($node_count > 0) {
         $node_body = $separator ."\n"
-          . t('Recent content - !count', array('!count' => format_plural(count($nodes), '1 new post', '!count new posts'))) ."\n"
+          . t('Recent content - !count', array('!count' => format_plural(count($nodes), '1 new post', count($nodes) .' new posts'))) ."\n"
           . $separator ."\n\n". $node_body;
       }
     }
