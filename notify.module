@@ -106,8 +106,48 @@ function notify_user($type, &$edit, &$user, $category = NULL) {
     case 'delete':
       db_query('DELETE FROM {notify} WHERE uid = %d', $user->uid);
       break;
+    
+    case 'register':
+      return _notify_user_reg_fields();
+      break;
+    
+    case 'insert':
+      if (isset($edit['notify_decision']) && $edit['notify_decision'] == 1){
+        db_query('INSERT INTO {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $user->uid, 1, 1, 0, 0);
+        $edit['notify_decision'] = NULL;
+      }
+      break;
+    
   }
 }
+
+
+/**
+ * Returns form fields to be added to User Regsitration form
+ */
+function _notify_user_reg_fields() {
+  // Get the variable for how often the notifications are sent out
+  $period = variable_get("notify_send", 86400);
+
+  // Add a fieldset containing a checkbox for users to accept
+  // getting updates on the registration form.
+  $fields['notify_agree'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Daily Email News Notifications')
+  );
+
+  // Add the checkbox to the fieldset
+  $fields['notify_agree']['notify_decision'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Receive email notifications of news posted to this site. Notifications are sent every ' . format_interval($period).'.'),
+    '#return_value' => 1,
+    '#default_value' => 1,
+    '#description' => t('By accepting to receive <em>daily email news notifications</em>, you will be kept informed of news associated with ' . variable_get('site_name', 'Drupal') . '.')
+  );
+
+  return $fields;
+}
+
 
 /**
  * Implementation of hook_perm().
