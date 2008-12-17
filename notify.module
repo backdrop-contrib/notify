@@ -51,7 +51,15 @@ function notify_admin_settings() {
     '#title' => 'Send notifications every',
     '#default_value' => variable_get('notify_send', array(86400)),
     '#options' => $period,
-    '#description' => 'How often should new content notifications be sent? Requires cron to be running.',
+    '#description' => 'How often should new content notifications be sent? Requires cron to be running at least this often.',
+  );
+  
+  $form['notify_settings']['notify_send_hour'] = array(
+    '#type' => 'select',
+    '#title' => 'Hour to Send Notifications',
+    '#description' => 'Specify the hour (24-hour clock) in which notifications should be sent, if the frequency is one day or greater.',
+    '#default_value' => variable_get('notify_send_hour', 9),
+    '#options' => array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23),
   );
   
   $form['notify_settings']['notify_attempts'] = array(
@@ -60,7 +68,7 @@ function notify_admin_settings() {
     '#default_value' => variable_get('notify_attempts', array(5)),
     '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
   );
-  
+    
   $set = 'ntype';
   $form[$set] = array(
     '#type' => 'fieldset',
@@ -88,9 +96,9 @@ function notify_admin_settings() {
 function notify_cron() {
   $send_last = variable_get('notify_send_last', 0);
   $send_interval = variable_get('notify_send', 86400);
-  $send_hour = variable_get('notify_send_hour', date('G', variable_get('notify_send_last', 0)));
+  $send_hour = variable_get('notify_send_hour', 9);
   if ( (time() - $send_last > $send_interval) 
-    && (date('G', time()) > $send_hour) 
+    && (date('G', time()) >= $send_hour || $send_interval < 86400) 
     && ($send_interval != -1) //special case of settings to send 'never' 
       ) {
     _notify_send();
@@ -540,7 +548,7 @@ function notify_mail($key, &$message, $params) {
 }
 
 /**
- * Switch from original user to mail submision user and back.
+ * Switch from original user to mail submission user and back.
  *
  * NOTE: Copied from mailhandler
  *
@@ -555,12 +563,17 @@ function _notify_switch_user($uid = NULL) {
   static $orig_user = array();
 
   if (isset($uid)) {
+    // Should a user visit cron.php, or should this module be invoked via poormanscron and _notify_send() does not complete,
+    // the visitor will end up logged in as the "switched to user" for subsequent requests unless we disable saving the session
+    // until we are sure we're the invoking user again.
+    session_save_session(FALSE);
     $user = user_load(array('uid' => $uid));
   }
   // Retrieve the initial user, can be called multiple times.
   else if (count($orig_user)) {
     $user = array_shift($orig_user);
     array_unshift($orig_user, $user);
+    session_save_session(TRUE);
   }
   // Store the initial user.
   else {
