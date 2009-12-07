@@ -87,6 +87,31 @@ function notify_admin_settings() {
     );
   }
 
+    $form[notify_settings]['notify_reg_default'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'Notification checkbox default on new user registration form',
+      '#return_value' => 1,
+      '#default_value' => variable_get('notify_reg_default',1),
+    );
+    
+  $set = 'ntype';
+  $form[$set] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Notification by node type',
+    '#collapsible' => true,
+    '#collapsed' => false,
+    '#description' => 'Having nothing checked defaults to sending notifications about all node types.'
+  );
+  
+  foreach (node_get_types('types', array()) as $type => $object) {
+    $form[$set][NOTIFY_NODE_TYPE . $type] = array(
+      '#type' => 'checkbox',
+      '#title' => $object->name,
+      '#return_value' => 1,
+      '#default_value' => variable_get(NOTIFY_NODE_TYPE . $type, 0),
+    );
+  }
+
   return system_settings_form($form);
 }
 
@@ -134,6 +159,8 @@ function notify_user($type, &$edit, &$user, $category = NULL) {
  * Returns form fields to be added to User Regsitration form
  */
 function _notify_user_reg_fields() {
+  if (!user_access('access notify')) return;
+
   // Get the variable for how often the notifications are sent out
   $period = variable_get("notify_send", 86400);
 
@@ -149,7 +176,7 @@ function _notify_user_reg_fields() {
     '#type' => 'checkbox',
     '#title' => t('Receive email notifications of news posted to this site. Notifications are sent every ' . format_interval($period).'.'),
     '#return_value' => 1,
-    '#default_value' => 1,
+    '#default_value' => variable_get('notify_reg_default',1),
     '#description' => t('By accepting to receive <em>daily email news notifications</em>, you will be kept informed of news associated with ' . variable_get('site_name', 'Drupal') . '.')
   );
 
@@ -185,8 +212,8 @@ function notify_menu() {
     'title' => 'Notification settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('notify_user_settings_form', 1),
-    'access callback' => 'user_access',
-    'access arguments' => array('access notify'),
+    'access callback' => 'notify_user_access',
+    'access arguments' => array(1),
     'type' => MENU_LOCAL_TASK
   );
   $items['admin/user/user/notify'] = array(
@@ -200,27 +227,44 @@ function notify_menu() {
 
   return $items;
 }
-  
-  /**
-  * Register the themeing the form data into a table at
-  * admin/user/user/notify
-  *
-  * @return array
-  */
-  function notify_theme() {
-    return array(
-      'notify_admin_users' => array(
-      'arguments' => array('form' => NULL)
+
+/**
+ * Checks access to notifications settings tab
+ */
+function notify_user_access($account = NULL)
+{
+  return $account->uid &&
+    (
+      // Always let users view their own profile.
+      ($GLOBALS['user']->uid == $account->uid && user_access('access notify'))  ||
+      // Administrators can view all accounts.
+      user_access('administer notify')
+    );
+}
+
+
+/**
+ * Register the themeing the form data into a table at
+ * admin/user/user/notify
+ *
+ * @return array
+ */
+function notify_theme() {
+  return array(
+    'notify_admin_users' => array(
+    'arguments' => array('form' => NULL)
     )
   );
 }
+  
 
 /**
  * Menu callback; show user notification options.
  */
 function notify_user_settings_form(&$form_state, $arg) {
   global $user;
-  if ($user->uid != $arg->uid && $user->uid != 1) {
+
+  if ($user->uid != $arg->uid && !user_access('administer notify') ) {
     drupal_access_denied();
     return;
   }
@@ -430,10 +474,12 @@ function _notify_send() {
     }
 
     // Fetch new comments.
-    $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name FROM {comments} c INNER JOIN {node} n ON c.nid = n.nid WHERE c.status = %d AND c.timestamp > %d AND c.timestamp <= %d '. $reqntype . ' ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period, time());
     $comments = array();
-    while ($comment = db_fetch_object($cresult)) {
-      $comments[$comment->nid][] = $comment;
+    if (module_exists('comment')) {
+        $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name FROM {comments} c INNER JOIN {node} n ON c.nid = n.nid WHERE c.status = %d AND c.timestamp > %d AND c.timestamp <= %d '. $reqntype . ' ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period, time());
+        while ($comment = db_fetch_object($cresult)) {
+          $comments[$comment->nid][] = $comment;
+        }
     }
 
     $node_body = '';
@@ -473,7 +519,7 @@ function _notify_send() {
       // Prepend node e-mail header as long as user could access at least one node.
       if ($node_count > 0) {
         $node_body = $separator ."\n"
-          . t('Recent content - !count', array('!count' => format_plural(count($nodes), '1 new post', count($nodes) .' new posts'))) ."\n"
+          . t('Recent content - !count', array('!count' => format_plural(count($nodes), '1 new post', '@count new posts'))) ."\n"
           . $separator ."\n\n". $node_body;
       }
     }
@@ -496,7 +542,7 @@ function _notify_send() {
         if ($comment_body) {
           $comment_body .= $mini_separator ."\n\n";
         }
-        $comment_body .= t('!count attached to !type posted by !author: !title', array('!count' => format_plural(count($comment), '1 new comment', '!count new comments'), '!title' => $nodes[$nid]->title, '!type' => node_get_types('name', $nodes[$nid]), '!author' => $nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))) ."\n";
+        $comment_body .= t('!count attached to !type posted by !author: !title', array('!count' => format_plural(count($comment), '1 new comment', '@count new comments'), '!title' => $nodes[$nid]->title, '!type' => node_get_types('name', $nodes[$nid]), '!author' => $nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))) ."\n";
 
         $comment_count = 0;
         foreach ($comment as $c) {
@@ -508,7 +554,7 @@ function _notify_send() {
 
       if ($total_comment_count > 0) {
         $comment_body = $separator ."\n"
-          . t('Recent comments - !count', array('!count' => format_plural($total_comment_count, '1 new comment', '!count new comments'))) ."\n"
+          . t('Recent comments - !count', array('!count' => format_plural($total_comment_count, '1 new comment', '@count new comments'))) ."\n"
           . $separator ."\n\n". $comment_body;
       }
     }

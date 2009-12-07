@@ -47,7 +47,7 @@ Kjartan Mannes <kjartan@drop.org> is the original author.
 
 Rob Barreca <rob@electronicinsight.com> was a previous maintainer.
 
-Matt Chapman <matt@ninjitsuhosting.com> is the current maintainer.
+Matt Chapman <matt@ninjitsuweb.com> is the current maintainer.
 
 ------------------------
 RELATED PROJECTS & ALTERNATIVES
