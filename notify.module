@@ -566,7 +566,7 @@ function _notify_send() {
       // Set up initial values for e-mail.
 
       $headers = array();//'From' => "$from_name <$from>");
-      if (!drupal_mail('notify', 'send', $user->mail, user_preferred_language($user), array('content' => wordwrap($body, 72)))) {
+      if (!drupal_mail('notify', 'send', $user->mail, user_preferred_language($user), array('content' => $body))) {
         $num_failed++;
         db_query('UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d', $user->uid);
         watchdog('notify', 'User %name (%mail) could not be notified. Mail error.', array('%name' => $user->name, '%mail' => $user->mail), WATCHDOG_ERROR);
