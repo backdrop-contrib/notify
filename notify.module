@@ -435,140 +435,144 @@ function _notify_send() {
   _notify_switch_user(); // Store current user
 
   // Fetch all node type authorized by notify settings
+  //Note that queries use 'nn' alias to avoid conflicts when query is rewritten by access control modules
   $ntype = array();
   foreach (node_get_types() as $type => $name) {
     if (variable_get(NOTIFY_NODE_TYPE . $type, 0)) {
       $ntype[] = $type;
     }
     if (count($ntype) >= 1) {
-      $nodetypes_query = "AND (n.type = '". implode("' OR n.type = '", $ntype) ."') ";
+      $nodetypes_query = "AND (nn.type = '". implode("' OR nn.type = '", $ntype) ."') ";
     }
     else {
       $nodetypes_query = '';
     }
   }
 
-  // Fetch users with notify enabled
-  $uresult = db_query('SELECT u.uid, u.name, u.mail, u.language, n.status, n.node, n.teasers, n.comment FROM {notify} n INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 AND n.attempts <= %d', variable_get('notify_attempts', 5));
+  // build query to fetch desired nodes.
+  $q = 'SELECT nn.nid FROM {node} nn WHERE (nn.status = 1 OR nn.moderate = 1) '. $nodetypes_query . ' AND ((nn.created > %d AND nn.created <= %d)';
+  //include updated nodes?
+  $q .= variable_get('notify_include_updates',1) ? ' OR (nn.changed > %d AND nn.changed <= %d))' : '';  
+  $q .= ' ORDER BY nn.created';
+  
+  //Run the query, and load the nodes
+  $nresult = db_query(db_rewrite_sql($q), $period, time(), $period, time());
+  $nodes = array();
+  while ($node = db_fetch_object($nresult)) {
+    $nodes[$node->nid] = node_load($node->nid);
+  }
 
-  while ($user = db_fetch_object($uresult)) {
-    // Switch current user to this account to use node_access functions, etc.
-    _notify_switch_user($user->uid);
+  // Fetch new comments.
+  $comments = array();
+  if (module_exists('comment')) {
+      $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name FROM {comments} c INNER JOIN {node} nn ON c.nid = nn.nid WHERE c.status = %d AND c.timestamp > %d AND c.timestamp <= %d '. $nodetypes_query . ' ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period, time());
+      while ($comment = db_fetch_object($cresult)) {
+        $comments[$comment->nid][] = $comment;
+      }
+  }
 
-    // build query to fetch desired nodes
-    $q = 'SELECT n.nid FROM {node} n WHERE (n.status = 1 OR n.moderate = 1) '. $nodetypes_query . ' AND ((n.created > %d AND n.created <= %d)';
-    //include updated nodes?
-    $q .= variable_get('notify_include_updates',1) ? ' OR (n.changed > %d AND n.changed <= %d))' : '';  
-    $q .= ' ORDER BY n.created';
+  if (count($nodes) || count($comments)) {
     
-    //Run the query, and load the nodes
-    $nresult = db_query(db_rewrite_sql($q), $period, time(), $period, time());
-    $nodes = array();
-    while ($node = db_fetch_object($nresult)) {
-      $nodes[$node->nid] = node_load($node->nid);
-    }
-
-    // Fetch new comments.
-    $comments = array();
-    if (module_exists('comment')) {
-        $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name FROM {comments} c INNER JOIN {node} n ON c.nid = n.nid WHERE c.status = %d AND c.timestamp > %d AND c.timestamp <= %d '. $reqntype . ' ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period, time());
-        while ($comment = db_fetch_object($cresult)) {
-          $comments[$comment->nid][] = $comment;
+    // Fetch users with notify enabled
+    $uresult = db_query('SELECT u.uid, u.name, u.mail, u.language, n.status, n.node, n.teasers, n.comment FROM {notify} n INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND u.status = 1 AND n.attempts <= %d', variable_get('notify_attempts', 5));
+  
+    while ($user = db_fetch_object($uresult)) {
+      // Switch current user to this account to use node_access functions, etc.
+      _notify_switch_user($user->uid);
+      
+      $node_body = '';
+      $comment_body = '';
+  
+      // Write new node content to e-mail if user has permissions and nodes are
+      // ready to be sent. @TODO - cache by role
+      if ($user->node && user_access('access content') && count($nodes)) {
+  
+        $node_count = 0;
+        foreach ($nodes as $node) {
+          // Skip to next if this user is NOT allowed to view this node.
+          if (!node_access('view', $node)) {
+            continue;
+          }
+  
+          // @TODO: Add functionality to hook into moderation modules?
+          if ($node->moderate == 1) {
+            $status = t('Queued');
+          }
+          elseif ($node->status == 1) {
+            $status = t('Published');
+          }
+          elseif ($node->status == 0) {
+            $status = t('Unpublished');
+          }
+  
+          if ($node_count > 0) {
+            $node_body .= $mini_separator ."\n\n";
+          }
+          $node_body .= ++$node_count .'. '. $node->title ."\n";
+          $node_body .= t('!status !type by !author', array('!status' => $status, '!type' => node_get_types('name', $node), '!author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
+          $node_body .= '[ '. url('node/'. $node->nid, array('absolute' => TRUE)) ." ]\n\n";
+          $node_body .= _notify_content($node, $user) ."\n";
         }
-    }
-
-    $node_body = '';
-    $comment_body = '';
-
-    // Write new node content to e-mail if user has permissions and nodes are
-    // ready to be sent.
-    if ($user->node && user_access('access content') && count($nodes)) {
-
-      $node_count = 0;
-      foreach ($nodes as $node) {
-        // Skip to next if this user is NOT allowed to view this node.
-        if (!node_access('view', $node)) {
-          continue;
-        }
-
-        // TODO: Add functionality to hook into moderation modules?
-        if ($node->moderate == 1) {
-          $status = t('Queued');
-        }
-        elseif ($node->status == 1) {
-          $status = t('Published');
-        }
-        elseif ($node->status == 0) {
-          $status = t('Unpublished');
-        }
-
+  
+        // Prepend node e-mail header as long as user could access at least one node.
         if ($node_count > 0) {
-          $node_body .= $mini_separator ."\n\n";
-        }
-        $node_body .= ++$node_count .'. '. $node->title ."\n";
-        $node_body .= t('!status !type by !author', array('!status' => $status, '!type' => node_get_types('name', $node), '!author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) ."\n";
-        $node_body .= '[ '. url('node/'. $node->nid, array('absolute' => TRUE)) ." ]\n\n";
-        $node_body .= _notify_content($node, $user) ."\n";
-      }
-
-      // Prepend node e-mail header as long as user could access at least one node.
-      if ($node_count > 0) {
-        $node_body = $separator ."\n"
-          . t('Recent content - !count', array('!count' => format_plural(count($nodes), '1 new post', '@count new posts'))) ."\n"
-          . $separator ."\n\n". $node_body;
-      }
-    }
-
-    // Write new comments to e-mail if user has permissions and there are
-    // comments to be sent.
-    if ($user->comment && user_access('access comments') && count($comments)) {
-      $total_comment_count = 0;
-      foreach ($comments as $nid => $comment) {
-        // If we don't already have the node, fetch it.
-        if (!isset($nodes[$nid])) {
-          $nodes[$nid] = node_load($nid);
-        }
-
-        // Don't show comments if we're not allowed to view this node.
-        if (!node_access('view', $nodes[$nid])) {
-          continue;
-        }
-
-        if ($comment_body) {
-          $comment_body .= $mini_separator ."\n\n";
-        }
-        $comment_body .= t('!count attached to !type posted by !author: !title', array('!count' => format_plural(count($comment), '1 new comment', '@count new comments'), '!title' => $nodes[$nid]->title, '!type' => node_get_types('name', $nodes[$nid]), '!author' => $nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))) ."\n";
-
-        $comment_count = 0;
-        foreach ($comment as $c) {
-          $comment_body .= '   '. ++$comment_count .'. '. t('!title by !author', array('!title' => $c->subject, '!author' => ($c->name ? $c->name : variable_get('anonymous', 'Anonymous')))) ."\n"
-            .'     '. url('node/'. $nid, array('fragment' => 'comment-'. $c->cid, 'absolute' => TRUE)) ."\n\n";
-          $total_comment_count++;
+          $node_body = $separator ."\n"
+            . t('Recent content - !count', array('!count' => format_plural(count($nodes), '1 new post', '@count new posts'))) ."\n"
+            . $separator ."\n\n". $node_body;
         }
       }
-
-      if ($total_comment_count > 0) {
-        $comment_body = $separator ."\n"
-          . t('Recent comments - !count', array('!count' => format_plural($total_comment_count, '1 new comment', '@count new comments'))) ."\n"
-          . $separator ."\n\n". $comment_body;
+  
+      // Write new comments to e-mail if user has permissions and there are
+      // comments to be sent.
+      if ($user->comment && user_access('access comments') && count($comments)) {
+        $total_comment_count = 0;
+        foreach ($comments as $nid => $comment) {
+          // If we don't already have the node, fetch it.
+          if (!isset($nodes[$nid])) {
+            $nodes[$nid] = node_load($nid);
+          }
+  
+          // Don't show comments if we're not allowed to view this node.
+          if (!node_access('view', $nodes[$nid])) {
+            continue;
+          }
+  
+          if ($comment_body) {
+            $comment_body .= $mini_separator ."\n\n";
+          }
+          $comment_body .= t('!count attached to !type posted by !author: !title', array('!count' => format_plural(count($comment), '1 new comment', '@count new comments'), '!title' => $nodes[$nid]->title, '!type' => node_get_types('name', $nodes[$nid]), '!author' => $nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))) ."\n";
+  
+          $comment_count = 0;
+          foreach ($comment as $c) {
+            $comment_body .= '   '. ++$comment_count .'. '. t('!title by !author', array('!title' => $c->subject, '!author' => ($c->name ? $c->name : variable_get('anonymous', 'Anonymous')))) ."\n"
+              .'     '. url('node/'. $nid, array('fragment' => 'comment-'. $c->cid, 'absolute' => TRUE)) ."\n\n";
+            $total_comment_count++;
+          }
+        }
+  
+        if ($total_comment_count > 0) {
+          $comment_body = $separator ."\n"
+            . t('Recent comments - !count', array('!count' => format_plural($total_comment_count, '1 new comment', '@count new comments'))) ."\n"
+            . $separator ."\n\n". $comment_body;
+        }
       }
-    }
-
-    $body = $node_body . $comment_body;
-
-    // If there was anything new, send mail.
-    if ($body) {
-      // Set up initial values for e-mail.
-
-      $headers = array();//'From' => "$from_name <$from>");
-      if (!drupal_mail('notify', 'send', $user->mail, user_preferred_language($user), array('content' => $body))) {
-        $num_failed++;
-        db_query('UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d', $user->uid);
-        watchdog('notify', 'User %name (%mail) could not be notified. Mail error.', array('%name' => $user->name, '%mail' => $user->mail), WATCHDOG_ERROR);
-      }
-      else {
-        $num_sent++;
-        watchdog('notify', 'User %name (%mail) notified successfully.', array('%name' => $user->name, '%mail' => $user->mail), WATCHDOG_INFO);
+  
+      $body = $node_body . $comment_body;
+  
+      // If there was anything new, send mail.
+      if ($body) {
+        // Set up initial values for e-mail.
+  
+        $headers = array();//'From' => "$from_name <$from>");
+        if (!drupal_mail('notify', 'send', $user->mail, user_preferred_language($user), array('content' => $body))) {
+          $num_failed++;
+          db_query('UPDATE {notify} SET attempts = attempts + 1 WHERE uid = %d', $user->uid);
+          watchdog('notify', 'User %name (%mail) could not be notified. Mail error.', array('%name' => $user->name, '%mail' => $user->mail), WATCHDOG_ERROR);
+        }
+        else {
+          $num_sent++;
+          watchdog('notify', 'User %name (%mail) notified successfully.', array('%name' => $user->name, '%mail' => $user->mail), WATCHDOG_INFO);
+        }
       }
     }
   }
