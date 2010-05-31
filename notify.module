@@ -69,30 +69,19 @@ function notify_admin_settings() {
     '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
   );
     
-  $set = 'ntype';
-  $form[$set] = array(
-    '#type' => 'fieldset',
-    '#title' => 'Notification by node type',
-    '#collapsible' => true,
-    '#collapsed' => false,
-    '#description' => 'Having nothing checked defaults to sending notifications about all node types.'
+  $form[notify_settings]['notify_reg_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Notification checkbox default on new user registration form',
+    '#return_value' => 1,
+    '#default_value' => variable_get('notify_reg_default',1),
   );
-  
-  foreach (node_get_types('types', array()) as $type => $object) {
-    $form[$set][NOTIFY_NODE_TYPE . $type] = array(
-      '#type' => 'checkbox',
-      '#title' => $object->name,
-      '#return_value' => 1,
-      '#default_value' => variable_get(NOTIFY_NODE_TYPE . $type, 0),
-    );
-  }
 
-    $form[notify_settings]['notify_reg_default'] = array(
-      '#type' => 'checkbox',
-      '#title' => 'Notification checkbox default on new user registration form',
-      '#return_value' => 1,
-      '#default_value' => variable_get('notify_reg_default',1),
-    );
+  $form[notify_settings]['notify_include_updates'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Include updated posts in notifications',
+    '#return_value' => 1,
+    '#default_value' => variable_get('notify_include_updates',1),
+  );
     
   $set = 'ntype';
   $form[$set] = array(
@@ -295,7 +284,7 @@ function notify_user_settings_form(&$form_state, $arg) {
     '#title' => 'Notify new content',
     '#default_value' => $notify->node,
     '#options' => array(t('Disabled'), t('Enabled')),
-    '#description' => t('Include new content in the notification mail.'),
+    '#description' => t('Include new posts in the notification mail.'),
   );
   $form['notify_page_detailed']['teasers'] = array('#type' => 'radios',
     '#title' => 'Content',
@@ -452,10 +441,10 @@ function _notify_send() {
       $ntype[] = $type;
     }
     if (count($ntype) >= 1) {
-      $reqntype = "AND (n.type = '". implode("' OR n.type = '", $ntype) ."') ";
+      $nodetypes_query = "AND (n.type = '". implode("' OR n.type = '", $ntype) ."') ";
     }
     else {
-      $reqntype = '';
+      $nodetypes_query = '';
     }
   }
 
@@ -466,8 +455,14 @@ function _notify_send() {
     // Switch current user to this account to use node_access functions, etc.
     _notify_switch_user($user->uid);
 
-    // Fetch all new nodes and 'load' it to get proper body, etc.
-    $nresult = db_query(db_rewrite_sql('SELECT n.nid FROM {node} n WHERE (n.status = 1 OR n.moderate = 1) '. $reqntype . ' AND ((n.created > %d AND n.created <= %d) OR (n.changed > %d AND n.changed <= %d)) ORDER BY n.created'), $period, time(), $period, time());
+    // build query to fetch desired nodes
+    $q = 'SELECT n.nid FROM {node} n WHERE (n.status = 1 OR n.moderate = 1) '. $nodetypes_query . ' AND ((n.created > %d AND n.created <= %d)';
+    //include updated nodes?
+    $q .= variable_get('notify_include_updates',1) ? ' OR (n.changed > %d AND n.changed <= %d))' : '';  
+    $q .= ' ORDER BY n.created';
+    
+    //Run the query, and load the nodes
+    $nresult = db_query(db_rewrite_sql($q), $period, time(), $period, time());
     $nodes = array();
     while ($node = db_fetch_object($nresult)) {
       $nodes[$node->nid] = node_load($node->nid);
