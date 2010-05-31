@@ -465,7 +465,7 @@ function _notify_send() {
   // Fetch new comments.
   $comments = array();
   if (module_exists('comment')) {
-      $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name FROM {comments} c INNER JOIN {node} nn ON c.nid = nn.nid WHERE c.status = %d AND c.timestamp > %d AND c.timestamp <= %d '. $nodetypes_query . ' ORDER BY c.nid, c.timestamp', 'c'), COMMENT_PUBLISHED, $period, time());
+      $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name, c.status FROM {comments} c INNER JOIN {node} nn ON c.nid = nn.nid WHERE c.timestamp > %d AND c.timestamp <= %d '. $nodetypes_query . ' ORDER BY c.nid, c.timestamp', 'c'), $period, time());
       while ($comment = db_fetch_object($cresult)) {
         $comments[$comment->nid][] = $comment;
       }
@@ -536,6 +536,17 @@ function _notify_send() {
           if (!node_access('view', $nodes[$nid])) {
             continue;
           }
+          
+          //Determine whether to show unpublished comments
+          if ($comment->status != COMMENT_PUBLISHED) {
+            if (user_access('administer comments')) {
+              $status = t('Unpublished');
+            } else {
+              continue;
+            }
+          } else { //it's pubilshed
+            $status = t('Published');
+          }
   
           if ($comment_body) {
             $comment_body .= $mini_separator ."\n\n";
@@ -544,7 +555,10 @@ function _notify_send() {
   
           $comment_count = 0;
           foreach ($comment as $c) {
-            $comment_body .= '   '. ++$comment_count .'. '. t('!title by !author', array('!title' => $c->subject, '!author' => ($c->name ? $c->name : variable_get('anonymous', 'Anonymous')))) ."\n"
+            $comment_body .= '   '. ++$comment_count .'. '. t('[!status] !title by !author',
+                                                              array('!status' => $status,
+                                                                    '!title' => $c->subject,
+                                                                    '!author' => ($c->name ? $c->name : variable_get('anonymous', 'Anonymous')))) ."\n"
               .'     '. url('node/'. $nid, array('fragment' => 'comment-'. $c->cid, 'absolute' => TRUE)) ."\n\n";
             $total_comment_count++;
           }
