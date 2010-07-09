@@ -30,4 +30,10 @@ function notify_install() {
 function notify_uninstall() {
   // Drop my tables.
   drupal_uninstall_schema('notify');
+
+  //Delete my variables
+  global $conf;
+  db_query("DELETE FROM {variable} WHERE name LIKE 'notify_%'");
+  cache_clear_all('variables', 'cache');
+  unset($conf[$name]);
 }
