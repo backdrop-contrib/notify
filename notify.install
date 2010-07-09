@@ -3,7 +3,7 @@
  * @file
  * Install, update and uninstall functions for the notify module.
  */
- 
+
 // $Id$
 
 function notify_schema() {
@@ -17,7 +17,6 @@ function notify_schema() {
       'teasers' => array('type' => 'int', 'size' => 'tiny', 'not null' => TRUE, 'default' => 0, 'disp-width' => '4'),
       ),
     'primary key' => array('uid'),
-    
   );
 
   return $schema;
