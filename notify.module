@@ -168,7 +168,7 @@ function _notify_user_reg_fields() {
   // getting updates on the registration form.
   $fields['notify_agree'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Daily Email News Notifications')
+    '#title' => t('Email Notifications')
   );
 
   // Add the checkbox to the fieldset
@@ -280,9 +280,9 @@ function notify_user_settings_form(&$form_state, $arg) {
         drupal_set_message(t('Your e-mail address must be specified on your <a href="@url">my account</a> page.', array('@url' => url('user/'. $account->uid .'/edit'))), 'error');
   }
 
-  $form['notify_page_master'] = array('#type' => 'fieldset', '#title' => 'Master switch');
+  $form['notify_page_master'] = array('#type' => 'fieldset', '#title' => t('Master switch'));
   $form['notify_page_master']['status'] = array('#type' => 'radios',
-    '#title' => 'Notify status',
+    '#title' => t('Notify status'),
     '#default_value' => $notify->status,
     '#options' =>  array(t('Disabled'), t('Enabled')),
     '#description' => t('Do you wish to receive periodic e-mails when new content is posted?'),
@@ -290,13 +290,13 @@ function notify_user_settings_form(&$form_state, $arg) {
 
   $form['notify_page_detailed'] = array('#type' => 'fieldset', '#title' => t('Detailed settings'));
   $form['notify_page_detailed']['node'] = array('#type' => 'radios',
-    '#title' => 'Notify new content',
+    '#title' => t('Notify new content'),
     '#default_value' => $notify->node,
     '#options' => array(t('Disabled'), t('Enabled')),
     '#description' => t('Include new posts in the notification mail.'),
   );
   $form['notify_page_detailed']['teasers'] = array('#type' => 'radios',
-    '#title' => 'Content',
+    '#title' => t('Content'),
     '#default_value' => $notify->teasers,
     '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body')),
     '#description' => t('Select the amount of each post that you would like to see in your notification e-mails.'),
@@ -461,8 +461,8 @@ function _notify_send() {
   // build query to fetch desired nodes.
   $q = 'SELECT nn.nid FROM {node} nn WHERE (nn.status = 1 OR nn.moderate = 1) ' . $nodetypes_query . ' AND ((nn.created > %d AND nn.created <= %d)';
   //include updated nodes?
-  $q .= variable_get('notify_include_updates', 1) ? ' OR (nn.changed > %d AND nn.changed <= %d))' : '';
-  $q .= ' ORDER BY nn.created';
+  $q .= variable_get('notify_include_updates', 1) ? ' OR (nn.changed > %d AND nn.changed <= %d))' : ')';
+  $q .= ' ORDER BY nn.created ASC';
 
   //Run the query, and load the nodes
   $nresult = db_query(db_rewrite_sql($q), $period, time(), $period, time());
