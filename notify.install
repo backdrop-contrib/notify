@@ -1,4 +1,9 @@
 <?php
+/**
+ * @file
+ * Install, update and uninstall functions for the notify module.
+ */
+ 
 // $Id$
 
 function notify_schema() {

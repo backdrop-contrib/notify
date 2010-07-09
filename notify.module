@@ -1,6 +1,17 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Notify module sends email digests of new content and comments.
+ *
+ * The notification module allows users to subscribe to periodic e-mails which
+ * include all new or revised content and/or comments much like the daily news
+ * letters sent by some websites.  Even if this feature is not configured for
+ * normal site users, it can be a useful feature for an administrator of a site
+ * to monitor content submissions and comment posts.
+ */
+
 define('NOTIFY_NODE_TYPE', 'notify_node_type_');
 
 /**
@@ -69,26 +80,26 @@ function notify_admin_settings() {
     '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
   );
     
-  $form[notify_settings]['notify_reg_default'] = array(
+  $form['notify_settings']['notify_reg_default'] = array(
     '#type' => 'checkbox',
     '#title' => 'Notification checkbox default on new user registration form',
     '#return_value' => 1,
-    '#default_value' => variable_get('notify_reg_default',1),
+    '#default_value' => variable_get('notify_reg_default', 1),
   );
 
-  $form[notify_settings]['notify_include_updates'] = array(
+  $form['notify_settings']['notify_include_updates'] = array(
     '#type' => 'checkbox',
     '#title' => 'Include updated posts in notifications',
     '#return_value' => 1,
-    '#default_value' => variable_get('notify_include_updates',1),
+    '#default_value' => variable_get('notify_include_updates', 1),
   );
     
   $set = 'ntype';
   $form[$set] = array(
     '#type' => 'fieldset',
     '#title' => 'Notification by node type',
-    '#collapsible' => true,
-    '#collapsed' => false,
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
     '#description' => 'Having nothing checked defaults to sending notifications about all node types.'
   );
   
@@ -134,7 +145,7 @@ function notify_user($type, &$edit, &$user, $category = NULL) {
       break;
     
     case 'insert':
-      if (isset($edit['notify_decision']) && $edit['notify_decision'] == 1){
+      if (isset($edit['notify_decision']) && $edit['notify_decision'] == 1) {
         db_query('INSERT INTO {notify} (uid, status, node, teasers, comment) VALUES (%d, %d, %d, %d, %d)', $user->uid, 1, 1, 0, 0);
         $edit['notify_decision'] = NULL;
       }
@@ -163,10 +174,9 @@ function _notify_user_reg_fields() {
   // Add the checkbox to the fieldset
   $fields['notify_agree']['notify_decision'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Receive email notifications of news posted to this site. Notifications are sent every ' . format_interval($period).'.'),
+    '#title' => t('Receive email notifications of new content posted to this site. Notifications are sent every ' . format_interval($period) . '.'),
     '#return_value' => 1,
-    '#default_value' => variable_get('notify_reg_default',1),
-    '#description' => t('By accepting to receive <em>daily email news notifications</em>, you will be kept informed of news associated with ' . variable_get('site_name', 'Drupal') . '.')
+    '#default_value' => variable_get('notify_reg_default', 1),
   );
 
   return $fields;
@@ -220,8 +230,7 @@ function notify_menu() {
 /**
  * Checks access to notifications settings tab
  */
-function notify_user_access($account = NULL)
-{
+function notify_user_access($account = NULL) {
   return $account->uid &&
     (
       // Always let users view their own profile.
@@ -450,9 +459,9 @@ function _notify_send() {
   }
 
   // build query to fetch desired nodes.
-  $q = 'SELECT nn.nid FROM {node} nn WHERE (nn.status = 1 OR nn.moderate = 1) '. $nodetypes_query . ' AND ((nn.created > %d AND nn.created <= %d)';
+  $q = 'SELECT nn.nid FROM {node} nn WHERE (nn.status = 1 OR nn.moderate = 1) ' . $nodetypes_query . ' AND ((nn.created > %d AND nn.created <= %d)';
   //include updated nodes?
-  $q .= variable_get('notify_include_updates',1) ? ' OR (nn.changed > %d AND nn.changed <= %d))' : '';  
+  $q .= variable_get('notify_include_updates', 1) ? ' OR (nn.changed > %d AND nn.changed <= %d))' : '';  
   $q .= ' ORDER BY nn.created';
   
   //Run the query, and load the nodes
@@ -465,7 +474,7 @@ function _notify_send() {
   // Fetch new comments.
   $comments = array();
   if (module_exists('comment')) {
-      $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name, c.status FROM {comments} c INNER JOIN {node} nn ON c.nid = nn.nid WHERE c.timestamp > %d AND c.timestamp <= %d '. $nodetypes_query . ' ORDER BY c.nid, c.timestamp', 'c'), $period, time());
+      $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name, c.status FROM {comments} c INNER JOIN {node} nn ON c.nid = nn.nid WHERE c.timestamp > %d AND c.timestamp <= %d ' . $nodetypes_query . ' ORDER BY c.nid, c.timestamp', 'c'), $period, time());
       while ($comment = db_fetch_object($cresult)) {
         $comments[$comment->nid][] = $comment;
       }
@@ -541,10 +550,12 @@ function _notify_send() {
           if ($comment->status != COMMENT_PUBLISHED) {
             if (user_access('administer comments')) {
               $status = t('Unpublished');
-            } else {
+            }
+            else {
               continue;
             }
-          } else { //it's pubilshed
+          }
+          else { //it's pubilshed
             $status = t('Published');
           }
   
@@ -629,7 +640,7 @@ function _notify_switch_user($uid = NULL) {
     $user = user_load(array('uid' => $uid));
   }
   // Retrieve the initial user, can be called multiple times.
-  else if (count($orig_user)) {
+  elseif (count($orig_user)) {
     $user = array_shift($orig_user);
     array_unshift($orig_user, $user);
     session_save_session(TRUE);
