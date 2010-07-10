@@ -122,12 +122,13 @@ function notify_cron() {
   $send_last = variable_get('notify_send_last', 0);
   $send_interval = variable_get('notify_send', 86400);
   $send_hour = variable_get('notify_send_hour', 9);
-  if ( (time() - $send_last > $send_interval)
-    && (date('G', time()) >= $send_hour || $send_interval < 86400)
+  $send_start = time();
+  if ( ($send_start - $send_last > $send_interval)
+    && (date('G', $send_start) >= $send_hour || $send_interval < 86400)
     && ($send_interval != -1) //special case of settings to send 'never'
       ) {
-    _notify_send();
-    variable_set('notify_send_last', time());
+    _notify_send($send_start);
+    variable_set('notify_send_last', $send_start);
   }
 }
 
@@ -367,8 +368,9 @@ function notify_admin_users_submit($form, &$form_state) {
   drupal_set_message(t('Notify settings saved.'));
 
   if ($form_state['values']['flush']) {
-    list($num_sent, $num_failed) = _notify_send();
-    variable_set('notify_send_last', time());
+    $send_start = time();
+    list($num_sent, $num_failed) = _notify_send($send_start);
+    variable_set('notify_send_last', $send_start);
 
     if ($num_sent > 0) {
       drupal_set_message(t('!count pending notification e-mails have been sent.', array('!count' => $num_sent)));
@@ -433,8 +435,9 @@ function _notify_content($node, $notify) {
  *
  * TODO: Needs some cleanup and themability.
  */
-function _notify_send() {
-  $period = variable_get('notify_send_last', time() - variable_get('notify_send', 86400));
+function _notify_send($send_start = NULL) {
+  $send_start = $send_start ? $send_start : time();
+  $period = variable_get('notify_send_last', $send_start - variable_get('notify_send', 86400));
   $separator = '------------------------------------------------------------------------------';
   $mini_separator = '---';
 
@@ -465,7 +468,7 @@ function _notify_send() {
   $q .= ' ORDER BY nn.created ASC';
 
   //Run the query, and load the nodes
-  $nresult = db_query(db_rewrite_sql($q), $period, time(), $period, time());
+  $nresult = db_query(db_rewrite_sql($q), $period, $send_start, $period, $send_start);
   $nodes = array();
   while ($node = db_fetch_object($nresult)) {
     $nodes[$node->nid] = node_load($node->nid);
@@ -474,7 +477,7 @@ function _notify_send() {
   // Fetch new comments.
   $comments = array();
   if (module_exists('comment')) {
-      $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name, c.status FROM {comments} c INNER JOIN {node} nn ON c.nid = nn.nid WHERE c.timestamp > %d AND c.timestamp <= %d ' . $nodetypes_query . ' ORDER BY c.nid, c.timestamp', 'c'), $period, time());
+      $cresult = db_query(db_rewrite_sql('SELECT c.nid, c.cid, c.subject, c.name, c.status FROM {comments} c INNER JOIN {node} nn ON c.nid = nn.nid WHERE c.timestamp > %d AND c.timestamp <= %d ' . $nodetypes_query . ' ORDER BY c.nid, c.timestamp', 'c'), $period, $send_start);
       while ($comment = db_fetch_object($cresult)) {
         $comments[$comment->nid][] = $comment;
       }
