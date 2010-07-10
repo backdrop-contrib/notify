@@ -546,26 +546,25 @@ function _notify_send() {
             continue;
           }
 
-          //Determine whether to show unpublished comments
-          if ($comment->status != COMMENT_PUBLISHED) {
-            if (user_access('administer comments')) {
-              $status = t('Unpublished');
-            }
-            else {
-              continue;
-            }
-          }
-          else { //it's pubilshed
-            $status = t('Published');
-          }
-
           if ($comment_body) {
             $comment_body .= $mini_separator ."\n\n";
           }
           $comment_body .= t('!count attached to !type posted by !author: !title', array('!count' => format_plural(count($comment), '1 new comment', '@count new comments'), '!title' => $nodes[$nid]->title, '!type' => node_get_types('name', $nodes[$nid]), '!author' => $nodes[$nid]->name ? $nodes[$nid]->name : variable_get('anonymous', 'Anonymous'))) ."\n";
 
           $comment_count = 0;
-          foreach ($comment as $c) {
+            foreach ($comment as $c) {
+            //Determine whether to show unpublished comments
+            if ($c->status != COMMENT_PUBLISHED) {
+              if (user_access('administer comments')) {
+                $status = t('Unpublished');
+              }
+              else {
+                continue; // No permission. Skip this comment.
+              }
+            }
+            else { // It's published.
+              $status = t('Published');
+            }
             $comment_body .= '   '. ++$comment_count .'. '. t('[!status] !title by !author',
                                                               array('!status' => $status,
                                                                     '!title' => $c->subject,
