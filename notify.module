@@ -553,19 +553,12 @@ function _notify_send() {
 
           $comment_count = 0;
             foreach ($comment as $c) {
-            //Determine whether to show unpublished comments
-            if ($c->status != COMMENT_PUBLISHED) {
-              if (user_access('administer comments')) {
-                $status = t('Unpublished');
-              }
-              else {
-                continue; // No permission. Skip this comment.
-              }
+            //Determine whether to show comment status
+            if (user_access('administer comments')) {
+              $status = $c->status == COMMENT_PUBLISHED ? t('Published') : t('Unpublished');
+              $status = " [$status]";
             }
-            else { // It's published.
-              $status = t('Published');
-            }
-            $comment_body .= '   '. ++$comment_count .'. '. t('[!status] !title by !author',
+            $comment_body .= '   '. ++$comment_count .'.'. t('!status !title by !author',
                                                               array('!status' => $status,
                                                                     '!title' => $c->subject,
                                                                     '!author' => ($c->name ? $c->name : variable_get('anonymous', 'Anonymous')))) ."\n"
