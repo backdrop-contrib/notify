@@ -12,7 +12,7 @@ http://drupal.org/project/issues/notify
 REQUIREMENTS
 ------------------------
 
-This module requires a supported version of Drupal and cron to be 
+This module requires a supported version of Drupal and cron to be
 running.
 
 ------------------------
@@ -55,6 +55,7 @@ RELATED PROJECTS & ALTERNATIVES
 
 http://drupal.org/project/notify_by_views
 http://drupal.org/project/subscriptions
+http://drupal.org/project/notifications
 
 ------------------------
 WISHLIST
