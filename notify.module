@@ -468,6 +468,7 @@ function _notify_send($send_start = NULL) {
   $q .= ' ORDER BY nn.created ASC';
 
   //Run the query, and load the nodes
+  _notify_switch_user(1); //Query as if user 1, we check for individual user access later.
   $nresult = db_query(db_rewrite_sql($q, 'nn'), $period, $send_start, $period, $send_start);
   $nodes = array();
   while ($node = db_fetch_object($nresult)) {
