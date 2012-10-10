@@ -6,8 +6,7 @@
 
 
 /**
- * @todo Please document this function.
- * @see http://drupal.org/node/1354
+ * Implements hook_schema()
  */
 function notify_schema() {
   $schema['notify'] = array(
@@ -62,28 +61,11 @@ function notify_schema() {
 }
 
 /**
- * @todo Please document this function.
- * @see http://drupal.org/node/1354
- */
-function notify_install() {
-  // Create my tables.
-  // TODO The drupal_(un)install_schema functions are called automatically in D7.
-  // drupal_install_schema('notify')
-}
-
-/**
- * @todo Please document this function.
- * @see http://drupal.org/node/1354
+ * Implements hook_uninstall()
  */
 function notify_uninstall() {
-  // Drop my tables.
-  // TODO The drupal_(un)install_schema functions are called automatically in D7.
-  // drupal_uninstall_schema('notify')
-
   //Delete my variables
   global $conf;
-  // TODO Please review the conversion of this statement to the D7 database API syntax.
-  /* db_query("DELETE FROM {variable} WHERE name LIKE 'notify_%'") */
   db_delete('variable')
   ->condition('name', 'notify_%', 'LIKE')
   ->execute();

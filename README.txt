@@ -22,13 +22,15 @@ INSTALLATION
 1. Extract the notify module directory, including all its subdirectories, into
    your sites/all/modules directory.
 
-2. Enable the notify module on the Administer >> Site building >> Modules page.
+2. Enable the notify module on the Modules list page.
    The database tables will be created automagically for you at this point.
 
-3. Modify permissions on the Administer >> Users >> Permissions page.
+3. Modify permissions on the People >> Permissions page.
 
-4. Go to Administer >> Content >> Notification settings and modify the settings
-   to your liking.
+4. Find the module in the Modules list page and click the Configuration link
+   to edit the settings to your liking.  You can also navigate directly to
+   admin/config/notify.
+
    Note: e-mail updates can only happen as frequently as the cron is setup to.
    Check your cron settings.
 
@@ -48,6 +50,10 @@ Kjartan Mannes <kjartan@drop.org> is the original author.
 Rob Barreca <rob@electronicinsight.com> was a previous maintainer.
 
 Matt Chapman <matt@ninjitsuweb.com> is the current maintainer.
+
+Ishmael Sanchez (http://ishmaelsanchez.com),
+Ward Poelmans <wpoely86@gmail.com> and
+John Oltman <john.oltman@sitebasin.com> co-developed the Drupal 7 port.
 
 ------------------------
 RELATED PROJECTS & ALTERNATIVES
