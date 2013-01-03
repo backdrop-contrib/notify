@@ -224,9 +224,6 @@ function notify_permission() {
 
 /**
  * Implements hook_menu().
- *
- * @return array
- *   Notifications settings menu.
  */
 function notify_menu() {
   $items = array();
@@ -554,6 +551,7 @@ function _notify_content($node, $notify) {
   switch ($notify->teasers) {
     case 0:
       return $txt;
+
     case 1:
       $content = node_view($node, 'teaser');
       if (isset($content['body'][0]['#markup'])) {
@@ -691,18 +689,35 @@ function _notify_send($send_start = NULL) {
             continue;
           }
 
+          $node_revs_list = node_revision_list($node);
+          $nrl_vals = array_values($node_revs_list);
+          $vers = array_shift($nrl_vals);
+
           // @TODO: Add functionality to hook into moderation modules?
           if ($node->status == 1) {
             $status = t('Published');
+            if (count($node_revs_list) > 1) {
+              $edit_status = t('last edited');
+            }
           }
           elseif ($node->status == 0) {
             $status = t('Unpublished');
+            if (count($node_revs_list) > 1) {
+              $edit_status = t('last edited');
+            }
           }
 
           if ($node_count > 0) {
             $node_body .= $mini_separator . "\n\n";
           }
           $node_body .= ++$node_count . '. ' . $node->title . "\n";
+          if (count($node_revs_list) > 1) {
+            $node_body .= t('!type was !edit_status by !author.', array(
+              '!type' => node_type_get_name($node),
+              '!edit_status' => $edit_status,
+              '!author' => ($vers->name ? $vers->name : variable_get('anonymous', 'Anonymous')),
+            )) . "\r\n";
+          }
           $node_body .= t('!status !type by !author', array(
             '!status' => $status,
             '!type' => node_type_get_name($node),
