@@ -29,10 +29,7 @@ INSTALLATION
 
 4. Find the module in the Modules list page and click the
    Configuration link to edit the settings to your liking.  You can
-   also navigate directly to admin/config/notify.
-
-   Note: e-mail updates can only happen as frequently as the cron is
-   setup to.  Check your cron settings.
+   also navigate directly to admin/config/people/notify.
 
 5. To enable your notification preferences, click on the "My
    notification settings" on the "My account" page. Or, similarly go
@@ -43,8 +40,14 @@ INSTALLATION
 USAGE
 ------------------------
 
-Additional options can be set at Administer >> User management >>
-Users by clicking the "Notification settings" tab.
+The administrative interface is at: Administer >> Configuration >>
+People >> Notification settings.  The Settings tab is for setting how
+often notifications are sent, and for selecting notification by note
+type.  The Users tab is to review and see per-user settings.
+
+When setting how often notifications are sent, note that e-mail
+updates can only happen as frequently as the cron is set to run.
+Check your cron settings.
 
 If you enable node revisions (http://drupal.org/node/320614), the
 notification e-mail will also mention the name of the last person to
