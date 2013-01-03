@@ -6,7 +6,7 @@
 
 
 /**
- * Implements hook_schema()
+ * Implements hook_schema().
  */
 function notify_schema() {
   $schema['notify'] = array(
@@ -61,10 +61,10 @@ function notify_schema() {
 }
 
 /**
- * Implements hook_uninstall()
+ * Implements hook_uninstall().
  */
 function notify_uninstall() {
-  //Delete my variables
+  // Delete my variables.
   global $conf;
   db_delete('variable')
   ->condition('name', 'notify_%', 'LIKE')

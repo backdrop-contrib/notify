@@ -74,7 +74,11 @@ function notify_admin_settings($form, &$form_state) {
     '#title' => t('Hour to Send Notifications'),
     '#description' => t('Specify the hour (24-hour clock) in which notifications should be sent, if the frequency is one day or greater.'),
     '#default_value' => variable_get('notify_send_hour', 9),
-    '#options' => array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23),
+    '#options' => array(
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+      20, 21, 22, 23,
+    ),
   );
 
   $form['notify_settings']['notify_attempts'] = array(
@@ -127,9 +131,10 @@ function notify_cron() {
   $send_interval = variable_get('notify_send', 86400);
   $send_hour = variable_get('notify_send_hour', 9);
   $send_start = REQUEST_TIME;
-  if ( ($send_start - $send_last > $send_interval)
+  if (($send_start - $send_last > $send_interval)
      && (date('G', $send_start) >= $send_hour || $send_interval < 86400)
-     && ($send_interval != -1) //special case of settings to send 'never'
+     && ($send_interval != -1)
+      // Special case of settings to send 'never'.
       ) {
     _notify_send($send_start);
     variable_set('notify_send_last', $send_start);
@@ -140,13 +145,14 @@ function notify_cron() {
  * Implements hook_user_cancel().
  */
 function notify_user_cancel($edit, $account, $method) {
+  global $user;
   db_delete('notify')
   ->condition('uid', $user->uid)
   ->execute();
 }
 
 /**
- * Implements hook_form_FORM_ID_alter()
+ * Implements hook_form_FORM_ID_alter().
  */
 function notify_form_user_register_form_alter(&$form, &$form_state, $form_id) {
   $form += _notify_user_reg_fields();
@@ -171,14 +177,14 @@ function notify_user_insert(&$edit, $account, $category) {
 }
 
 /**
- * Returns form fields to be added to User Regsitration form
+ * Returns form fields to be added to User Regsitration form.
  */
 function _notify_user_reg_fields() {
   if (!user_access('access notify')) {
     return array();
   }
 
-  // Get the variable for how often the notifications are sent out
+  // Get the variable for how often the notifications are sent out.
   $period = variable_get("notify_send", 86400);
 
   // Add a fieldset containing a checkbox for users to accept
@@ -188,7 +194,7 @@ function _notify_user_reg_fields() {
     '#title' => t('Email Notifications'),
   );
 
-  // Add the checkbox to the fieldset
+  // Add the checkbox to the fieldset.
   $fields['notify_agree']['notify_decision'] = array(
     '#type' => 'checkbox',
     '#title' => t('Receive email notifications of new content posted to this site. Notifications are sent every @interval.', array('@interval' => format_interval($period))),
@@ -220,13 +226,14 @@ function notify_permission() {
  * Implements hook_menu().
  *
  * @return array
+ *   Notifications settings menu.
  */
 function notify_menu() {
   $items = array();
 
   $items['admin/config/people/notify'] = array(
-    'title' => t('Notification settings'),
-    'description' => t('Adjust settings for new content notifications sent by e-mail.'),
+    'title' => 'Notification settings',
+    'description' => 'Adjust settings for new content notifications sent by e-mail.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('notify_admin_settings'),
     'access callback' => 'user_access',
@@ -234,12 +241,12 @@ function notify_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   $items['admin/config/people/notify/settings'] = array(
-    'title' => t('Settings'),
+    'title' => 'Settings',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
   $items['admin/config/people/notify/users'] = array(
-    'title' => t('Users'),
+    'title' => 'Users',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('notify_admin_users'),
     'access callback' => 'user_access',
@@ -247,7 +254,7 @@ function notify_menu() {
     'type' => MENU_LOCAL_TASK,
   );
   $items['user/%user/notify'] = array(
-    'title' => t('Notification settings'),
+    'title' => 'Notification settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('notify_user_settings_form', 1),
     'access callback' => 'notify_user_access',
@@ -259,7 +266,7 @@ function notify_menu() {
 }
 
 /**
- * Checks access to notifications settings tab
+ * Checks access to notifications settings tab.
  */
 function notify_user_access($account = NULL) {
   return $account->uid &&
@@ -273,10 +280,10 @@ function notify_user_access($account = NULL) {
 
 
 /**
- * Register the themeing the form data into a table at
- * admin/user/user/notify
+ * Register the form data theme into a table at admin/user/user/notify.
  *
  * @return array
+ *   form data theme.
  */
 function notify_theme() {
   return array(
@@ -293,7 +300,7 @@ function notify_theme() {
 function notify_user_settings_form($form, &$form_state, $arg) {
   global $user;
 
-  if ($user->uid != $arg->uid && !user_access('administer notify') ) {
+  if ($user->uid != $arg->uid && !user_access('administer notify')) {
     drupal_access_denied();
     return;
   }
@@ -316,6 +323,13 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#type' => 'fieldset',
     '#title' => t('Master switch'),
   );
+  // If user existed before notify was enabled, these are not set in db.
+  if (!isset($notify->status)) {
+    $notify->status = 0;
+    $notify->node = 0;
+    $notify->teasers = 0;
+    $notify->comment = 0;
+  }
   $form['notify_page_master']['status'] = array(
     '#type' => 'radios',
     '#title' => t('Notify status'),
@@ -339,7 +353,12 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#type' => 'radios',
     '#title' => t('Content'),
     '#default_value' => $notify->teasers,
-    '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body'), t('Title + Body + Fields')),
+    '#options' => array(
+      t('Title only'),
+      t('Title + Teaser'),
+      t('Title + Body'),
+      t('Title + Body + Fields'),
+    ),
     '#description' => t('Select the amount of each post that you would like to see in your notification e-mails.'),
   );
   $form['notify_page_detailed']['comment'] = array(
@@ -362,7 +381,7 @@ function notify_user_settings_form($form, &$form_state, $arg) {
 }
 
 /**
- * Submit for the notify_user_settings form
+ * Submit for the notify_user_settings form.
  */
 function notify_user_settings_form_submit($form, &$form_state) {
   unset($form);
@@ -392,7 +411,7 @@ function notify_admin_users($form, &$form_state) {
 
   $form['users'] = array();
 
-  // Fetch users with notify enabled
+  // Fetch users with notify enabled.
   $q = db_select('notify', 'n');
   $q->join('users', 'u', 'n.uid = u.uid');
   $q->fields('u', array('uid', 'name', 'mail', 'language'));
@@ -417,7 +436,12 @@ function notify_admin_users($form, &$form_state) {
     $form['users'][$user->uid]['teasers'] = array(
       '#type' => 'select',
       '#default_value' => $user->teasers,
-      '#options' => array(t('Title only'), t('Title + Teaser'), t('Title + Body'), t('Title + Body + Fields')),
+      '#options' => array(
+        t('Title only'),
+        t('Title + Teaser'),
+        t('Title + Body'),
+        t('Title + Body + Fields'),
+      ),
     );
     $form['users'][$user->uid]['comment'] = array(
       '#type' => 'checkbox',
@@ -454,14 +478,14 @@ function notify_admin_users_submit($form, &$form_state) {
   if ($form_state['values']['users']) {
     foreach ($form_state['values']['users'] as $uid => $settings) {
       db_update('notify')
-  ->fields(array(
+      ->fields(array(
         'node' => $settings['node'],
         'teasers' => $settings['teasers'],
         'comment' => $settings['comment'],
         'attempts' => $settings['attempts'],
       ))
-  ->condition('uid', $uid)
-  ->execute();
+      ->condition('uid', $uid)
+      ->execute();
     }
   }
   drupal_set_message(t('Notify settings saved.'));
@@ -489,7 +513,14 @@ function notify_admin_users_submit($form, &$form_state) {
 function theme_notify_admin_users($variables) {
   $form = $variables['form'];
   $output = drupal_render($form['info']);
-  $header = array(t('Username'), t('E-mail address'), t('Content'), t('Teasers'), t('Comment'), t('Failed attempts'));
+  $header = array(
+    t('Username'),
+    t('E-mail address'),
+    t('Content'),
+    t('Teasers'),
+    t('Comment'),
+    t('Failed attempts'),
+  );
 
   $rows = array();
   foreach (element_children($form['users']) as $uid) {
@@ -515,7 +546,7 @@ function theme_notify_admin_users($variables) {
 }
 
 /**
- * Formatting of outgoing mail, taken from mail.inc, part of project.module
+ * Formatting of outgoing mail, taken from mail.inc, part of project.module.
  */
 function _notify_content($node, $notify) {
   $txt = '';
@@ -524,29 +555,29 @@ function _notify_content($node, $notify) {
     case 0:
       return $txt;
     case 1:
-      $content = node_view($node,'teaser');
+      $content = node_view($node, 'teaser');
       if (isset($content['body'][0]['#markup'])) {
         $txt = $content['body'][0]['#markup'];
       }
       break;
+
     case 2:
-      $content = node_view($node,'full');
+      $content = node_view($node, 'full');
       if (isset($content['body'][0]['#markup'])) {
         $txt = $content['body'][0]['#markup'];
       }
       break;
+
     case 3:
-      $content = node_view($node,'full');
-      // run of all children so that every attacked field is also included
+      $content = node_view($node, 'full');
+      // Run of all children so that every attacked field is also included.
       $children = element_children($content, TRUE);
 
-      foreach($children as $child)
-      {
-	  if(isset($content[$child]['#title']) && isset($content[$child][0]['#markup']))
-	  {
-	      $txt .= $content[$child]['#title'] . ': ';
-	      $txt .= $content[$child][0]['#markup'] . "\n\n";
-	  }
+      foreach ($children as $child) {
+        if (isset($content[$child]['#title']) && isset($content[$child][0]['#markup'])) {
+          $txt .= $content[$child]['#title'] . ': ';
+          $txt .= $content[$child][0]['#markup'] . "\n\n";
+        }
       }
   }
 
@@ -567,9 +598,10 @@ function _notify_send($send_start = NULL) {
   $num_sent = 0;
   $num_failed = 0;
 
-  _notify_switch_user(); // Store current user
+  // Store current user.
+  _notify_switch_user();
 
-  // Fetch all node type authorized by notify settings
+  // Fetch all node type authorized by notify settings.
   $ntype = array();
   foreach (node_type_get_types() as $type => $name) {
     if (variable_get(NOTIFY_NODE_TYPE . $type, 0)) {
@@ -577,7 +609,7 @@ function _notify_send($send_start = NULL) {
     }
   }
 
-  // build query to fetch desired nodes.
+  // Build query to fetch desired nodes.
   $q = db_select('node', 'n');
   $q->fields('n', array('nid'));
   $q->condition('status', 1);
@@ -587,15 +619,17 @@ function _notify_send($send_start = NULL) {
   if (variable_get('notify_include_updates', 1)) {
     $q->condition(db_or()->condition(db_and()->condition('n.created', $period, '>')->condition('n.created', $send_start, '<='))
                          ->condition(db_and()->condition('n.changed', $period, '>')->condition('n.changed', $send_start, '<=')));
-  } else {
+  }
+  else {
     $q->condition('n.created', $period, '>');
     $q->condition('n.created', $send_start, '<=');
   }
   $q->orderBy('n.created', 'asc');
   $result = $q->execute();
 
-  //Run the query, and load the nodes
-  _notify_switch_user(1); //Query as if user 1, we check for individual user access later.
+  // Run the query, and load the nodes.
+  // Query as if user 1, we check for individual user access later.
+  _notify_switch_user(1);
   $nodes = array();
   foreach ($result as $node) {
     $nodes[$node->nid] = node_load($node->nid);
@@ -613,7 +647,8 @@ function _notify_send($send_start = NULL) {
     if (variable_get('notify_include_updates', 1)) {
       $q->condition(db_or()->condition(db_and()->condition('c.created', $period, '>')->condition('c.created', $send_start, '<='))
                            ->condition(db_and()->condition('c.changed', $period, '>')->condition('c.changed', $send_start, '<=')));
-    } else {
+    }
+    else {
       $q->condition('c.created', $period, '>');
       $q->condition('c.created', $send_start, '<=');
     }
@@ -628,7 +663,7 @@ function _notify_send($send_start = NULL) {
 
   if (count($nodes) || count($comments)) {
 
-    // Fetch users with notify enabled
+    // Fetch users with notify enabled.
     $q = db_select('notify', 'n');
     $q->join('users', 'u', 'n.uid = u.uid');
     $q->fields('u', array('uid', 'name', 'mail', 'language'));
@@ -646,7 +681,7 @@ function _notify_send($send_start = NULL) {
       $comment_body = '';
 
       // Write new node content to e-mail if user has permissions and nodes are
-      // ready to be sent. @TODO - cache by role
+      // ready to be sent. @TODO - cache by role.
       if ($user->node && user_access('access content') && count($nodes)) {
 
         $node_count = 0;
@@ -668,22 +703,28 @@ function _notify_send($send_start = NULL) {
             $node_body .= $mini_separator . "\n\n";
           }
           $node_body .= ++$node_count . '. ' . $node->title . "\n";
-          $node_body .= t('!status !type by !author', array('!status' => $status, '!type' => node_type_get_name($node), '!author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')))) . "\n";
-          $node_body .= '[ ' . url('node/' . $node->nid, array('absolute' => TRUE)) . " ]\n\n";
+          $node_body .= t('!status !type by !author', array(
+            '!status' => $status,
+            '!type' => node_type_get_name($node),
+            '!author' => ($node->name ? $node->name : variable_get('anonymous', 'Anonymous')),
+          )) . "\n";
+          $node_body .= '[ ' . url('node/' . $node->nid, array(
+            'absolute' => TRUE,
+          )) . " ]\n\n";
           $node_body .= _notify_content($node, $user) . "\n";
         }
 
-        // Prepend node e-mail header as long as user could access at least one node.
+        // Prepend node e-mail header as long as user could access at
+        // least one node.
         if ($node_count > 0) {
-          $node_body = $separator . "\n"
-            . t('Recent content - !count', array('!count' => format_plural(count($nodes), '1 new post', '@count new posts'))) . "\n"
-            . $separator . "\n\n" . $node_body;
+          $node_body = $separator . "\n" . t('Recent content - !count', array(
+            '!count' => format_plural(count($nodes), '1 new post', '@count new posts'),
+          )) . "\n" . $separator . "\n\n" . $node_body;
         }
       }
 
       // Write new comments to e-mail if user has permissions and there are
       // comments to be sent.
-
       if ($user->comment && user_access('access comments') && count($comments)) {
         $total_comment_count = 0;
         foreach ($comments as $nid => $comment) {
@@ -692,7 +733,7 @@ function _notify_send($send_start = NULL) {
             $node = node_load($nid);
           }
           else {
-            $node = $node[$nid];
+            $node = $nodes[$nid];
           }
 
           // Don't show comments if we're not allowed to view this node.
@@ -703,11 +744,16 @@ function _notify_send($send_start = NULL) {
           if ($comment_body) {
             $comment_body .= $mini_separator . "\n\n";
           }
-          $comment_body .= t('!count attached to !type posted by !author: !title', array('!count' => format_plural(count($comment), '1 new comment', '@count new comments'), '!title' => $node->title, '!type' => node_type_get_name($node), '!author' => $node->name ? $node->name : variable_get('anonymous', 'Anonymous'))) . "\n";
+          $comment_body .= t('!count attached to !type posted by !author: !title', array(
+            '!count' => format_plural(count($comment), '1 new comment', '@count new comments'),
+            '!title' => $node->title,
+            '!type'  => node_type_get_name($node),
+            '!author' => $node->name ? $node->name : variable_get('anonymous', 'Anonymous'),
+          )) . "\n";
 
           $comment_count = 0;
           foreach ($comment as $c) {
-            //Determine whether to show comment status
+            // Determine whether to show comment status.
             if (user_access('administer comments')) {
               $status = $c->status == COMMENT_PUBLISHED ? t('Published') : t('Unpublished');
               $status = " [$status]";
@@ -721,16 +767,16 @@ function _notify_send($send_start = NULL) {
             $comment_loaded = comment_load($c->cid);
             if (isset($comment_loaded->comment_body[$comment_loaded->language][0]['value'])) {
               $format = $comment_loaded->comment_body[$comment_loaded->language][0]['format'];
-              $comment_body .= drupal_html_to_text(check_markup($comment_loaded->comment_body[$comment_loaded->language][0]['value'], $format, $comment_loaded->language, FALSE)) . "\n\n" ;
+              $comment_body .= drupal_html_to_text(check_markup($comment_loaded->comment_body[$comment_loaded->language][0]['value'], $format, $comment_loaded->language, FALSE)) . "\n\n";
             }
             $total_comment_count++;
           }
         }
 
         if ($total_comment_count > 0) {
-          $comment_body = $separator . "\n"
-            . t('Recent comments - !count', array('!count' => format_plural($total_comment_count, '1 new comment', '@count new comments'))) . "\n"
-            . $separator . "\n\n" . $comment_body;
+          $comment_body = $separator . "\n" . t('Recent comments - !count', array(
+            '!count' => format_plural($total_comment_count, '1 new comment', '@count new comments'),
+          )) . "\n" . $separator . "\n\n" . $comment_body;
         }
       }
 
@@ -739,8 +785,8 @@ function _notify_send($send_start = NULL) {
       // If there was anything new, send mail.
       if ($body) {
         // Set up initial values for e-mail.
-
-        $headers = array(); //'From' => "$from_name <$from>");
+        $headers = array();
+        // 'From' => "$from_name <$from>");
         if (!drupal_mail('notify', 'send', $user->mail, user_preferred_language($user), array('content' => $body))) {
           $num_failed++;
           db_update('notify')
@@ -762,20 +808,25 @@ function _notify_send($send_start = NULL) {
 }
 
 /**
- * Implementation of hook_mail().
+ * Implements hook_mail().
  */
 function notify_mail($key, &$message, $params) {
   global $user;
 
   $message['headers']['MIME-Version'] = '1.0';
   $message['headers']['Content-Type'] = 'text/plain;charset=utf-8';
-
-  $message['subject'] = t('!sitename new content notification for !username', array('!username' => $user->name, '!sitename' => variable_get('site_name', 'Drupal')));
+  $message['subject'] = t('!sitename new content notification for !username', array(
+    '!username' => $user->name,
+    '!sitename' => variable_get('site_name', 'Drupal'),
+  ));
   $message['body'][] = t('Greetings !user,', array('!user' => $user->name)) . "\n\n";
   $message['body'][] = $params['content'];
   $message['body'][] = "\n-- \n";
-  $message['body'][] = t('This is an automatic e-mail from !sitename.', array('!sitename' => variable_get('site_name', 'Drupal'))) . "\n";
-  $message['body'][] = t('To stop receiving these e-mails, change your notification preferences at !notify-url', array('!notify-url' => url("user/$user->uid/notify", array('absolute' => TRUE)))) . "\n";
+  $message['body'][] = t('This is an automatic e-mail from !sitename.',
+    array('!sitename' => variable_get('site_name', 'Drupal'))) . "\n";
+  $message['body'][] = t('To stop receiving these e-mails, change your notification preferences at !notify-url', array(
+    '!notify-url' => url("user/$user->uid/notify", array('absolute' => TRUE)),
+  )) . "\n";
 }
 
 /**
@@ -787,15 +838,18 @@ function notify_mail($key, &$message, $params) {
  * argument to store the current user. Call _notify_switch_user
  * without argument to set the user back to the original user.
  *
- * @param $uid The user ID to switch to
+ * @param int $uid
+ *   The user ID to switch to.
  */
 function _notify_switch_user($uid = NULL) {
   global $user;
   static $orig_user = array();
 
   if (isset($uid)) {
-    // Should a user visit cron.php, or should this module be invoked via poormanscron and _notify_send() does not complete,
-    // the visitor will end up logged in as the "switched to user" for subsequent requests unless we disable saving the session
+    // Should a user visit cron.php, or should this module be invoked
+    // via poormanscron and _notify_send() does not complete, the
+    // visitor will end up logged in as the "switched to user" for
+    // subsequent requests unless we disable saving the session
     // until we are sure we're the invoking user again.
     drupal_save_session(FALSE);
     $user = user_load($uid);
