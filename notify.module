@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Notify module sends email digests of new content and comments.
+ * Notify module sends e-mail digests of new content and comments.
  *
  * The notification module allows users to subscribe to periodic e-mails which
  * include all new or revised content and/or comments much like the daily news
@@ -23,14 +23,33 @@ function notify_help($section) {
       $output .= '<p>' . t('The administrator sets the frequency of the e-mails in the notify administration interface. They can also set how many e-mail failures should occur before notify stops sending notifications.  Note that cron must be enabled for notifications to be sent out.') . '</p>';
       $output .= '<p>'  . t('You can:</p><ul><li>set up your site to run tasks automatically at required intervals. For more information, see <a href="@cron">cron</a>.', array('@cron' => url('admin/config/system/cron'))) . '</li>';
       $output .= '<li>' . t('administer <a href="@notify">notify settings', array('@notify' => url('admin/config/people/notify'))) . '</a>.</li>';
-      $output .= '<li>' . t('administer <a href="@notifu">notify users', array('@notifu' => url('admin/config/people/notify/users'))) . '</a>.</li></ul>';
+      $output .= '<li>' . t('administer <a href="@notifu">notify users and batch operations', array('@notifu' => url('admin/config/people/notify/users'))) . '</a>.</li>';
       $output .= '<p>'  . t('For more information please read the community documentation handbook <a href="@notifyhb">Notify page</a>.', array('@notifyhb' => 'http://www.drupal.org/handbook/modules/notify/')) . '</p>';
       return $output;
   }
 }
 
 /**
- * Menu callback; display notify settings page.
+ * Submit for the notify_admin_settings form.
+ */
+function notify_admin_settings_submit($form, &$form_state) {
+  variable_set('notify_send', $form_state['values']['notify_send']);
+  variable_set('notify_send_hour', $form_state['values']['notify_send_hour']);
+  variable_set('notify_attempts', $form_state['values']['notify_attempts']);
+  variable_set('notify_include_updates', $form_state['values']['notify_include_updates']);
+  variable_set('notify_reg_default', $form_state['values']['notify_reg_default']);
+  foreach (node_type_get_types() as $type => $object) {
+    $ntype = 'notify_node_type_' . $type;
+    variable_set($ntype, $form_state['values'][$ntype]);
+  }
+  $last  = variable_get('notify_send_last', 0);
+  _notify_next_notificaton($last, TRUE);
+  drupal_set_message(t('Notify admin settings saved.'));
+}
+
+
+/**
+ * Menu callback, show admin notification settings form.
  */
 function notify_admin_settings($form, &$form_state) {
   $period = array(
@@ -90,18 +109,37 @@ function notify_admin_settings($form, &$form_state) {
     '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
   );
 
-  $form['notify_settings']['notify_reg_default'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Notification checkbox default on new user registration form'),
-    '#return_value' => 1,
-    '#default_value' => variable_get('notify_reg_default', 1),
-  );
-
   $form['notify_settings']['notify_include_updates'] = array(
     '#type' => 'checkbox',
     '#title' => t('Include updated posts in notifications'),
     '#return_value' => 1,
     '#default_value' => variable_get('notify_include_updates', 1),
+  );
+
+  /*
+  TODO;
+  $form['notify_settings']['notify_unpublished'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Administrator to be notified about unpublished'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('notify_unpublished', 1),
+  );
+  */
+
+  $set = 'defaults';
+  $form['notify_defaults'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Notification default for new users'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('The default master switch for new users (check for enabled, uncheck for disabled).'),
+  );
+
+  $form['notify_defaults']['notify_reg_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Receive e-mail notifications'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('notify_reg_default', 1),
   );
 
   $set = 'ntype';
@@ -122,24 +160,128 @@ function notify_admin_settings($form, &$form_state) {
     );
   }
 
-  return system_settings_form($form);
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save settings'),
+  );
+
+  //return system_settings_form($form);
+  return ($form);
 }
+
+/**
+ * Helper function to count nodes and comments queued for notification
+ *
+ * @return array
+ *   nodes comments
+ */
+function _notify_count_nodes() {
+  $now = REQUEST_TIME;
+  $period = variable_get('notify_send_last', $now - variable_get('notify_send', 86400));
+
+  // Fetch all node type authorized by notify settings.
+  $ntype = array();
+  foreach (node_type_get_types() as $type => $name) {
+    if (variable_get(NOTIFY_NODE_TYPE . $type, 0)) {
+      $ntype[] = $type;
+    }
+  }
+
+  // Build query to fetch desired nodes.
+  $q = db_select('node', 'n');
+  $q->fields('n', array('nid'));
+  $q->condition('status', 1);
+  if (count($ntype) >= 1) {
+    $q->condition('n.type', $ntype, 'IN');
+  }
+  if (variable_get('notify_include_updates', 1)) {
+    $q->condition(db_or()->condition(db_and()->condition('n.created', $period, '>')->condition('n.created', $now, '<='))
+                         ->condition(db_and()->condition('n.changed', $period, '>')->condition('n.changed', $now, '<=')));
+  }
+  else {
+    $q->condition('n.created', $period, '>');
+    $q->condition('n.created', $now, '<=');
+  }
+  $q->orderBy('n.created', 'asc');
+  $result = $q->execute();
+  $nodes = $result->rowCount();
+
+  // Fetch new comments.
+  $comments = array();
+  if (module_exists('comment')) {
+    $q = db_select('comment', 'c');
+    $q->join('node', 'n', 'c.nid = n.nid');
+    $q->fields('c');
+    if (count($ntype) >= 1) {
+      $q->condition('n.type', $ntype, 'IN');
+    }
+    if (variable_get('notify_include_updates', 1)) {
+      $q->condition(db_or()->condition(db_and()->condition('c.created', $period, '>')->condition('c.created', $now, '<='))
+                           ->condition(db_and()->condition('c.changed', $period, '>')->condition('c.changed', $now, '<=')));
+    }
+    else {
+      $q->condition('c.created', $period, '>');
+      $q->condition('c.created', $now, '<=');
+    }
+    $q->orderBy('c.nid', 'asc');
+    $q->orderBy('c.changed', 'asc');
+    $cresult = $q->execute();
+    $comments = $cresult->rowCount();
+
+  }
+
+  return array($nodes, $comments);
+}
+
+
+
+
+
+
+/**
+ * Compute the next time a notification should be sent.
+ * 
+ * @param int $send_last
+ *   timestamp of last notification
+ *
+ * @return int
+ *   -1 never, 0 send instantly, else next time to notify.
+ */
+function _notify_next_notificaton($send_last, $reset=0) {
+  $send_interval = variable_get('notify_send', 86400);
+  if ($send_interval < 0) {
+    return(-1);
+  }
+  $next_last = $next_frst = $send_last + $send_interval;
+  $next = variable_get('notify_send_next', 0);
+  if (REQUEST_TIME >= $next_frst) {
+    return(0);
+  }
+  // dpm($next);
+  if (!$next || $reset) {
+    $send_hour  = variable_get('notify_send_hour',  0);
+
+
+    if ($send_interval >= 86400) {
+      $next_last = strtotime(date('Y-m-d ', $next_frst) . $send_hour . ':00:00');
+      if ($next_last < REQUEST_TIME) $next_last += 86400;
+    }
+    variable_set('notify_send_next', $next_last);
+    return($next_last);
+  }
+  return($next);
+}
+
 
 /**
  * Implements hook_cron().
  */
 function notify_cron() {
-  $send_last = variable_get('notify_send_last', 0);
-  $send_interval = variable_get('notify_send', 86400);
-  $send_hour = variable_get('notify_send_hour', 9);
-  $send_start = REQUEST_TIME;
-  if (($send_start - $send_last > $send_interval)
-     && (date('G', $send_start) >= $send_hour || $send_interval < 86400)
-     && ($send_interval != -1)
-      // Special case of settings to send 'never'.
-      ) {
-    _notify_send($send_start);
-    variable_set('notify_send_last', $send_start);
+  $now = REQUEST_TIME;
+  $last  = variable_get('notify_send_last', 0);
+  $next = _notify_next_notificaton($last);
+  if ($now > $next) {
+    _notify_send($now);
   }
 }
 
@@ -193,13 +335,13 @@ function _notify_user_reg_fields() {
   // getting updates on the registration form.
   $fields['notify_agree'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Email Notifications'),
+    '#title' => t('E-mail Notifications'),
   );
 
   // Add the checkbox to the fieldset.
   $fields['notify_agree']['notify_decision'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Receive email notifications of new content posted to this site. Notifications are sent every @interval.', array('@interval' => format_interval($period))),
+    '#title' => t('Receive e-mail notifications of new content posted to this site. Notifications are sent every @interval.', array('@interval' => format_interval($period))),
     '#return_value' => 1,
     '#default_value' => variable_get('notify_reg_default', 1),
   );
@@ -251,6 +393,7 @@ function notify_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer notify'),
     'type' => MENU_LOCAL_TASK,
+    'weight' => -9,
   );
   $items['user/%user/notify'] = array(
     'title' => 'Notification settings',
@@ -334,7 +477,7 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#title' => t('Notify status'),
     '#default_value' => $notify->status,
     '#options' => array(t('Disabled'), t('Enabled')),
-    '#description' => t('Do you wish to receive periodic e-mails when new content is posted?'),
+    '#description' => t('The master switch overrides all other settings for Notify.  You can use it to suspend notifications without having to disturb any of your options under &#8220;Detailed setting&#8221;.'),
   );
 
   $form['notify_page_detailed'] = array(
@@ -401,10 +544,38 @@ function notify_user_settings_form_submit($form, &$form_state) {
 }
 
 /**
- * Menu callback; show admininster user notification settings form.
+ * Menu callback, show admin list of user notification settings.
  */
 function notify_admin_users($form, &$form_state) {
+  $send_last  = variable_get('notify_send_last', 0);
+  $next_last = _notify_next_notificaton($send_last);
+  $sent = variable_get('notify_num_sent', 0);
+  if ($sent == 0) {
+    $sent = t('No e-mails were sent');
+  }
+  elseif ($sent > 0) {
+    $sent = t('sent ') . format_plural($sent, '1 e-mail', '@count e-mails');
+  }
+  else {
+    $sent = -$sent;
+    $sent = t('sending ') . format_plural($sent, '1 e-mail', '@count e-mails') . t(' failed');
+  }
+
+  $last = $send_last ? format_date($send_last, 'short') : t('never.');
+
+  if ($next_last == -1) {
+    $batch_msg = t('No more notifications scheduled');
+  } elseif ($next_last == 0) {
+    $batch_msg = t('the next notification is scheduled for the next cron run');
+  }
+  else {
+    $next = format_date($next_last, 'short');
+    $batch_msg = t('The next notification is scheduled for the first cron run after ') . $next;
+  }
+  $schedule = t('Last notification ran ') . $last . ' (' . $sent . '). ' . $batch_msg . '.';
+
   $form = array();
+
   $form['#tree'] = TRUE;
   $form['info'] = array('#value' => t('The following table shows all users that have notifications enabled.'));
 
@@ -457,23 +628,53 @@ function notify_admin_users($form, &$form_state) {
     '#title' => t('Flush e-mail queue'),
     '#type' => 'checkbox',
     '#default_value' => FALSE,
-    '#description' => t('Send out any pending notification e-mails currently in queue.'),
+    '#description' => t('Check to send out any pending notification e-mails currently in queue.'),
   );
+
+  /*
+  TODO
+  $form['bulk'] = array(
+    '#title' => t('Batch subscribe all users'),
+    '#type' => 'checkbox',
+    '#default_value' => FALSE,
+    '#description' => t('Set the master switch for all users to enabled.'),
+  );
+  */
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Save settings'),
+    '#value' => t('Save settings / Execute'),
+  );
+
+  $form['batch'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Status'),
+    '#collapsible' => TRUE,
+  );
+
+  list ($c_node, $c_comm) = _notify_count_nodes();
+  $s_node = format_plural($c_node, '1 node', '@count nodes');
+  $s_comm = format_plural($c_comm, '1 comment', '@count comments');
+
+  // $db_next = variable_get('notify_send_next', -13); if ($db_next > 0) $db_next = format_date($db_next, 'short'); // DB
+
+  $form['batch']['schedule'] = array(
+    '#markup' => $schedule . '<br/>' . t('Queued for next notificantion are ') . $s_node . ', and ' . $s_comm. '.',
   );
 
   return $form;
 }
 
 /**
- * Submit for the notify_admin form.
+ * Submit for the notify_admin_users form.
  */
 function notify_admin_users_submit($form, &$form_state) {
   unset($form);
 
+  if (!array_key_exists('users', $form_state['values'])) {
+    drupal_set_message('No users have notifications enabled.', 'error');
+    return;
+  }
   if ($form_state['values']['users']) {
     foreach ($form_state['values']['users'] as $uid => $settings) {
       db_update('notify')
@@ -487,23 +688,31 @@ function notify_admin_users_submit($form, &$form_state) {
       ->execute();
     }
   }
-  drupal_set_message(t('Notify settings saved.'));
+  drupal_set_message(t('Notify settings saved / batch executed.'));
 
   if ($form_state['values']['flush']) {
     $send_start = REQUEST_TIME;
     list($num_sent, $num_failed) = _notify_send($send_start);
-    variable_set('notify_send_last', $send_start);
 
     if ($num_sent > 0) {
       drupal_set_message(t('!count pending notification e-mails have been sent.', array('!count' => $num_sent)));
+      variable_set('notify_num_sent', $num_sent);
     }
     elseif ($num_failed > 0) {
       drupal_set_message(t('!count notification e-mails could not be sent.', array('!count' => $num_failed)), 'error');
+      variable_set('notify_num_sent', 0-$num_sent);
     }
     else {
       drupal_set_message(t('No notification e-mails needed to be sent.'));
+      variable_set('notify_num_sent', 0);
     }
   }
+
+/*
+  if ($form_state['values']['bulk']) {
+    drupal_set_message(t('Batch subscribe is planned for a future release, but not implemented yet.'));
+  }
+*/
 }
 
 /**
@@ -585,7 +794,7 @@ function _notify_content($node, $notify) {
 }
 
 /**
- * Helper function to send the notification email.
+ * Helper function to send the notification e-mail.
  *
  * TODO: Needs some cleanup and themability.
  */
@@ -626,6 +835,7 @@ function _notify_send($send_start = NULL) {
   }
   $q->orderBy('n.created', 'asc');
   $result = $q->execute();
+  $c_nodes = $result->rowCount();
 
   // Run the query, and load the nodes.
   // Query as if user 1, we check for individual user access later.
@@ -780,7 +990,7 @@ function _notify_send($send_start = NULL) {
             )) . "\n"
               . '     ' . url('node/' . $nid, array('fragment' => 'comment-' . $c->cid, 'absolute' => TRUE)) . "\n\n";
 
-            /* @TODO - some people may not want comment body in the email, so make it an option instead of always included */
+            /* @TODO - some people may not want comment body in the e-mail, so make it an option instead of always included */
             $comment_loaded = comment_load($c->cid);
             if (isset($comment_loaded->comment_body[$comment_loaded->language][0]['value'])) {
               $format = $comment_loaded->comment_body[$comment_loaded->language][0]['format'];
@@ -819,8 +1029,9 @@ function _notify_send($send_start = NULL) {
       }
     }
   }
-  // Restore user.
-  _notify_switch_user();
+  variable_set('notify_send_last', $send_start);
+  variable_set('notify_send_next', 0);
+  _notify_switch_user();   // Restore user.
   return array($num_sent, $num_failed);
 }
 

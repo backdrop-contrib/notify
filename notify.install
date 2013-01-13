@@ -70,5 +70,5 @@ function notify_uninstall() {
   ->condition('name', 'notify_%', 'LIKE')
   ->execute();
   cache_clear_all('variables', 'cache');
-  unset($conf[$name]);
+  unset($conf);
 }

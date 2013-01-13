@@ -53,6 +53,9 @@ If you enable node revisions (http://drupal.org/node/320614), the
 notification e-mail will also mention the name of the last person to
 edit the node.
 
+To let new users opt in for notifications during registration, you
+must grant the anonymous user the right to access notify.
+
 ------------------------
 AUTHOR / MAINTAINER
 ------------------------
