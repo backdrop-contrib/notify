@@ -463,13 +463,17 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     return;
   }
 
-  $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = :uid AND u.status = :status', array(':uid' => $account->uid, ':status' => 1));
-  $notify = $result->fetchObject();
+  $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = :uid', array(':uid' => $account->uid));
+  if (0==$result->rowCount())
+    $notify = NULL; // Internal error.
+  else
+    $notify = $result->fetchObject();
 
   $form = array();
   if (!$notify->mail) {
     drupal_set_message(t('Your e-mail address must be specified on your <a href="@url">my account</a> page.', array('@url' => url('user/' . $account->uid . '/edit'))), 'error');
   }
+
 
   $form['notify_page_master'] = array(
     '#type' => 'fieldset',

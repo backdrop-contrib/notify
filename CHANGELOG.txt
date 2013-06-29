@@ -1,3 +1,12 @@
+2013-06-29:  Gisle Hannemyr <gisle@hannemyr.no>
+- By gisle: Allow access to notification settings for blocked users.
+
+2013-05-13: Gisle Hannemyr <gisle@hannemyr.no>
+- #1992788 by mark.lindsey: Deleted comments are deleted from queue.
+
+2013-05-12: Gisle Hannemyr <gisle@hannemyr.no>
+- #1992788 by mark.lindsey:  D7 Users Are Notified About New Unpublished Comments.
+
 2013-01-13: Gisle Hannemyr <gisle@hannemyr.no>
 - #92206 by gisle: Made the purpose of default checkbox clearer.
   By gisle: changed "email" to "e-mail" (as used by the core).
@@ -17,4 +26,4 @@
 - #1159632 by wpoely86: More work on D7 port
 
 2011-07-23: Ishmael Sanchez <me@ishmaelsanchez.com>
-- Issue #1159632 by Ishmael Sanchez: Initial port to D7
+- #1159632 by Ishmael Sanchez: Initial port to D7
