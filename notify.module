@@ -816,7 +816,7 @@ function _notify_send($send_start = NULL) {
   $send_start = $send_start ? $send_start : REQUEST_TIME;
   $period = variable_get('notify_send_last', $send_start - variable_get('notify_send', 86400));
   $separator = '------------------------------------------------------------------------------';
-  $mini_separator = '---';
+  $mini_separator = '----';
 
   $num_sent = 0;
   $num_failed = 0;
@@ -962,7 +962,7 @@ function _notify_send($send_start = NULL) {
               '!type' => node_type_get_name($node),
               '!edit_status' => $edit_status,
               '!author' => ($vers->name ? $vers->name : variable_get('anonymous', 'Anonymous')),
-            )) . "\r\n";
+            )) . "\n";
           }
           $node_body .= t('!status !type by !author', array(
             '!status' => $status,
@@ -1081,14 +1081,14 @@ function notify_mail($key, &$message, $params) {
     '!username' => $user->name,
     '!sitename' => variable_get('site_name', 'Drupal'),
   ));
-  $message['body'][] = t('Greetings !user,', array('!user' => $user->name)) . "\n\n";
+  $message['body'][] = t('Greetings !user,', array('!user' => $user->name));
   $message['body'][] = $params['content'];
-  $message['body'][] = "\n-- \n";
-  $message['body'][] = t('This is an automatic e-mail from !sitename.',
-    array('!sitename' => variable_get('site_name', 'Drupal'))) . "\n";
-  $message['body'][] = t('To stop receiving these e-mails, change your notification preferences at !notify-url', array(
-    '!notify-url' => url("user/$user->uid/notify", array('absolute' => TRUE)),
-  )) . "\n";
+  $message['body'][] = "-- \n" .
+    t('This is an automatic e-mail from !sitename.',
+      array('!sitename' => variable_get('site_name', 'Drupal'))) . "\n" .
+    t('To stop receiving these e-mails, change your notification preferences at !notify-url', array(
+      '!notify-url' => url("user/$user->uid/notify", array('absolute' => TRUE)),
+    ));
 }
 
 /**

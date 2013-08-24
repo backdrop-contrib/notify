@@ -1,3 +1,9 @@
+2013-08-25:  Gisle Hannemyr <gisle@hannemyr.no>
+-  By gisle: Removed some redundant newlines for nicer messages.
+
+2013-08-24:  Gisle Hannemyr <gisle@hannemyr.no>
+- By gisle: Fixed up README.txt to match that of the 6.x-branch..
+
 2013-06-29:  Gisle Hannemyr <gisle@hannemyr.no>
 - By gisle: Allow access to notification settings for blocked users.
 
