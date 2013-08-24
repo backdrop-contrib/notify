@@ -1,5 +1,5 @@
 ------------------------
-NOTIFY MODULE README
+NOTIFY 7.x MODULE README
 ------------------------
 
 This is a simple notification module. It provides e-mail notifications to
@@ -28,14 +28,13 @@ INSTALLATION
 
 3. Modify permissions on the People >> Permissions page.
 
-4. Find the module in the Modules list page and click the
-   Configuration link to edit the settings to your liking.  You can
-   also navigate directly to admin/config/people/notify.
+   To set the notification checkbox default on new user registration
+   form, or let new users opt in for notifications during
+   registration, you must grant the anonymous user the right to access
+   notify.
 
-5. To enable your notification preferences, click on the "My
-   notification settings" on the "My account" page. Or, similarly go
-   to another user's account page at user/<user_id_here> to modify his
-   or her personal settings.
+4. Configure general notification settings.  See the "Usage" section
+   below for details.
 
 ------------------------
 USAGE
@@ -54,8 +53,8 @@ If you enable node revisions (http://drupal.org/node/320614), the
 notification e-mail will also mention the name of the last person to
 edit the node.
 
-To let new users opt in for notifications during registration, you
-must grant the anonymous user the right to access notify.
+To manage your own notification preferences, click on the
+"Notification settings" on your "My account" page.
 
 ------------------------
 AUTHOR / MAINTAINER
@@ -80,9 +79,3 @@ RELATED PROJECTS & ALTERNATIVES
 http://drupal.org/project/notify_by_views
 http://drupal.org/project/subscriptions
 http://drupal.org/project/notifications
-
-------------------------
-WISHLIST
------------------------
-
-- Templated e-mails.
