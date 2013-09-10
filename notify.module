@@ -519,6 +519,7 @@ function notify_user_settings_form($form, &$form_state, $arg) {
   );
   $form['notify_page_detailed']['comment'] = array(
     '#type' => 'radios',
+    '#access' => module_exists('comment'),
     '#title' => t('Notify new comments'),
     '#default_value' => $notify->comment,
     '#options' => array(t('Disabled'), t('Enabled')),
