@@ -491,7 +491,7 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#title' => t('Notify status'),
     '#default_value' => $notify->status,
     '#options' => array(t('Disabled'), t('Enabled')),
-    '#description' => t('The master switch overrides all other settings for Notify.  You can use it to suspend notifications without having to disturb any of your options under &#8220;Detailed setting&#8221;.'),
+    '#description' => t('The master switch overrides all other settings for Notify.  You can use it to suspend notifications without having to disturb any of your options under &#8220;Detailed settings&#8221;.'),
   );
 
   $form['notify_page_detailed'] = array(
