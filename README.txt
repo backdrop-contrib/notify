@@ -19,9 +19,8 @@ running.
 INSTALLATION
 ------------------------
 
-1. Extract the notify module directory, including all its
-   subdirectories, into directory where you keep contributed modules
-   (e.g. sites/all/modules/).
+1. Extract the notify project directory into the directory where you
+   keep contributed modules (e.g. sites/all/modules/).
 
 2. Enable the notify module on the Modules list page.  The database
    tables will be created automagically for you at this point.

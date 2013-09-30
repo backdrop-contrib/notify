@@ -21,10 +21,11 @@ function notify_help($section) {
     case 'admin/help#notify':
       $output = '<p>' . t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
       $output .= '<p>' . t('The administrator sets the frequency of the e-mails in the notify administration interface. They can also set how many e-mail failures should occur before notify stops sending notifications.  Note that cron must be enabled for notifications to be sent out.') . '</p>';
-      $output .= '<p>'  . t('You can:</p><ul><li>set up your site to run tasks automatically at required intervals. For more information, see <a href="@cron">cron</a>.', array('@cron' => url('admin/config/system/cron'))) . '</li>';
-      $output .= '<li>' . t('administer <a href="@notify">notify settings', array('@notify' => url('admin/config/people/notify'))) . '</a>.</li>';
-      $output .= '<li>' . t('administer <a href="@notifu">notify users and batch operations', array('@notifu' => url('admin/config/people/notify/users'))) . '</a>.</li>';
-      $output .= '<p>'  . t('For more information please read the community documentation handbook <a href="@notifyhb">Notify page</a>.', array('@notifyhb' => 'http://www.drupal.org/handbook/modules/notify/')) . '</p>';
+      $output .= '<p>'  . t('For more information please read the community documentation handbook <a href="@notifyhb">Notify page</a>.', array('@notifyhb' => url('http://www.drupal.org/handbook/modules/notify/'))) . '</p>';
+
+      $send_interval = variable_get('notify_send', 86400);
+      dpm($send_interval);
+
       return $output;
   }
 }
@@ -36,6 +37,7 @@ function notify_admin_settings_submit($form, &$form_state) {
   variable_set('notify_send', $form_state['values']['notify_send']);
   variable_set('notify_send_hour', $form_state['values']['notify_send_hour']);
   variable_set('notify_attempts', $form_state['values']['notify_attempts']);
+  variable_set('notify_batchsize', $form_state['values']['notify_batchsize']);
   variable_set('notify_include_updates', $form_state['values']['notify_include_updates']);
   variable_set('notify_reg_default', $form_state['values']['notify_reg_default']);
   foreach (node_type_get_types() as $type => $object) {
@@ -52,14 +54,16 @@ function notify_admin_settings_submit($form, &$form_state) {
  * Menu callback, show admin notification settings form.
  */
 function notify_admin_settings($form, &$form_state) {
+
+ $defnu = variable_get('notify_reg_default', 1);
+ $perms = user_role_permissions(array(DRUPAL_ANONYMOUS_RID => 'anon'));
+ $anonp = array_key_exists('access notify', $perms[1]);
+  if ($defnu && !$anonp) {
+    drupal_set_message(t('If you want notification enabled by default for new users, you must grant the anonymous user role the permission to access notify.'), 'warning');
+  }
+
   $period = array(
-    60 => format_interval(60),
-    120 => format_interval(120),
-    180 => format_interval(180),
-    300 => format_interval(300),
-    600 => format_interval(600),
-    900 => format_interval(900),
-    1800 => format_interval(1800),
+    0 => t('Cron'),
     3600 => format_interval(3600),
     10800 => format_interval(10800),
     21600 => format_interval(21600),
@@ -92,7 +96,7 @@ function notify_admin_settings($form, &$form_state) {
 
   $form['notify_settings']['notify_send_hour'] = array(
     '#type' => 'select',
-    '#title' => t('Hour to Send Notifications'),
+    '#title' => t('Hour to send notifications'),
     '#description' => t('Specify the hour (24-hour clock) in which notifications should be sent, if the frequency is one day or greater.'),
     '#default_value' => variable_get('notify_send_hour', 9),
     '#options' => array(
@@ -105,8 +109,17 @@ function notify_admin_settings($form, &$form_state) {
   $form['notify_settings']['notify_attempts'] = array(
     '#type' => 'select',
     '#title' => t('Number of failed sends after which notifications are disabled'),
+    '#description' => t('The maximum number of failed attempts to send e-mail to tolerate before notification is suspended.'),
     '#default_value' => variable_get('notify_attempts', array(5)),
     '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
+  );
+
+  $form['notify_settings']['notify_batchsize'] = array(
+    '#type' => 'select',
+    '#title' => t('Maximum number of items to send out per cron run'),
+    '#description' => t('The maximum number of notification e-mails to send in each pass of  a <a href="@cron">cron maintenance task</a>. If necessary, reduce the number of items to prevent resource limit conflicts.', array('@cron' => url('admin/reports/status'))),
+    '#default_value' => variable_get('notify_batchsize', array(100)),
+    '#options' => array(2, 10, 20, 50, 100, 200, 400),
   );
 
   $form['notify_settings']['notify_include_updates'] = array(
@@ -262,6 +275,9 @@ function _notify_next_notificaton($send_last, $reset=0) {
   if ($send_interval < 0) {
     return(-1);
   }
+  elseif (!$send_interval) {
+    return(0);
+  }
   $next_last = $next_frst = $send_last + $send_interval;
   $next = variable_get('notify_send_next', 0);
   if (REQUEST_TIME >= $next_frst) {
@@ -269,7 +285,7 @@ function _notify_next_notificaton($send_last, $reset=0) {
   }
   // dpm($next);
   if (!$next || $reset) {
-    $send_hour  = variable_get('notify_send_hour',  0);
+    $send_hour  = variable_get('notify_send_hour',  9);
 
 
     if ($send_interval >= 86400) {
@@ -505,18 +521,6 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#options' => array(t('Disabled'), t('Enabled')),
     '#description' => t('Include new posts in the notification mail.'),
   );
-  $form['notify_page_detailed']['teasers'] = array(
-    '#type' => 'radios',
-    '#title' => t('Content'),
-    '#default_value' => $notify->teasers,
-    '#options' => array(
-      t('Title only'),
-      t('Title + Teaser'),
-      t('Title + Body'),
-      t('Title + Body + Fields'),
-    ),
-    '#description' => t('Select the amount of each post that you would like to see in your notification e-mails.'),
-  );
   $form['notify_page_detailed']['comment'] = array(
     '#type' => 'radios',
     '#access' => module_exists('comment'),
@@ -524,6 +528,18 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#default_value' => $notify->comment,
     '#options' => array(t('Disabled'), t('Enabled')),
     '#description' => t('Include new comments in the notification mail.'),
+  );
+  $form['notify_page_detailed']['teasers'] = array(
+    '#type' => 'radios',
+    '#title' => t('How much to include?'),
+    '#default_value' => $notify->teasers,
+    '#options' => array(
+      t('Title only'),
+      t('Title + Teaser/Excerpt'),
+      t('Title + Body'),
+      t('Title + Body + Fields'),
+    ),
+    '#description' => t('Select the amount of each item that you would like to see in your notification e-mails.'),
   );
   $form['uid'] = array(
     '#type' => 'value',
@@ -917,6 +933,7 @@ function _notify_send($send_start = NULL) {
     $q->condition('u.status', 1);
     $q->condition('n.attempts', variable_get('notify_attempts', 5), '<=');
     $uresult = $q->execute();
+    //dpm($uresult); // DEBUG list of users.
 
     foreach ($uresult as $user) {
       // Switch current user to this account to use node_access functions, etc.
