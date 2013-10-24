@@ -1,3 +1,10 @@
+2013-10-24:  Gisle Hannemyr <gisle@hannemyr.no>
+- Added option to truncate notification queue.
+
+2013-09-30:  Gisle Hannemyr <gisle@hannemyr.no>
+- Added sanity check to settings page.
+- Removed meaningless options from period menu.
+
 2013-09-10:  Gisle Hannemyr <gisle@hannemyr.no>
 - #2083875 by interactivejunky: Remove Notify of new comments option
   when comment module is disabled.
