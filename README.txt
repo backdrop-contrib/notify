@@ -30,7 +30,9 @@ INSTALLATION
    To set the notification checkbox default on new user registration
    form, or let new users opt in for notifications during
    registration, you must grant the anonymous user the right to access
-   notify.
+   notify.  To allow users to control their own notification settings
+   (recommended) you must also grant authenticated users the right to
+   access notify
 
 4. Configure general notification settings.  See the "Usage" section
    below for details.
@@ -40,13 +42,42 @@ USAGE
 ------------------------
 
 The administrative interface is at: Administer >> Configuration >>
-People >> Notification settings.  The Settings tab is for setting how
-often notifications are sent, and for selecting notification by note
-type.  The Users tab is to review and see per-user settings.
+People >> Notification settings.
+
+The Settings tab allow you to configure how the module shall work.
+
+You can specify how often notifications are sent, the hour to send
+them (if the frequency is one day or greater), the number of failed
+sends after which notifications are disabled, and the maximum number
+of notifications to send out per cron run.
 
 When setting how often notifications are sent, note that e-mail
 updates can only happen as frequently as the cron is set to run.
-Check your cron settings.
+
+If you check "Include updated posts in notifications", any change to a
+node or content will cause it to be included in the next notification.
+Note that even minor changes, such as correcting a trivial typo or
+setting or unsetting the "sticky" attribute for the node will flag it
+as updated, so use this option with caution in order to avoid excess
+notificatons.
+
+If you check "Administrators shall be notified about unpublished
+content", users belonging to roles with the "administer nodes" and
+"administer comments" permissions granted will receive notifications
+about unpublished content.  This is mainly to make the module useful
+to manage moderation queues.
+
+The checkbox under "Notification default for new users" is used as the
+default value for the notification master switch on the new user
+registration.  Note that this setting has no effect unless you grant
+the anonymous user the right to access notify.
+
+The final section under the Settings tab let you set up notification
+by node type.  Having nothing checked defaults to sending
+notifications about all node types.
+
+The Users tab is to review and see per-user settings, and to
+process the notification queue.
 
 If you enable node revisions (http://drupal.org/node/320614), the
 notification e-mail will also mention the name of the last person to
