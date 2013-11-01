@@ -25,7 +25,9 @@ INSTALLATION
 2. Enable the notify module on the Modules list page.  The database
    tables will be created automagically for you at this point.
 
-3. Modify permissions on the People >> Permissions page.
+3. Run the update script if you're upgrading from 7.x-1.0-alpha1.
+
+4. Modify permissions on the People >> Permissions page.
 
    To set the notification checkbox default on new user registration
    form, or let new users opt in for notifications during
@@ -34,8 +36,13 @@ INSTALLATION
    (recommended) you must also grant authenticated users the right to
    access notify
 
-4. Configure general notification settings.  See the "Usage" section
-   below for details.
+5. Configure the other general notification settings.
+
+   See the "Usage" section below for details.
+
+Note that no after installing Notify. no users will be subscribed to
+notificatons.  Before anyone is subscribed, no notifications will be
+sent.
 
 ------------------------
 USAGE
@@ -76,8 +83,25 @@ The final section under the Settings tab let you set up notification
 by node type.  Having nothing checked defaults to sending
 notifications about all node types.
 
-The Users tab is to review and see per-user settings, and to
-process the notification queue.
+The Users tab is to review and see per-user settings, to process the
+notification queue, and to inspect the current status of the
+notification queue.
+
+The radio buttons below the heading "Process notification queue" has
+the following meanings:
+
+ - Update status: Update the status panel at the bottom of the page,
+   but do not change the queue.
+
+ - Send batch: Force sending a notification batch without waiting for
+   the next cron run.  Note that if the number of notifications queue
+   exceeds the maximum number of notifications to send out per cron
+   run, only the maximum number is sent.  The rest will be queued for
+   the next cron run ir the next manual send batch (whatever happens
+   first),
+
+ - Truncate queue: Truncate the queue of pending notifications without
+   sending any.
 
 If you enable node revisions (http://drupal.org/node/320614), the
 notification e-mail will also mention the name of the last person to
