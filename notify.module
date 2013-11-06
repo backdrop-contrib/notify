@@ -1191,6 +1191,7 @@ function _notify_send() {
         //'From' => "$from_name <$from>");
         if (drupal_mail('notify', 'send', $userrow['mail'], user_preferred_language($userrow), array('content' => $body, 'user' => $userobj, 'viewmode' => $userrow['teasers']))) {
           watchdog('notify', 'User %name (%mail) notified successfully.', array('%name' => $userrow['name'], '%mail' => $userrow['mail']), WATCHDOG_INFO);
+	  $num_sent++;
         }
         else {
           $num_fail++;

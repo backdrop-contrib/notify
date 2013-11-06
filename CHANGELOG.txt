@@ -1,3 +1,6 @@
+2013-11-06: Gisle Hannemyr <gisle@hannemyr.no>
+- by gisle: Corrected count of emails sent.
+
 2013-11-01: Gisle Hannemyr <gisle@hannemyr.no>
 - #2099241 by gisle: Fixed problem with restart from beginning on error.
 
