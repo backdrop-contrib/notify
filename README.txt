@@ -29,18 +29,24 @@ INSTALLATION
 
 4. Modify permissions on the People >> Permissions page.
 
+   To adminster the notify main settings and user notfification
+   settings, grant the permission "administer notify".
+
+   To adminster the notificaton queue (flush and truncate), grant the
+   permission "administer notify queue".
+
    To set the notification checkbox default on new user registration
    form, or let new users opt in for notifications during
-   registration, you must grant the anonymous user the right to access
-   notify.  To allow users to control their own notification settings
-   (recommended) you must also grant authenticated users the right to
-   access notify
+   registration, you must grant the anonymous user the right to
+   "access notify".  To allow users to control their own notification
+   settings (recommended) you must also grant authenticated users the
+   right to "access notify".
 
 5. Configure the other general notification settings.
 
    See the "Usage" section below for details.
 
-Note that no after installing Notify. no users will be subscribed to
+Note that after installing Notify. no users will be subscribed to
 notificatons.  Before anyone is subscribed, no notifications will be
 sent.
 

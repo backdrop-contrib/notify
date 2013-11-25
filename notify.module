@@ -325,6 +325,10 @@ function notify_permission() {
       'title' => t('administer notify'),
       'description' => t('Administer the notify module'),
     ),
+    'administer notify queue' => array(
+      'title' => t('administer notify queue'),
+      'description' => t('Administer the notify queue'),
+    ),
   );
 }
 
@@ -348,6 +352,15 @@ function notify_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
+  $items['admin/config/people/notify/queue'] = array(
+    'title' => 'Queue',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('notify_admin_queue'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer notify queue'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -9,
+  );
   $items['admin/config/people/notify/users'] = array(
     'title' => 'Users',
     'page callback' => 'drupal_get_form',
@@ -355,7 +368,7 @@ function notify_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer notify'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => -9,
+    'weight' => -8,
   );
   $items['user/%user/notify'] = array(
     'title' => 'Notification settings',
@@ -513,7 +526,7 @@ function notify_user_settings_form_submit($form, &$form_state) {
 /**
  * Menu callback, show admin list of user notification settings.
  */
-function notify_admin_users($form, &$form_state) {
+function notify_admin_queue($form, &$form_state) {
   $notify_send_last  = variable_get('notify_send_last', 0);
   $next_last = _notify_next_notificaton($notify_send_last);
 
@@ -540,81 +553,17 @@ function notify_admin_users($form, &$form_state) {
 
   $form = array();
 
-  $form['#tree'] = TRUE;
-  $form['info'] = array(
-    '#markup' => '<p>' . t('The following table shows all users that have notifications enabled:' . '</p>'),
-  );
-
-  $form['users'] = array();
-
-  // Fetch users with notify enabled.
-  $q = db_select('notify', 'n');
-  $q->join('users', 'u', 'n.uid = u.uid');
-  $q->fields('u', array('uid', 'name', 'mail', 'language'));
-  $q->fields('n', array('status', 'node', 'comment', 'attempts', 'teasers'));
-  $q->condition('n.status', 1);
-  $q->condition('u.status', 1);
-  $q->orderBy('u.name');
-  $uresult = $q->execute();
-
-  foreach ($uresult as $user) {
-    $form['users'][$user->uid] = array();
-    $form['users'][$user->uid]['name'] = array(
-      '#markup' => theme('username', array('account' => $user)),
-    );
-    $form['users'][$user->uid]['mail'] = array(
-      '#markup' => $user->mail,
-    );
-    $form['users'][$user->uid]['node'] = array(
-      '#type' => 'checkbox',
-      '#default_value' => $user->node,
-    );
-    $form['users'][$user->uid]['teasers'] = array(
-      '#type' => 'select',
-      '#default_value' => $user->teasers,
-      '#options' => array(
-        t('Title only'),
-        t('Title + Teaser'),
-        t('Title + Body'),
-        t('Title + Body + Fields'),
-      ),
-    );
-    $form['users'][$user->uid]['comment'] = array(
-      '#type' => 'checkbox',
-      '#default_value' => $user->comment,
-    );
-    $form['users'][$user->uid]['attempts'] = array(
-      '#type' => 'textfield',
-      '#size' => 2,
-      '#default_value' => $user->attempts ? intval($user->attempts) : 0,
-    );
-  }
-
-  $form['info2'] = array(
-    '#markup' => '<p>' . t('You may check/uncheck the checkboxes to change the users\' subscription status. Press &#8220;Save settings / Process queue&#8220; to save the settings.' . '</p>'),
-  );
-
   $form['process'] = array(
     '#type' => 'radios',
     '#title' => t('Process notification queue'),
     '#default_value' => 0,
-    '#options' => array(t('Update status'), t('Send batch'), t('Truncate queue')),
-    '#description' => t('Select &#8220;Leave unchanged &#8220; to leave queue unchanged. Select &#8220;Send batch now&#8220; to send next batch of e-mails queued for notifications. Select &#8220;Truncate queue&#8220; to empty queue of pending notification <em>without</em> sending e-mails. Press &#8220;Save settings / Process queue&#8220; to process queue.'),
+    '#options' => array(t('Send batch now'), t('Truncate queue')),
+    '#description' => t('Select &#8220;Send batch now&#8220; to send next batch of e-mails queued for notifications. Select &#8220;Truncate queue&#8220; to empty queue of pending notification <em>without</em> sending e-mails. Press &#8220;Process queue&#8220; to execute.'),
   );
-
-  /*
-  TODO
-  $form['bulk'] = array(
-    '#title' => t('Batch subscribe all users'),
-    '#type' => 'checkbox',
-    '#default_value' => FALSE,
-    '#description' => t('Set the master switch for all users to enabled.'),
-  );
-  */
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Save settings / Process queue'),
+    '#value' => t('Process queue'),
   );
 
   $form['batch'] = array(
@@ -689,12 +638,156 @@ function notify_admin_users($form, &$form_state) {
 }
 
 /**
+ * Submit for the notify_admin_queue form.
+ */
+function notify_admin_queue_submit($form, &$form_state) {
+  unset($form);
+
+  if (0 == $form_state['values']['process']) { // flush
+    list($num_sent, $num_fail) = _notify_send();
+
+    if ($num_fail > 0) {
+      drupal_set_message(t('!sent notification !emsent sent successfully, !fail !emfail could not be sent.',
+        array(
+          '!sent' => $num_sent, '!emsent' =>  format_plural($num_sent, 'e-mail', 'e-mails'),
+          '!fail' => $num_fail, '!emfail' =>  format_plural($num_fail, 'notification', 'notifications'),
+        )
+      ), 'error');
+    }
+    elseif ($num_sent > 0) {
+      drupal_set_message(t('!count pending notification !emails have been sent in this pass.', array('!count' => $num_sent, '!emails' =>  format_plural($num_sent, 'e-mail', 'e-mails'))));
+    }
+    if (($num_sent + $num_fail) == 0) {
+      drupal_set_message(t('No notifications needed to be sent in this pass.'));
+    }
+    $num_sent += variable_get('notify_num_sent', 0);
+    $num_fail += variable_get('notify_num_failed', 0);
+    variable_set('notify_num_sent', $num_sent);
+    variable_set('notify_num_failed', $num_fail);
+  }
+  else { // truncate
+    list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
+    foreach ($res_nopub as $row) {
+      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
+    }
+    foreach ($res_copub as $row) {
+      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => $row->cid, ':nid' => $row->nid));
+    }
+    variable_set('notify_send_start', REQUEST_TIME);
+    variable_set('notify_send_last', REQUEST_TIME);
+    variable_set('notify_send_next', 0);
+    variable_set('notify_users', array());
+    drupal_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
+    return;
+  }
+}
+
+/**
+ * Menu callback, show admin list of user notification settings.
+ */
+function notify_admin_users($form, &$form_state) {
+  $notify_send_last  = variable_get('notify_send_last', 0);
+  $next_last = _notify_next_notificaton($notify_send_last);
+
+  $period = variable_get('notify_period', 86400);
+  if ($period >= 0) {
+    $since = variable_get('notify_send_last', REQUEST_TIME - $period);
+  }
+  else {
+    $since = 0;
+  }
+  $lastdate = format_date($since, 'short');
+  $start = variable_get('notify_send_start', 0);
+  $startdate = format_date($start, 'short');
+
+  if ($next_last == -1) {
+    $batch_msg = t('No more notifications scheduled');
+  } elseif ($next_last == 0) {
+    $batch_msg = t('The next notification is scheduled for the next cron run');
+  }
+  else {
+    $next = format_date($next_last, 'short');
+    $batch_msg = t('The next notification is scheduled for the first cron run after ') . $next;
+  }
+
+  $form = array();
+
+  $form['#tree'] = TRUE;
+  $form['info'] = array(
+    '#markup' => '<p>' . t('The following table shows all users that have notifications enabled:' . '</p>'),
+  );
+
+  $form['users'] = array();
+
+  // Fetch users with notify enabled.
+  $q = db_select('notify', 'n');
+  $q->join('users', 'u', 'n.uid = u.uid');
+  $q->fields('u', array('uid', 'name', 'mail', 'language'));
+  $q->fields('n', array('status', 'node', 'comment', 'attempts', 'teasers'));
+  $q->condition('n.status', 1);
+  $q->condition('u.status', 1);
+  $q->orderBy('u.name');
+  $uresult = $q->execute();
+
+  foreach ($uresult as $user) {
+    $form['users'][$user->uid] = array();
+    $form['users'][$user->uid]['name'] = array(
+      '#markup' => theme('username', array('account' => $user)),
+    );
+    $form['users'][$user->uid]['mail'] = array(
+      '#markup' => $user->mail,
+    );
+    $form['users'][$user->uid]['node'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $user->node,
+    );
+    $form['users'][$user->uid]['comment'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $user->comment,
+    );
+    $form['users'][$user->uid]['teasers'] = array(
+      '#type' => 'select',
+      '#default_value' => $user->teasers,
+      '#options' => array(
+        t('Title only'),
+        t('Title + Teaser'),
+        t('Title + Body'),
+        t('Title + Body + Fields'),
+      ),
+    );
+    $form['users'][$user->uid]['attempts'] = array(
+      '#markup' => $user->attempts ? intval($user->attempts) : 0,
+    );
+  }
+
+  $form['info2'] = array(
+    '#markup' => '<p>' . t('You may check/uncheck the checkboxes and the &#8220;How much&#8220;-selection to change the users\' subscription. Press &#8220;Save settings&#8220; to save the settings.' . '</p>'),
+  );
+
+  /*
+  TODO
+  $form['bulk'] = array(
+    '#title' => t('Batch subscribe all users'),
+    '#type' => 'checkbox',
+    '#default_value' => FALSE,
+    '#description' => t('Set the master switch for all users to enabled.'),
+  );
+  */
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save settings'),
+  );
+  return $form;
+}
+
+/**
  * Submit for the notify_admin_users form.
  */
 function notify_admin_users_submit($form, &$form_state) {
   unset($form);
 
-  if (1 == $form_state['values']['process'] && !array_key_exists('users', $form_state['values'])) {
+  if (!array_key_exists('users', $form_state['values'])) {
     drupal_set_message(t('No users have notifications enabled.'), 'warning');
     return;
   }
@@ -713,45 +806,6 @@ function notify_admin_users_submit($form, &$form_state) {
   }
 
   drupal_set_message(t('Notify settings saved.'));
-  if (0 < $form_state['values']['process']) {
-    if (1 == $form_state['values']['process']) { // flush
-      list($num_sent, $num_fail) = _notify_send();
-
-      if ($num_fail > 0) {
-        drupal_set_message(t('!sent notification !emsent sent successfully, !fail !emfail could not be sent.',
-          array(
-            '!sent' => $num_sent, '!emsent' =>  format_plural($num_sent, 'e-mail', 'e-mails'),
-            '!fail' => $num_fail, '!emfail' =>  format_plural($num_fail, 'notification', 'notifications'),
-          )
-        ), 'error');
-      }
-      elseif ($num_sent > 0) {
-        drupal_set_message(t('!count pending notification !emails have been sent in this pass.', array('!count' => $num_sent, '!emails' =>  format_plural($num_sent, 'e-mail', 'e-mails'))));
-      }
-      if (($num_sent + $num_fail) == 0) {
-        drupal_set_message(t('No notifications needed to be sent in this pass.'));
-      }
-      $num_sent += variable_get('notify_num_sent', 0);
-      $num_fail += variable_get('notify_num_failed', 0);
-      variable_set('notify_num_sent', $num_sent);
-      variable_set('notify_num_failed', $num_fail);
-    }
-    else { // truncate
-      list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
-      foreach ($res_nopub as $row) {
-        db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
-      }
-      foreach ($res_copub as $row) {
-        db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => $row->cid, ':nid' => $row->nid));
-      }
-      variable_set('notify_send_start', REQUEST_TIME);
-      variable_set('notify_send_last', REQUEST_TIME);
-      variable_set('notify_send_next', 0);
-      variable_set('notify_users', array());
-      drupal_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
-      return;
-    }
-  }
 
 /*
   if ($form_state['values']['bulk']) {
@@ -770,8 +824,8 @@ function theme_notify_admin_users($variables) {
     t('Username'),
     t('E-mail address'),
     t('Content'),
-    t('Teasers'),
     t('Comment'),
+    t('How much'),
     t('Failed attempts'),
   );
 

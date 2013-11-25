@@ -1,3 +1,6 @@
+2013-11-25: Gisle Hannemyr <gisle@hannemyr.no>
+- by gisle: Made admin queue a separate permission.
+
 2013-11-06: Gisle Hannemyr <gisle@hannemyr.no>
 - by gisle: Corrected count of emails sent.
 
