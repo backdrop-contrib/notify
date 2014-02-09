@@ -17,11 +17,8 @@ define('NOTIFY_NODE_TYPE', 'notify_node_type_');
  * Implements hook_help().
  */
 function notify_help($section) {
-
-
-  $tt = strtotime('2014-02-06 23:00'); //variable_set('notify_send_last', $tt);	
-  $tt = strtotime('2014-02-10 01:00'); //variable_set('notify_send_next', $tt);	
-
+  //$tt = strtotime('2014-02-06 23:00'); variable_set('notify_send_last', $tt);	
+  //$tt = strtotime('2014-02-10 01:00'); variable_set('notify_send_next', $tt);	
   switch ($section) {
     case 'admin/help#notify':
       $output = '<p>' . t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
@@ -243,10 +240,6 @@ function notify_cron() {
   $last = variable_get('notify_send_last', 0);
   $next = _notify_next_notificaton($last);
   $quep = variable_get('notify_users', array());
-  dpm(REQUEST_TIME);
-  dpm($next);
-  $tt = date('Y-m-d H:i:s', $next);
-  dpm($tt);
   if ((REQUEST_TIME > $next) || $quep) {
     list($num_sent, $num_fail) = _notify_send();
     $num_sent += variable_get('notify_num_sent', 0);
