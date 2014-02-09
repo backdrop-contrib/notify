@@ -17,6 +17,11 @@ define('NOTIFY_NODE_TYPE', 'notify_node_type_');
  * Implements hook_help().
  */
 function notify_help($section) {
+
+
+  $tt = strtotime('2014-02-06 23:00'); //variable_set('notify_send_last', $tt);	
+  $tt = strtotime('2014-02-10 01:00'); //variable_set('notify_send_next', $tt);	
+
   switch ($section) {
     case 'admin/help#notify':
       $output = '<p>' . t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
@@ -238,6 +243,10 @@ function notify_cron() {
   $last = variable_get('notify_send_last', 0);
   $next = _notify_next_notificaton($last);
   $quep = variable_get('notify_users', array());
+  dpm(REQUEST_TIME);
+  dpm($next);
+  $tt = date('Y-m-d H:i:s', $next);
+  dpm($tt);
   if ((REQUEST_TIME > $next) || $quep) {
     list($num_sent, $num_fail) = _notify_send();
     $num_sent += variable_get('notify_num_sent', 0);
@@ -276,6 +285,7 @@ function notify_user_insert(&$edit, $account, $category) {
       'node' => 1,
       'teasers' => 0,
       'comment' => 0,
+      'attempts' => 0,
     ))
       ->execute();
     $edit['notify_decision'] = NULL;
@@ -573,14 +583,14 @@ function notify_admin_queue($form, &$form_state) {
   );
 
   list ($np, $cp, $nn, $cn, $nu, $cu) = _notify_count();
-  if ($nn + $cn) {
-    $recpb_msg = t('Recently published: !noderp and !commrp.') .'</br>';
+  if (($np && $nu) || ($cp && $cu)) {
+    $nonew_msg = '.';
   }
   else {
-    $recpb_msg = '';
+    $nonew_msg = t(', no new notifications queued.');
   }
   if ($nu + $cu) {
-    $queue_msg = t('Unpublished !nodeup and !commup.') .'</br>';
+    $queue_msg = t('Unpublished !nodeup and !commup') . $nonew_msg .'</br>';
   }
   else {
     $queue_msg = '';
@@ -612,9 +622,8 @@ function notify_admin_queue($form, &$form_state) {
 
   $form['batch']['schedule'] = array(
     '#markup' => 
-      t('There are !nodes and !comms created '
+      t('There are !nodes and !comms created, !noderp and !commrp published, '
         . $intrv_msg . '.<br/>'
-	. $recpb_msg
         . $queue_msg
         . $sent_msg . '.<br/>'
         . $batch_msg,
@@ -686,30 +695,6 @@ function notify_admin_queue_submit($form, &$form_state) {
  * Menu callback, show admin list of user notification settings.
  */
 function notify_admin_users($form, &$form_state) {
-  $notify_send_last  = variable_get('notify_send_last', 0);
-  $next_last = _notify_next_notificaton($notify_send_last);
-
-  $period = variable_get('notify_period', 86400);
-  if ($period >= 0) {
-    $since = variable_get('notify_send_last', REQUEST_TIME - $period);
-  }
-  else {
-    $since = 0;
-  }
-  $lastdate = format_date($since, 'short');
-  $start = variable_get('notify_send_start', 0);
-  $startdate = format_date($start, 'short');
-
-  if ($next_last == -1) {
-    $batch_msg = t('No more notifications scheduled');
-  } elseif ($next_last == 0) {
-    $batch_msg = t('The next notification is scheduled for the next cron run');
-  }
-  else {
-    $next = format_date($next_last, 'short');
-    $batch_msg = t('The next notification is scheduled for the first cron run after ') . $next;
-  }
-
   $form = array();
 
   $form['#tree'] = TRUE;
@@ -798,7 +783,7 @@ function notify_admin_users_submit($form, &$form_state) {
         'node' => $settings['node'],
         'teasers' => $settings['teasers'],
         'comment' => $settings['comment'],
-        'attempts' => $settings['attempts'],
+        // 'attempts' => $settings['attempts'],
       ))
       ->condition('uid', $uid)
       ->execute();
@@ -918,8 +903,14 @@ function _notify_content($node, $comment, $view_mode) {
  * Helper function to set up query objects to select content for
  * counting and sending.
  *
+ * Return array has six values:
+ * - ordinary published entities: nodes, comments;
+ * - in unpublished queue:
+ *     published nodes, published comments,
+ *     unpublished nodes, unpublished comments,
+ *
  * @return array
- *   res_nodes, res_comms, res_nopub, res_copub
+ *   res_nodes, res_comms, res_nopub, res_copub, res_nounp, res_counp
  */
 function _notify_select_content() {
   $since = variable_get('notify_send_last', 0);
@@ -982,6 +973,7 @@ function _notify_select_content() {
     WHERE q.cid = :cid AND n.status = :status
     ORDER BY q.nid asc',
     array(':cid' => 0, ':status' => NODE_NOT_PUBLISHED));
+  //dpm($res_nounp); // DEBUG
 
   if (module_exists('comment')) {
 
@@ -1057,17 +1049,19 @@ function _notify_send() {
   // Get the nodes and comments queued.
   $count = 0;
   $nodes = $comments = array();
+  // Ordinary nodes
   foreach ($res_nodes as $row) {
     $nodes[$row->nid] = node_load($row->nid);
     $count++;
   }
-  foreach ($res_nopub as $row) {
-    if (!isset($nodes[$row->nid])) {
-      $nodes[$row->nid] = node_load($row->nid);
-      $count++;
-    }
-  }
+  // Ordinary comments
   if ($res_comms) {
+    foreach ($res_nopub as $row) {
+      if (!isset($nodes[$row->nid])) {
+        $nodes[$row->nid] = node_load($row->nid);
+        $count++;
+      }
+    }
     foreach ($res_comms as $row) {
       $comment = comment_load($row->cid);
       $comments[$comment->nid][$row->cid] = $comment;
@@ -1078,6 +1072,20 @@ function _notify_send() {
         $comments[$row->nid][$row->cid] =comment_load($row->cid);
         $count++;
       }
+    }
+  }
+  // Published nodes in unpublished queue
+  foreach ($res_nopub as $row) {
+    if (!isset($nodes[$row->nid])) {
+      $nodes[$row->nid] = node_load($row->nid);
+      $count++;
+    }
+  }
+  // Unpublished nodes in unpublished queue
+  foreach ($res_nounp as $row) {
+    if (!isset($nodes[$row->nid])) {
+      $nodes[$row->nid] = node_load($row->nid);
+      $count++;
     }
   }
   drupal_set_message(t('Total !count messages queued for notification.',
@@ -1120,6 +1128,7 @@ function _notify_send() {
           // Skip to next if user is not allowed to view this node.
           if (!user_access('administer nodes', $userobj) && NODE_NOT_PUBLISHED == $node->status) {
             continue;
+	    //dpm('pre'); // DEBUG
           }
 	  if (!variable_get('notify_unpublished', 1) && NODE_NOT_PUBLISHED == $node->status) {
             continue;

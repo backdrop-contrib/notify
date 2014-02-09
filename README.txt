@@ -78,7 +78,8 @@ If you check "Administrators shall be notified about unpublished
 content", users belonging to roles with the "administer nodes" and
 "administer comments" permissions granted will receive notifications
 about unpublished content.  This is mainly to make the module useful
-to manage moderation queues.
+to manage moderation queues.  Note that notifications about
+unpublished content is only sent once.
 
 The checkbox under "Notification default for new users" is used as the
 default value for the notification master switch on the new user
@@ -131,11 +132,3 @@ Ward Poelmans <wpoely86@gmail.com>,
 John Oltman <john.oltman@sitebasin.com>,
 Ajit Shinde (https://www.facebook.com/shinde.ajit), and 
 Gisle Hannemyr <gisle@hannemyr.no> contributed to the Drupal 7 port.
-
-------------------------
-RELATED PROJECTS & ALTERNATIVES
-------------------------
-
-http://drupal.org/project/notify_by_views
-http://drupal.org/project/subscriptions
-http://drupal.org/project/notifications
