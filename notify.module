@@ -576,65 +576,89 @@ function notify_admin_queue($form, &$form_state) {
   );
 
   list ($np, $cp, $nn, $cn, $nu, $cu) = _notify_count();
+
+  $npcp = $np + $cp;
+  if ($npcp) {
+    $queue_msg = t('Notifications about !item queued', array(
+      '!item' => format_plural($npcp, '1 item is', '@count items are'),
+    ));
+  } else {
+    $queue_msg = t('No notifications queued');
+  }
+
   if (($np && $nu) || ($cp && $cu)) {
-    $nonew_msg = '.';
+    $nonew_msg = '';
   }
   else {
-    $nonew_msg = t(', no new notifications queued.');
+    $nonew_msg = t(', no notification about unpublished items is queued');
   }
   if ($nu + $cu) {
-    $queue_msg = t('Unpublished !nodeup and !commup') . $nonew_msg .'</br>';
+    $unpub_msg = t('Unpublished: !nodeup and !commup', array(
+      '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
+      '!commup' => format_plural($cu, '1 comment', '@count comments'),
+    )) . $nonew_msg;
   }
   else {
-    $queue_msg = '';
+    $unpub_msg = t('No unpublished items');
   }
+
   $sent = variable_get('notify_num_sent', 0);
   $fail = variable_get('notify_num_failed', 0);
   $remn = count(variable_get('notify_users', array()));
 
-  if ($remn) {
-    $intrv_msg = t('between !last and !start');
-    $sent_msg = t('Batch not yet complete.  So far !sent has been sent (!fail, !remain to go)');
+
+  $creat_msg = t('There are !nodes and !comms created', array(
+    '!nodes' => format_plural($np, '1 node', '@count nodes'),
+    '!comms' => format_plural($cp, '1 comment', '@count comments'),
+  ));
+  if ($nn + $cn) {
+    $publ_msg = t(', and in addition !noderp and !commrp published,', array(
+      '!noderp' => format_plural($nn, '1 node', '@count nodes'),
+      '!commrp' => format_plural($cn, '1 comment', '@count comments'),
+    ));
   }
   else {
-    $intrv_msg = t('since !last');
+    $publ_msg = '';
+  }
+  if ($remn) {
+    $intrv_msg = t('between !last and !start', array(
+       '!last' => $lastdate,
+       '!start' => $startdate,
+    ));
+    $sent_msg = t('Batch not yet complete.  So far !sent has been sent (!fail, !remain to go)', array(
+      '!sent' => format_plural($sent, '1 e-mail', '@count e-mails'),
+      '!fail' => format_plural($fail, '1 failure', '@count failures'),
+      '!remain' => format_plural($remn, '1 user', '@count users'),
+    ));
+  }
+  else {
+    $intrv_msg = t('since !last', array(
+      '!last' => $lastdate,
+    ));
     $sent_msg = t('Last batch:') . ' ';
     if ($sent == 0) {
       $sent_msg = t('No e-mails were sent');
     }
     else {
-      $sent_msg .= t('sent !sent');
+      $sent_msg .= t('sent !sent', array(
+        '!sent' => format_plural($sent, '1 e-mail', '@count e-mails'),
+      ));
     }
     if ($fail > 0) {
-      $sent_msg .= ', ' . t('!fail');
+      $sent_msg .= ', ' . t('!fail', array(
+        '!fail' => format_plural($fail, '1 failure', '@count failures'),
+      ));
     }
     elseif ($sent) {
       $sent_msg .= ', ' . t('no failures');
     }
   }
-
   $form['batch']['schedule'] = array(
-    '#markup' => 
-      t('There are !nodes and !comms created, !noderp and !commrp published, '
-        . $intrv_msg . '.<br/>'
-        . $queue_msg
-        . $sent_msg . '.<br/>'
-        . $batch_msg,
-        array(
-          '!nodes' => format_plural($np, '1 node', '@count nodes'),
-          '!comms' => format_plural($cp, '1 comment', '@count comments'),
-          '!noderp' => format_plural($nn, '1 node', '@count nodes'),
-          '!commrp' => format_plural($cn, '1 comment', '@count comments'),
-          '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
-          '!commup' => format_plural($cu, '1 comment', '@count comments'),
-          '!sent' => format_plural($sent, '1 e-mail', '@count e-mails'),
-          '!fail' => format_plural($fail, '1 failure', '@count failures'),
-          '!remain' => format_plural($remn, '1 user', '@count users'),
-          '!last' => $lastdate,
-          '!start' => $startdate,
-        )
-      )
-      . '.'
+    '#markup' => $creat_msg . $publ_msg . ' ' . $intrv_msg . '.<br/>'
+    . $unpub_msg . '.<br/>'
+    . $queue_msg . '.<br/>'
+    . $sent_msg . '.<br/>'
+    . $batch_msg . '.'
   );
   return $form;
 }
