@@ -17,8 +17,8 @@ define('NOTIFY_NODE_TYPE', 'notify_node_type_');
  * Implements hook_help().
  */
 function notify_help($section) {
-  //$tt = strtotime('2014-02-06 23:00'); variable_set('notify_send_last', $tt);	
-  //$tt = strtotime('2014-02-10 01:00'); variable_set('notify_send_next', $tt);	
+  //$tt = strtotime('2014-02-15 23:00'); variable_set('notify_send_last', $tt);	
+  //$tt = strtotime('2014-03-15 14:00'); variable_set('notify_send_next', $tt);	
   switch ($section) {
     case 'admin/help#notify':
       $output = '<p>' . t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
@@ -213,19 +213,21 @@ function _notify_next_notificaton($send_last, $reset=0) {
   }
   $next_last = $next_frst = $send_last + $send_interval;
   $next = variable_get('notify_send_next', 0);
-  if (REQUEST_TIME >= $next_frst) {
+  if (($send_interval < 86400) && (REQUEST_TIME >= $next_frst)) {
     return(0);
   }
+  $send_hour  = variable_get('notify_send_hour',  9);
   if (!$next || $reset) {
-    $send_hour  = variable_get('notify_send_hour',  9);
-
-
     if ($send_interval >= 86400) {
       $next_last = strtotime(date('Y-m-d ', $next_frst) . $send_hour . ':00:00');
       if ($next_last < REQUEST_TIME) $next_last += 86400;
     }
     variable_set('notify_send_next', $next_last);
     return($next_last);
+  }
+  elseif (($send_interval >= 86400) && (REQUEST_TIME >= $next_frst)) {
+    $next= strtotime(date('Y-m-d ', time()) . $send_hour . ':00:00');
+    if ($next < REQUEST_TIME) $next += 86400;
   }
   return($next);
 }
@@ -572,7 +574,6 @@ function notify_admin_queue($form, &$form_state) {
   list ($np, $cp, $nn, $cn, $nu, $cu) = _notify_count();
 
   $npcp = $np + $cp;
-  dpm($npcp, 'queued items');
   if ($npcp) {
     $queue_msg = t('Notifications about at least !item queued', array(
       '!item' => format_plural($npcp, '1 item is', '@count items are'),
@@ -606,8 +607,6 @@ function notify_admin_queue($form, &$form_state) {
     '!nodes' => format_plural($np, '1 node', '@count nodes'),
     '!comms' => format_plural($cp, '1 comment', '@count comments'),
   ));
-  dpm($nn);
-  dpm($cn);
   if ($nn + $cn) {
     $publ_msg = t(', and in addition !noderp and !commrp published,', array(
       '!noderp' => format_plural($nn, '1 node', '@count nodes'),
@@ -1383,7 +1382,6 @@ function notify_node_insert($node) {
 function notify_comment_insert($comment) {
   if ($comment->status == COMMENT_NOT_PUBLISHED) {
     $bundle = substr($comment->node_type,13);
-    //dpm($bundle, 'bundle');
     _notify_get_content_types($ntype, TRUE);
     if (in_array($bundle, $ntype)) {
       db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => $comment->cid, ':nid' => $comment->nid));
