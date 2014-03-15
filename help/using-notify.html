@@ -1,0 +1,83 @@
+<p><em>Notify</em> is a simple, lightweight notification module. It provides e-mail notifications to subscribers about updates and changes to the Drupal web site.</p>
+
+<p>Submit bug reports and comments via the project's 
+<a target="_blank" href="http://drupal.org/project/issues/notify" title="link to issue queue">issues queue on drupal.org</a>.</p>
+
+<h2>Requirements</h2>
+
+<p>This module requires a supported version of Drupal and cron to be
+running.</p>
+
+
+<h2>Administration</h2>
+
+<p>The administrative interface is at:
+ <a href="&base_url&/admin/config/people/notify">Administer » Configuration » People » Notification settings</a>.</p>
+
+<p>The administrative interface consists of three tabs:</p>
+
+<p>The <strong>Settings</strong> tab allow you to configure how the module shall work.</p>
+
+<p>You can specify how often notifications are sent, the hour to send
+them (if the frequency is one day or greater), the number of failed
+sends after which notifications are disabled, and the maximum number
+of notifications to send out per cron run.</p>
+
+<p>When setting how often notifications are sent, note that e-mail
+updates can only happen as frequently as the cron is set to run.</p>
+
+<p>If you check &#8220;Include updated posts in notifications&#8221;, any change to a
+node or content will cause it to be included in the next notification.
+Note that even minor changes, such as correcting a trivial typo or
+setting or unsetting the &#8220;sticky&#8221; attribute for the node will flag it
+as updated, so use this option with caution in order to avoid excess
+notificatons.</p>
+
+<p>If you check &#8220;Administrators shall be notified about unpublished
+content&#8221;, users belonging to roles with the &#8220;administer nodes&#8221; and
+&#8220;administer comments&#8221; permissions granted will receive notifications
+about unpublished content.  This is mainly to make the module useful
+to manage moderation queues.  Note that notifications about
+unpublished content are only sent once.</p>
+
+<p>The checkbox under &#8220;Notification default for new users&#8221; is used as the
+default value for the notification master switch on the new user
+registration.  Note that this setting has no effect unless you grant
+the anonymous user the right to access notify.</p>
+
+<p>The final section under the <strong>Settings</strong> tab let you
+set up notification by node type.  Having nothing checked defaults to
+sending notifications about all node types.</p>
+
+<p>The <strong>Queue</strong> tab is to process and inspect the notification queue.</p>
+
+<p>The radio buttons below the heading &#8220;Process notification queue&#8221; has
+the following meanings:</p>
+
+<ul>
+<li><em>Send batch now</em>: Force sending a notification batch without waiting
+   for the next cron run.  Note that if the number of notifications
+   queue exceeds the maximum number of notifications to send out per
+   cron run, only the maximum number is sent.  The rest will be queued
+   for the next cron run or the next manual send batch (whatever
+   happens first).</li>
+
+<li><em>Truncate queue</em>: Truncate the queue of pending notifications without
+   sending out any notifications.</li>
+</ul>
+
+<p>The <em>Status</em> panel gives the administrator a rough overview of the
+current state of the notification queue.</p>
+
+<p>The <strong>Users</strong> tab is to review and alter per-user settings for those users
+that have the master switch for notifications set to <em>Enabled</em>.</p>
+
+<h2>Miscellaneous</h2>
+
+<p>If you enable node revisions <a target="_blank" href="http://drupal.org/node/320614" title="link to background information">node revisions</a>, the
+notification e-mail will also mention the name of the last person to
+edit the node.</p>
+
+<p>To manage your own notification preferences, click on the
+&#8220;Notification settings&#8221; on your &#8220;My account&#8221; page.</p>
+

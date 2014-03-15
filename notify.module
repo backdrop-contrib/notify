@@ -24,7 +24,6 @@ function notify_help($section) {
       $output = '<p>' . t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
       $output .= '<p>' . t('The administrator sets the frequency of the e-mails in the notify administration interface. They can also set how many e-mail failures should occur before notify stops sending notifications.  Note that cron must be enabled for notifications to be sent out.') . '</p>';
       $output .= '<p>'  . t('For more information please read the community documentation handbook <a href="@notifyhb">Notify page</a>.', array('@notifyhb' => url('http://www.drupal.org/handbook/modules/notify/'))) . '</p>';
-
       return $output;
   }
 }
@@ -142,7 +141,7 @@ function notify_admin_settings($form, &$form_state) {
 
   $form['notify_settings']['notify_unpublished'] = array(
     '#type' => 'checkbox',
-   '#title' => t('Administrators shall be notified about unpublished content.'),
+   '#title' => t('Administrators shall be notified about unpublished content of tracked types.'),
     '#return_value' => 1,
     '#default_value' => variable_get('notify_unpublished', 1),
   );
@@ -169,7 +168,7 @@ function notify_admin_settings($form, &$form_state) {
     '#title' => t('Notification by node type'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    '#description' => t('Having nothing checked defaults to sending notifications about all node types.'),
+    '#description' => t('Tick node types to track. Having nothing checked defaults to sending notifications about all node types.'),
   );
 
   foreach (node_type_get_types() as $type => $object) {
@@ -534,12 +533,7 @@ function notify_admin_queue($form, &$form_state) {
   $next_last = _notify_next_notificaton($notify_send_last);
 
   $period = variable_get('notify_period', 86400);
-  if ($period >= 0) {
-    $since = variable_get('notify_send_last', REQUEST_TIME - $period);
-  }
-  else {
-    $since = 0;
-  }
+  $since = variable_get('notify_send_last', REQUEST_TIME - $period);
   $lastdate = format_date($since, 'short');
   $start = variable_get('notify_send_start', 0);
   $startdate = format_date($start, 'short');
@@ -578,8 +572,9 @@ function notify_admin_queue($form, &$form_state) {
   list ($np, $cp, $nn, $cn, $nu, $cu) = _notify_count();
 
   $npcp = $np + $cp;
+  dpm($npcp, 'queued items');
   if ($npcp) {
-    $queue_msg = t('Notifications about !item queued', array(
+    $queue_msg = t('Notifications about at least !item queued', array(
       '!item' => format_plural($npcp, '1 item is', '@count items are'),
     ));
   } else {
@@ -590,7 +585,7 @@ function notify_admin_queue($form, &$form_state) {
     $nonew_msg = '';
   }
   else {
-    $nonew_msg = t(', no notification about unpublished items is queued');
+    $nonew_msg = t(', no notification about unpublished items are queued');
   }
   if ($nu + $cu) {
     $unpub_msg = t('Unpublished: !nodeup and !commup', array(
@@ -611,6 +606,8 @@ function notify_admin_queue($form, &$form_state) {
     '!nodes' => format_plural($np, '1 node', '@count nodes'),
     '!comms' => format_plural($cp, '1 comment', '@count comments'),
   ));
+  dpm($nn);
+  dpm($cn);
   if ($nn + $cn) {
     $publ_msg = t(', and in addition !noderp and !commrp published,', array(
       '!noderp' => format_plural($nn, '1 node', '@count nodes'),
@@ -917,6 +914,31 @@ function _notify_content($node, $comment, $view_mode) {
 }
 
 /**
+ * Helper function to get array of tracked types.
+ *
+ * @param array $ntype
+ *   Reference to array with tracked types.
+ *
+ * @param bool $foop
+ *   TRUE if we return full lost if empty,
+ *
+ */
+function _notify_get_content_types(&$ntype, $foop) {
+  $ntype = array();
+  foreach (node_type_get_types() as $type => $name) {
+    if (variable_get(NOTIFY_NODE_TYPE . $type, 0)) {
+      $ntype[] = $type;
+    }
+  }
+  if ($foop && count($ntype) < 1) {
+    foreach (node_type_get_types() as $type => $name) {
+      $ntype[] = $type;
+    }
+  }
+}
+
+
+/**
  * Helper function to set up query objects to select content for
  * counting and sending.
  *
@@ -948,13 +970,7 @@ function _notify_select_content() {
     }
   }
 
-  // Fetch all node types authorized by notify settings.
-  $ntype = array();
-  foreach (node_type_get_types() as $type => $name) {
-    if (variable_get(NOTIFY_NODE_TYPE . $type, 0)) {
-      $ntype[] = $type;
-    }
-  }
+  _notify_get_content_types($ntype, FALSE);
 
   // Build query object to fetch new nodes.
   $q = db_select('node', 'n');
@@ -1348,22 +1364,30 @@ function notify_mail($key, &$message, $params) {
 /**
  * Implementation of hook_node_insert().
  *
- * Add any newly created unpublished nodes to the queue.
+ * Add tracked newly created unpublished nodes to the unpublished queue.
  */
 function notify_node_insert($node) {
   if ($node->status == NODE_NOT_PUBLISHED) {
-    db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => 0, ':nid' => $node->nid));
+    _notify_get_content_types($ntype, TRUE);
+    if (in_array($node->type, $ntype)) {
+      db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => 0, ':nid' => $node->nid));
+    }
   }
 }
 
 /**
  * Implementation of hook_comment_insert().
  *
- * Add any newly created unpublished comments to the queue.
+ * Add tracked newly created unpublished comments to the unpublished queue.
  */
 function notify_comment_insert($comment) {
   if ($comment->status == COMMENT_NOT_PUBLISHED) {
-    db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => $comment->cid, ':nid' => $comment->nid));
+    $bundle = substr($comment->node_type,13);
+    //dpm($bundle, 'bundle');
+    _notify_get_content_types($ntype, TRUE);
+    if (in_array($bundle, $ntype)) {
+      db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => $comment->cid, ':nid' => $comment->nid));
+    }
   }
 }
 
