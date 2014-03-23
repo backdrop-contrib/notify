@@ -45,14 +45,14 @@ INSTALLATION
 
 5. Configure the other general notification settings.
 
-   See the "Usage" section below for details.
+   See the "Administratione" section below for details.
 
 Note that after installing Notify. no users will be subscribed to
 notificatons.  Before anyone is subscribed, no notifications will be
 sent.
 
 ------------------------
-MISCELLANEOUS	
+ADMINISTRATION
 ------------------------
 
 The administrative interface is at: Administer >> Configuration >>
@@ -90,8 +90,10 @@ registration.  Note that this setting has no effect unless you grant
 the anonymous user the right to access notify.
 
 The final section under the Settings tab let you set up notification
-by node type.  Having nothing checked defaults to sending
-notifications about all node types.
+subscriptions by node type.
+
+Having nothing checked defaults to making all content types available
+for subscription.
 
 The Queue tab is to process and inspect the notification queue.
 
@@ -115,7 +117,7 @@ The Users tab is to review and alter per-user settings for those users
 that have the master switch for notifications set to Enabled.
 
 ------------------------
-ADMINISTRATION
+MISCELLANEOUS
 ------------------------
 
 If you enable node revisions (http://drupal.org/node/320614), the

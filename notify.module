@@ -165,7 +165,7 @@ function notify_admin_settings($form, &$form_state) {
   $set = 'ntype';
   $form[$set] = array(
     '#type' => 'fieldset',
-    '#title' => t('Notification by node type'),
+    '#title' => t('Notification subscription by node type'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#description' => t('Tick content types to make available for subscription. Having nothing checked defaults to making all content types available.'),
@@ -1183,7 +1183,8 @@ function _notify_count() {
  * Helper function to debug whithout sending mail.
  */
 function drupal_db_mail($module, $key, $to, $language, $params = array(), $from = NULL, $send = TRUE) {
-  dsm($to);
+  dsm($to, 'to');
+  dsm($params, 'mailbody');
   return TRUE;
 }
 
@@ -1367,8 +1368,13 @@ function _notify_send() {
       }
 
       // Consider new comments if user has permissions and comments are ready.
+      // $userrow['comment']: user subscribes to nodes.
+      // user_access('access comments', $userobj): user allowed to view published
+      // count($comments): comments are queued
       if ($userrow['comment'] && user_access('access comments', $userobj) && count($comments)) {
+        //dsm($userrow['comment'], 'comment'); // DEBUG
         $total_comment_count = 0;
+        // Look at the comment
         foreach ($comments as $nid => $value) {
           // If we don't already have the node, fetch it.
           if (isset($nodes[$nid])) {
@@ -1377,19 +1383,27 @@ function _notify_send() {
           else {
             $node = node_load($nid);
           }
-          
-          // Show no comments if user is not allowed to view this node.
           if (!node_access('view', $node, $userobj)) {
+            dsm($node->type, 'skipping no view access');
             continue;
           }
 
           $comment_count = 0;
 	  $onecomment = '';
+          // dsm($node, 'node');
+          // Look at the comment
           foreach ($value as $commobj) {
+            //dsm($commobj, 'commobj');
             if (!user_access('administer comments', $userobj) && COMMENT_NOT_PUBLISHED == $commobj->status) {
+              //dsm($node->type, 'skipping unpublished');
+              continue;
+            }
+  	    if (!user_access('administer comments', $userobj) && !in_array($node->type, $defaultlist)) {
+              //dsm($node->type, 'skipping not subscribable');
               continue;
             }
             if (!variable_get('notify_unpublished', 1) && COMMENT_NOT_PUBLISHED == $commobj->status) {
+              //dsm($node->type, 'skipping unpublished admin');
               continue;
             }
             // Determine whether to show comment status.
@@ -1522,10 +1536,7 @@ function notify_mail($key, &$message, $params) {
  */
 function notify_node_insert($node) {
   if ($node->status == NODE_NOT_PUBLISHED) {
-    _notify_get_content_types($ntype, TRUE);
-    if (in_array($node->type, $ntype)) {
-      db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => 0, ':nid' => $node->nid));
-    }
+    db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => 0, ':nid' => $node->nid));
   }
 }
 
@@ -1536,11 +1547,7 @@ function notify_node_insert($node) {
  */
 function notify_comment_insert($comment) {
   if ($comment->status == COMMENT_NOT_PUBLISHED) {
-    $bundle = substr($comment->node_type,13);
-    _notify_get_content_types($ntype, TRUE);
-    if (in_array($bundle, $ntype)) {
-      db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => $comment->cid, ':nid' => $comment->nid));
-    }
+    db_query('INSERT INTO {notify_unpublished_queue} (cid, nid) VALUES (:cid, :nid)', array(':cid' => $comment->cid, ':nid' => $comment->nid));
   }
 }
 

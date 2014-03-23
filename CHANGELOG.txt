@@ -1,3 +1,6 @@
+2014-03-23: Gisle Hannemyr <gisle@hannemyr.no>
+- #2222771: Subcriptions by content type now ready for testing.
+
 2014-03-20: Gisle Hannemyr <gisle@hannemyr.no>
 - #2221675: Added views integration submodule.
 
