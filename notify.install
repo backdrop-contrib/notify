@@ -57,8 +57,8 @@ function notify_schema() {
     'primary key' => array('uid'),
   );
 
-  $schema['notify_bytecount'] = array( // UPDATE
-    'description' => 'Stores list of unpublished contents to determine what content have been published since last notification.',
+  $schema['notify_bytecount'] = array(
+    'description' => 'Stores a some signature used to determine if node has really changed.',
     'fields' => array(
       'id' => array(
         'description' => 'primary key',
@@ -83,8 +83,8 @@ function notify_schema() {
     'primary key' => array('id'),
   );
 
-  $schema['notify_subscriptions'] = array( // UPDATE
-    'description' => 'Stores list of unpublished contents to determine what content have been published since last notification.',
+  $schema['notify_subscriptions'] = array(
+    'description' => 'Stores custom subscriptions to content types.',
     'fields' => array(
       'id' => array(
         'description' => 'primary key',
@@ -156,6 +156,76 @@ function notify_uninstall() {
   ->execute();
   cache_clear_all('variables', 'cache');
   unset($conf);
+}
+
+/**
+ * Add notify_bytecount table.  Add notify_subscriptions table.
+ */
+function notify_update_7003() {
+
+  $schema['notify_bytecount'] = array(
+    'description' => 'Stores a some signature used to determine if node has really changed.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'primary key',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => '{node}.nid of the node the byte count is associated with.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'bytes' => array(
+        'description' => 'number of bytes it held last time we notified about it.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  $schema['notify_subscriptions'] = array(
+    'description' => 'Stores custom subscriptions to content types.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'primary key',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => '{users}.uid that subscribes to this type.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'nid' => array(
+        'description' => '{node}.nid of the subscribed node.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'type' => array(
+        'description' => 'machine-readable name of the subscribed type',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  db_create_table('notify_bytecount', $schema['notify_bytecount']);
+  db_create_table('notify_subscriptions', $schema['notify_subscriptions']);
+
 }
 
 /**
