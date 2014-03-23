@@ -40,7 +40,7 @@ function notify_admin_settings_submit($form, &$form_state) {
   variable_set('notify_unpublished', $form_state['values']['notify_unpublished']);
   variable_set('notify_reg_default', $form_state['values']['notify_reg_default']);
   foreach (node_type_get_types() as $type => $object) {
-    $ntype = 'notify_node_type_' . $type;
+    $ntype = NOTIFY_NODE_TYPE . $type;
     variable_set($ntype, $form_state['values'][$ntype]);
   }
   $last  = variable_get('notify_send_last', 0);
@@ -168,7 +168,7 @@ function notify_admin_settings($form, &$form_state) {
     '#title' => t('Notification by node type'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    '#description' => t('Tick node types to track. Having nothing checked defaults to sending notifications about all node types.'),
+    '#description' => t('Tick content types to make available for subscription. Having nothing checked defaults to making all content types available.'),
   );
 
   foreach (node_type_get_types() as $type => $object) {
@@ -323,7 +323,7 @@ function notify_permission() {
   return array(
     'access notify' => array(
       'title' => t('access notify'),
-      'description' => t('Allow user to setup and receive notifications when there is new content'),
+      'description' => t('Allow user to setup and receive notifications when there is new content.  Enable this for the anonymous user role if you want notification enabled by default for new users.'),
     ),
     'administer notify' => array(
       'title' => t('administer notify'),
@@ -416,6 +416,17 @@ function notify_theme() {
 
 
 /**
+ * Helper function to check whether user has custom subscriptions.
+ */
+function _notify_subscriberp($uid) {
+  $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE uid = :uid', array(':uid' => $uid))->fetchObject();
+  $subscriber = $field ? TRUE : FALSE;
+  return $subscriber;
+}
+
+
+
+/**
  * Menu callback; show user notification options.
  */
 function notify_user_settings_form($form, &$form_state, $arg) {
@@ -460,12 +471,15 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#title' => t('Notify status'),
     '#default_value' => $notify->status,
     '#options' => array(t('Disabled'), t('Enabled')),
-    '#description' => t('The master switch overrides all other settings for Notify.  You can use it to suspend notifications without having to disturb any of your options under &#8220;Detailed settings&#8221;.'),
+    '#description' => t('The master switch overrides all other settings for Notify.  You can use it to suspend notifications without having to disturb any of your settings under &#8220;Detailed settings&#8221; and &#8220;Subscriptions&#8221;.'),
   );
 
   $form['notify_page_detailed'] = array(
     '#type' => 'fieldset',
     '#title' => t('Detailed settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('These settings will only be effective if the master switch is set to &#8220;Enabled&#8221;.'),
   );
   $form['notify_page_detailed']['node'] = array(
     '#type' => 'radios',
@@ -494,6 +508,57 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     ),
     '#description' => t('Select the amount of each item that you would like to see in your notification e-mails.'),
   );
+
+  $set = 'notify_page_nodetype';
+  $form[$set] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Subscriptions (N.I.)'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('Tick the content type you want to subscribe to.'),
+  );
+  $alltypes = node_type_get_types();
+  $enatypes = array();
+
+  foreach (node_type_get_types() as $type => $object) {
+    if (variable_get(NOTIFY_NODE_TYPE . $type, 0)) {
+      $enatypes[] = array($type, $object->name);
+    }
+  }
+  if (user_access('administer notify queue', $account) || empty($enatypes )) {
+    $enatypes = array();
+    foreach ($alltypes as $obj) {
+      $enatypes[] = array($obj->type, $obj->name);
+    }
+  }
+
+  $exists = _notify_subscriberp($user->uid);
+  if ($exists) {
+    // Custom subscriptions exists, use those.
+    foreach ($enatypes as $type) {
+      $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :type)', array(':uid' => $user->uid, ':type' => $type[0]))->fetchObject();
+      $default = $field ? TRUE : FALSE;
+      $form[$set][NOTIFY_NODE_TYPE . $type[0]] = array(
+        '#type' => 'checkbox',
+        '#title' => $type[1],
+        '#return_value' => 1,
+        '#default_value' => $default,
+      );
+    }
+  }
+  else {
+    // No custom subscriptions, so inherit default.
+    foreach ($enatypes as $type) {
+      $form[$set][NOTIFY_NODE_TYPE . $type[0]] = array(
+        '#type' => 'checkbox',
+        '#title' => $type[1],
+        '#return_value' => 1,
+        '#default_value' => TRUE,
+      );
+    }
+  }
+
+
   $form['uid'] = array(
     '#type' => 'value',
     '#value' => $account->uid,
@@ -506,24 +571,63 @@ function notify_user_settings_form($form, &$form_state, $arg) {
   return $form;
 }
 
+
 /**
  * Submit for the notify_user_settings form.
  */
 function notify_user_settings_form_submit($form, &$form_state) {
   unset($form);
+  $uid = $form_state['values']['uid'];
   db_delete('notify')
-    ->condition('uid', $form_state['values']['uid'])
+    ->condition('uid', $uid)
     ->execute();
 
   $id = db_insert('notify')
     ->fields(array(
-    'uid' => $form_state['values']['uid'],
+    'uid' => $uid,
     'status' => $form_state['values']['status'],
     'node' => $form_state['values']['node'],
     'teasers' => $form_state['values']['teasers'],
     'comment' => $form_state['values']['comment'],
   ))
     ->execute();
+  $subscriptions = array();
+  foreach ($form_state['values'] as $key => $value) {
+    if (preg_match("/^" . NOTIFY_NODE_TYPE . "/", $key)) {
+      $key = substr($key, 17);
+      //drupal_set_message($uid . '|' . $key . '|' . $value . '|'); // DEBUG
+      $id = db_query('SELECT id FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :key)', array(':uid' => $uid, ':key' => $key))->fetchObject();
+      if ($id) {
+        $id = $id->id;
+	if (!$value) {
+          db_delete('notify_subscriptions')
+            ->condition('id', $id)
+            ->execute();
+        }
+      }
+      else {
+         if ($value) {
+           $subscriber = _notify_subscriberp($uid);
+           if (!$subscriber) {
+	     // Remember that this is a custom subscriber.
+             db_insert('notify_subscriptions')
+               ->fields(array(
+                 'uid' => $uid,
+                 'type' => 'magic custom subscription',
+               ))
+               ->execute();
+           }
+	   db_insert('notify_subscriptions')
+             ->fields(array(
+               'uid' => $uid,
+               'type' => $key,
+             ))
+             ->execute();
+         }
+      }
+    }
+  }
+
   drupal_set_message(t('Notify settings saved.'));
 }
 
@@ -1005,7 +1109,7 @@ function _notify_select_content() {
     WHERE q.cid = :cid AND n.status = :status
     ORDER BY q.nid asc',
     array(':cid' => 0, ':status' => NODE_NOT_PUBLISHED));
-  //dpm($res_nounp); // DEBUG
+    //dsm($res_nounp); // DEBUG
 
   if (module_exists('comment')) {
 
@@ -1160,7 +1264,7 @@ function _notify_send() {
           // Skip to next if user is not allowed to view this node.
           if (!user_access('administer nodes', $userobj) && NODE_NOT_PUBLISHED == $node->status) {
             continue;
-	    //dpm('pre'); // DEBUG
+	    //dsm('pre'); // DEBUG
           }
 	  if (!variable_get('notify_unpublished', 1) && NODE_NOT_PUBLISHED == $node->status) {
             continue;
@@ -1281,7 +1385,7 @@ function _notify_send() {
 
       // If there was anything new, send mail.
       if ($body) {
-        //dpm($body);  // DEBUG
+        //dsm($body);  // DEBUG
         //$headers = array();
         //'From' => "$from_name <$from>");
         if (drupal_mail('notify', 'send', $userrow['mail'], user_preferred_language($userrow), array('content' => $body, 'user' => $userobj, 'viewmode' => $userrow['teasers']))) {

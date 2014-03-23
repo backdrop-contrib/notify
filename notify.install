@@ -57,6 +57,66 @@ function notify_schema() {
     'primary key' => array('uid'),
   );
 
+  $schema['notify_bytecount'] = array( // UPDATE
+    'description' => 'Stores list of unpublished contents to determine what content have been published since last notification.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'primary key',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => '{node}.nid of the node the byte count is associated with.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'bytes' => array(
+        'description' => 'number of bytes it held last time we notified about it.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  $schema['notify_subscriptions'] = array( // UPDATE
+    'description' => 'Stores list of unpublished contents to determine what content have been published since last notification.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'primary key',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => '{users}.uid that subscribes to this type.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'nid' => array(
+        'description' => '{node}.nid of the subscribed node.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'type' => array(
+        'description' => 'machine-readable name of the subscribed type',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
   $schema['notify_unpublished_queue'] = array(
     'description' => 'Stores list of unpublished contents to determine what content have been published since last notification.',
     'fields' => array(
@@ -67,13 +127,13 @@ function notify_schema() {
         'not null' => TRUE,
       ),
       'cid' => array(
-        'description' => 'The {comment}.cid of the unpublished comment, or 0 if it is a node.',
+        'description' => '{comment}.cid of the unpublished comment, or 0 if it is a node.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
       'nid' => array(
-        'description' => 'The {node}.nid of the uinpublished node, or {node}.nid to the node which the comment is a reply.',
+        'description' => '{node}.nid of the uinpublished node, or {node}.nid to the node which the comment is a reply.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
