@@ -800,7 +800,7 @@ function notify_admin_queue_submit($form, &$form_state) {
       db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => $row->cid, ':nid' => $row->nid));
     }
     variable_set('notify_send_start', REQUEST_TIME);
-    variable_set('notify_send_last', REQUEST_TIME);
+    variable_set('notify_send_last', REQUEST_TIME); /* Comment to DEBUG */
     variable_set('notify_send_next', 0);
     variable_set('notify_users', array());
     drupal_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
@@ -1023,7 +1023,7 @@ function _notify_content($node, $comment, $view_mode) {
  *   Reference to array with tracked types.
  *
  * @param bool $foop
- *   TRUE if we return full lost if empty,
+ *   TRUE if we return full list if empty,
  *
  */
 function _notify_get_content_types(&$ntype, $foop) {
@@ -1073,7 +1073,17 @@ function _notify_select_content() {
     }
   }
 
+  /* We now get content from all types, to let the notify queue admin
+     track everything
+
   _notify_get_content_types($ntype, FALSE);
+  dsm($ntype, 'SUBSCRIBABLE');
+  */
+  $all = node_type_get_types();
+  $ntype = array();
+  foreach ($all as $obj) {
+    $ntype[] = $obj->type;
+  }
 
   // Build query object to fetch new nodes.
   $q = db_select('node', 'n');
@@ -1169,6 +1179,14 @@ function _notify_count() {
   return array($np, $cp, $nn, $cn, $nu, $cu);
 }
 
+/**
+ * Helper function to debug whithout sending mail.
+ */
+function drupal_db_mail($module, $key, $to, $language, $params = array(), $from = NULL, $send = TRUE) {
+  dsm($to);
+  return TRUE;
+}
+
 
 /**
  * Helper function to send the notification e-mail batch.
@@ -1181,6 +1199,11 @@ function _notify_send() {
   $num_sent = 0;
   $num_fail = 0;
   list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
+
+
+  // list ($xnp, $xcp, $xnn, $xcn, $xnu, $xcu) = _notify_count(); // DEBUG
+  _notify_get_content_types($defaultlist, TRUE);
+
 
   // Get the nodes and comments queued.
   $count = 0;
@@ -1255,20 +1278,49 @@ function _notify_send() {
       $node_body = $comment_body = '';
       //drupal_set_message('[' . $userobj->name . ']'); // DEBUG
 
-      // Write new node content to e-mail if user has permissions and nodes are
-      // ready to be sent.
+      // Consider new node content if user has permissions and nodes are ready.
+      // $userrow['node']: user subscribes to nodes.
+      // user_access('access content', $userobj): user allowed to view published
+      // count($nodes): nodes are queued
+      //dsm($userrow, 'node'); // user_access('access content', $userobj) && count($nodes))
       if ($userrow['node'] && user_access('access content', $userobj) && count($nodes)) {
+        // dsm($userrow['uid'], 'uid'); // DEBUG
 
         $node_count = 0;
+        // Look at the node
         foreach ($nodes as $node) {
           // Skip to next if user is not allowed to view this node.
           if (!user_access('administer nodes', $userobj) && NODE_NOT_PUBLISHED == $node->status) {
+            // dsm($node->type, 'skipping unpublished');
             continue;
-	    //dsm('pre'); // DEBUG
+          }
+	  if (!user_access('administer nodes', $userobj) && !in_array($node->type, $defaultlist)) {
+            // dsm($node->type, 'skipping not subscribable');
+            continue;
           }
 	  if (!variable_get('notify_unpublished', 1) && NODE_NOT_PUBLISHED == $node->status) {
+            // dsm($node->type, 'skipping unpublished admin');
             continue;
           }
+
+	  $sss = _notify_subscriberp($userrow['uid']);
+
+	  if (_notify_subscriberp($userrow['uid'])) {
+	    // Custom subscriptions exists, use those.
+	    $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :type)', array(':uid' => $userrow['uid'], ':type' => $node->type))->fetchObject();
+	    $default = $field ? TRUE : FALSE;
+	    if (!$default) {
+   	      // dsm($node->type, 'skipping not subscribed');
+              continue;
+	    }
+	    else {
+    	      // dsm($node->type, 'sending');
+            }
+          }
+          else {
+    	    // dsm($node->type, 'sending');
+          }
+
 
           $node_revs_list = node_revision_list($node);
           $nrl_vals = array_values($node_revs_list);
@@ -1314,8 +1366,7 @@ function _notify_send() {
         }
       }
 
-      // Write new comments to e-mail if user has permissions and there
-      // are comments to be sent.
+      // Consider new comments if user has permissions and comments are ready.
       if ($userrow['comment'] && user_access('access comments', $userobj) && count($comments)) {
         $total_comment_count = 0;
         foreach ($comments as $nid => $value) {
@@ -1408,7 +1459,7 @@ function _notify_send() {
   $rest = count(variable_get('notify_users', array()));
   if (!$rest) {
     $send_start = variable_get('notify_send_start', 0);	
-    variable_set('notify_send_last', $send_start);	
+    variable_set('notify_send_last', $send_start);	/* Comment to DEBUG */
     variable_set('notify_send_next', 0);
     list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
     foreach ($res_nopub as $row) {
