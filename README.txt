@@ -1,24 +1,46 @@
-------------------------
-NOTIFY 7.x MODULE README
-------------------------
+NOTIFY README.txt
+=================
+
+
+CONTENTS OF THIS FILE
+---------------------
+
+* Introduction
+* Requirements
+* Installation
+* Configuration
+  - Administration form
+  - User's settings
+* Maintainers
+
+
+INTRODUCTION
+------------
 
 Notify is a simple, lightweight notification module. It provides
 e-mail notifications to subscribers about updates and changes to the
 Drupal web site.
 
-Submit bug reports and comments via the project's issues queue on
-drupal.org: http://drupal.org/project/issues/notify.
+* For a full description of the module, visit the project page:
+  https://drupal.org/project/notify
 
-------------------------
+* To submit bug reports and feature suggestions, or to track changes:
+  https://drupal.org/project/issues/notify
+
+If you enable node revisions (http://drupal.org/node/320614), the
+notification e-mail will also mention the name of the last person to
+edit the node.
+
+
 REQUIREMENTS
-------------------------
+------------
 
 This module requires a supported version of Drupal and cron to be
 running.
 
-------------------------
+
 INSTALLATION
-------------------------
+------------
 
 1. Extract the notify project directory into the directory where you
    keep contributed modules (e.g. sites/all/modules/).
@@ -28,7 +50,7 @@ INSTALLATION
 
 3. Run the update script if you're upgrading from 7.x-1.0-alpha1.
 
-4. Modify permissions on the People >> Permissions page.
+4. Modify permissions on the People » Permissions page.
 
    To adminster the notify main settings and user notfification
    settings, grant the permission "administer notify".
@@ -45,20 +67,30 @@ INSTALLATION
 
 5. Configure the other general notification settings.
 
-   See the "Administratione" section below for details.
+   See the "Administration form" section below for details.
 
-Note that after installing Notify. no users will be subscribed to
-notificatons.  Before anyone is subscribed, no notifications will be
+Notify will not automatically subscribe anyone to notifications upon
+installation.  Before anyone is subscribed, no notifications will be
 sent.
 
-------------------------
-ADMINISTRATION
-------------------------
 
-The administrative interface is at: Administer >> Configuration >>
-People >> Notification settings.
+CONFIGURATION
+-------------
 
-The administrative interface consists of three tabs:
+Administration form
+-------------------
+
+The administrative interface is at: Administer » Configuration »
+People » Notification settings.
+
+There are three tabs:
+
+1. Settings: All the main options for this module.
+2. Queue: Process and inspect the notification queue.
+3. Users: Review and alter per-user settings.
+
+
+Settings
 
 The Settings tab allow you to configure how the module shall work.
 
@@ -95,6 +127,9 @@ subscriptions by node type.
 Having nothing checked defaults to making all content types available
 for subscription.
 
+
+Queue
+
 The Queue tab is to process and inspect the notification queue.
 
 The radio buttons below the heading "Process notification queue" has
@@ -113,23 +148,22 @@ the following meanings:
 The status panel gives the administrator a rough overview of the
 current state of the notification queue.
 
+
+Users
+
 The Users tab is to review and alter per-user settings for those users
 that have the master switch for notifications set to Enabled.
 
-------------------------
-MISCELLANEOUS
-------------------------
 
-If you enable node revisions (http://drupal.org/node/320614), the
-notification e-mail will also mention the name of the last person to
-edit the node.
+User's settings
+---------------
 
 To manage your own notification preferences, click on the
 "Notification settings" on your "My account" page.
 
-------------------------
-AUTHOR / MAINTAINER
-------------------------
+
+MAINTAINERS
+-----------
 
 Kjartan Mannes <kjartan@drop.org> is the original author.
 
