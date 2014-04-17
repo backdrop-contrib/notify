@@ -122,10 +122,8 @@ registration.  Note that this setting has no effect unless you grant
 the anonymous user the right to access notify.
 
 The final section under the Settings tab let you set up notification
-subscriptions by node type.
-
-Having nothing checked defaults to making all content types available
-for subscription.
+subscriptions by node type.  Having nothing checked defaults to making
+all content types available for subscription.
 
 
 Queue

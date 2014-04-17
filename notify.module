@@ -17,8 +17,9 @@ define('NOTIFY_NODE_TYPE', 'notify_node_type_');
  * Implements hook_help().
  */
 function notify_help($path, $arg) {
-  //$tt = strtotime('2014-02-15 23:00'); variable_set('notify_send_last', $tt);	 dpm($tt, 'notify_send_last');
-  //$tt = strtotime('2014-03-15 14:00'); variable_set('notify_send_next', $tt); dpm($tt, 'notify_send_next');
+  //$tt = strtotime('2014-04-16 10:05'); variable_set('notify_send_start', $tt); dpm($tt, 'notify_send_start');
+  //$tt = strtotime('2014-04-16 10:05'); variable_set('notify_send_last',  $tt); dpm($tt, 'notify_send_last');
+  //$tt = strtotime('2014-04-04 09:00'); variable_set('notify_cron_next',  $tt); dpm($tt, 'notify_cron_next');
 
   switch ($path) {
     case 'admin/help#notify':
@@ -45,7 +46,7 @@ function notify_admin_settings_submit($form, &$form_state) {
     variable_set($ntype, $form_state['values'][$ntype]);
   }
   $last  = variable_get('notify_send_last', 0);
-  _notify_next_notificaton($last, TRUE);
+  variable_set('notify_cron_next', 0); // Force reset.
   drupal_set_message(t('Notify admin settings saved.'));
 }
 
@@ -191,61 +192,53 @@ function notify_admin_settings($form, &$form_state) {
 }
 
 /**
- * Compute the next time a notification should be sent.
+ * Compute the next time a notification shall be sent by adding to
+ * $send_last if required, Don't update the variable (leave that to
+ * caller).
  * 
  * @param int $send_last
  *   timestamp of last notification
  *
- * @param bool $reset
- *   force reset clock for 'notify_send_next'.
- *
  * @return int
  *   -1 never, 0 send instantly, else next time to notify.
  */
-function _notify_next_notificaton($send_last, $reset=0) {
+function _notify_next_notificaton($send_last) {
   $send_interval = variable_get('notify_period', 86400);
+  // Two special cases: Never and instantly.
   if ($send_interval < 0) {
-    variable_set('notify_send_next', REQUEST_TIME+31536120); // now +1 year
     return(-1);
   }
   elseif (!$send_interval) {
-    variable_set('notify_send_next', 0);
     return(0);
   }
-  $next_last = $next_frst = $send_last + $send_interval;
-  $next = variable_get('notify_send_next', 0);
-  if (($send_interval < 86400) && (REQUEST_TIME >= $next_frst)) {
-    return(0);
-  }
-  $send_hour  = variable_get('notify_send_hour',  9);
-  if (TRUE) {
-  //if (!$next || $reset) {
-    if ($send_interval >= 86400) {
-      $next_last = strtotime(date('Y-m-d ', $next_frst) . $send_hour . ':00:00');
-      if ($next_last < REQUEST_TIME) $next_last += 86400;
+  $next_time_to_send = $send_last + $send_interval;
+  if ($send_interval < 86400) {
+    if (REQUEST_TIME >= $next_time_to_send) {
+      return(0);
     }
-    variable_set('notify_send_next', $next_last);
-    return($next_last);
+    else {
+      return($next_time_to_send);
+    }
   }
-  elseif (($send_interval >= 86400) && (REQUEST_TIME >= $next_frst)) {
-    _debug_dpm_times('_n_n_next', 'send_last', $send_last);
-    //drupal_set_message('Add 1 day to to <em>send_last</em> to produce <em>next_last</em> and <em>next_first</em>.'); // DEBUG
-    _debug_dpm_times('_n_n_next', 'next_frst', $next_frst);
 
-    // Compute the next as the sending hour today.
-    $next= strtotime(date('Y-m-d ', REQUEST_TIME) . $send_hour . ':00:00');
-    _debug_dpm_times('_n_n_next', 'next', $next);
-    // Add one day if already past this.
-    //if ($next < REQUEST_TIME) $next += 86400;
+  // Interval >= 1 day.
+
+  $next_time_to_send = $send_last;
+  _debug_dpm_times('_n_next_n', 'next_time_to_send 1', $next_time_to_send);
+  $send_hour  = variable_get('notify_send_hour',  9);
+
+  // Compute the next as the sending hour today.
+  $next_time_to_send = strtotime(date('Y-m-d ', $next_time_to_send) . $send_hour . ':00:00');
+  if ($next_time_to_send < REQUEST_TIME) {
+    $next_time_to_send  += 86400;
   }
-  return($next);
+  return($next_time_to_send);
 }
-
 
 function _debug_dpm_times($id, $varname, $raw) {
    return;
    $cooked = format_date($raw, 'short');
-   drupal_set_message($varname . '@' . $id . ' =&gt; [' . $raw . '] ' . $cooked);
+   drupal_set_message($id . ': ' . $varname . ' &rarr; [' . $raw . '] ' . $cooked);
 }
 
 /**
@@ -253,20 +246,29 @@ function _debug_dpm_times($id, $varname, $raw) {
  *
  */
 function notify_cron() {
-  $last = variable_get('notify_send_last', 0);
-  _debug_dpm_times('h_cron', 'last', $last);
-  $next = _notify_next_notificaton($last);
-  $quep = variable_get('notify_users', array());
+  $send_last = variable_get('notify_send_last', 0);
+  $cron_next = variable_get('notify_cron_next', 0);
+  $next = _notify_next_notificaton($send_last);
+  $doitp = variable_get('notify_users', array());
 
-  _debug_dpm_times('h_cron', 'REQUEST_TIME', REQUEST_TIME);
-  _debug_dpm_times('h_cron', 'next', $next);
-  if ((REQUEST_TIME > $next) || $quep) {
+  _debug_dpm_times('n_cron', 'REQUEST_TIME', REQUEST_TIME);
+  _debug_dpm_times('n_cron', 'send_last', $send_last);
+  _debug_dpm_times('n_cron', 'cron_next', $cron_next);
+  _debug_dpm_times('n_cron', 'next', $next);
+
+  $period = variable_get("notify_period", 0);
+  if (($period >= 86400) && ($cron_next < REQUEST_TIME)) {
+    $doitp = TRUE;
+  }
+
+  if ((REQUEST_TIME > $next) || $doitp) {
     list($num_sent, $num_fail) = _notify_send();
-    //dpm($num_sent, 'num_sent'); // DEBUG
     $num_sent += variable_get('notify_num_sent', 0);
     $num_fail += variable_get('notify_num_failed', 0);
     variable_set('notify_num_sent', $num_sent);
     variable_set('notify_num_failed', $num_fail);
+    $next = _notify_next_notificaton(REQUEST_TIME);
+    variable_set('notify_cron_next', $next);
   }
 }
 
@@ -656,17 +658,13 @@ function notify_user_settings_form_submit($form, &$form_state) {
  * Menu callback, show admin list of user notification settings.
  */
 function notify_admin_queue($form, &$form_state) {
-  $notify_send_last  = variable_get('notify_send_last', 0);
-  $next_last = _notify_next_notificaton($notify_send_last);
-  _debug_dpm_times('n_a_queue', 'next_last', $next_last);
-  $db_send_next  = variable_get('notify_send_next', 0); // DEBUG
-  _debug_dpm_times('n_a_queue', 'send_next', $db_send_next);
-
   $period = variable_get('notify_period', 86400);
   $since = variable_get('notify_send_last', REQUEST_TIME - $period);
   $lastdate = format_date($since, 'short');
   $start = variable_get('notify_send_start', 0);
   $startdate = format_date($start, 'short');
+  $notify_send_last  = variable_get('notify_send_last', 0);
+  $next_last = _notify_next_notificaton($notify_send_last);
 
   if ($next_last == -1) {
     $batch_msg = t('No more notifications scheduled');
@@ -824,8 +822,8 @@ function notify_admin_queue_submit($form, &$form_state) {
       db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => $row->cid, ':nid' => $row->nid));
     }
     variable_set('notify_send_start', REQUEST_TIME);
-    variable_set('notify_send_last', REQUEST_TIME); /* Comment to DEBUG */
-    variable_set('notify_send_next', 0);
+    variable_set('notify_send_last', REQUEST_TIME); /* Comment to DEBUGX: Don't update notify_send_last. */
+    variable_set('notify_cron_next', 0); // Force reset
     variable_set('notify_users', array());
     drupal_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
     return;
@@ -1001,7 +999,7 @@ function _notify_content($node, $comment, $view_mode) {
   }
   elseif (3 == $view_mode && !$comment) {
     $content = node_view($node, 'full');
-    // Run of all children so that every attacked field is also included.
+    // Run of all children so that every attached field is also included.
     $children = element_children($content, TRUE);
 
     foreach ($children as $child) {
@@ -1097,12 +1095,6 @@ function _notify_select_content() {
     }
   }
 
-  /* We now get content from all types, to let the notify queue admin
-     track everything
-
-  _notify_get_content_types($ntype, FALSE);
-  dsm($ntype, 'SUBSCRIBABLE');
-  */
   $all = node_type_get_types();
   $ntype = array();
   foreach ($all as $obj) {
@@ -1121,9 +1113,11 @@ function _notify_select_content() {
   }
   else {
     $q->condition('n.created', $since, '>');
-    $q->condition('n.created', $send_start, '<=');
+    //$q->condition('n.created', $send_start, '<=');
   }
   $q->orderBy('n.created', 'asc');
+  //dpm((string)$q);
+  //dpm($q->arguments());
   $res_nodes = $q->execute();
 
   // Get published nodes in unpublished queue
@@ -1143,10 +1137,8 @@ function _notify_select_content() {
     WHERE q.cid = :cid AND n.status = :status
     ORDER BY q.nid asc',
     array(':cid' => 0, ':status' => NODE_NOT_PUBLISHED));
-    //dsm($res_nounp); // DEBUG
 
   if (module_exists('comment')) {
-
     // Fetch new published comments.
     $q = db_select('comment', 'c');
     $q->join('node', 'n', 'c.nid = n.nid');
@@ -1207,8 +1199,8 @@ function _notify_count() {
  * Helper function to debug whithout sending mail.
  */
 function drupal_db_mail($module, $key, $to, $language, $params = array(), $from = NULL, $send = TRUE) {
-  dsm($to, 'to');
-  dsm($params, 'mailbody');
+  dpm($to, 'to');
+  dpm($params, 'mailbody');
   return TRUE;
 }
 
@@ -1301,30 +1293,24 @@ function _notify_send() {
       }
       $userobj = user_load($userrow['uid']);
       $node_body = $comment_body = '';
-      //drupal_set_message('[' . $userobj->name . ']'); // DEBUG
 
       // Consider new node content if user has permissions and nodes are ready.
       // $userrow['node']: user subscribes to nodes.
       // user_access('access content', $userobj): user allowed to view published
       // count($nodes): nodes are queued
-      //dsm($userrow, 'node'); // user_access('access content', $userobj) && count($nodes))
       if ($userrow['node'] && user_access('access content', $userobj) && count($nodes)) {
-        // dsm($userrow['uid'], 'uid'); // DEBUG
 
         $node_count = 0;
         // Look at the node
         foreach ($nodes as $node) {
           // Skip to next if user is not allowed to view this node.
           if (!user_access('administer nodes', $userobj) && NODE_NOT_PUBLISHED == $node->status) {
-            // dsm($node->type, 'skipping unpublished');
             continue;
           }
 	  if (!user_access('administer nodes', $userobj) && !in_array($node->type, $defaultlist)) {
-            // dsm($node->type, 'skipping not subscribable');
             continue;
           }
 	  if (!variable_get('notify_unpublished', 1) && NODE_NOT_PUBLISHED == $node->status) {
-            // dsm($node->type, 'skipping unpublished admin');
             continue;
           }
 
@@ -1335,15 +1321,8 @@ function _notify_send() {
 	    $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :type)', array(':uid' => $userrow['uid'], ':type' => $node->type))->fetchObject();
 	    $default = $field ? TRUE : FALSE;
 	    if (!$default) {
-   	      // dsm($node->type, 'skipping not subscribed');
               continue;
 	    }
-	    else {
-    	      // dsm($node->type, 'sending');
-            }
-          }
-          else {
-    	    // dsm($node->type, 'sending');
           }
 
 
@@ -1396,7 +1375,6 @@ function _notify_send() {
       // user_access('access comments', $userobj): user allowed to view published
       // count($comments): comments are queued
       if ($userrow['comment'] && user_access('access comments', $userobj) && count($comments)) {
-        //dsm($userrow['comment'], 'comment'); // DEBUG
         $total_comment_count = 0;
         // Look at the comment
         foreach ($comments as $nid => $value) {
@@ -1408,26 +1386,20 @@ function _notify_send() {
             $node = node_load($nid);
           }
           if (!node_access('view', $node, $userobj)) {
-            dsm($node->type, 'skipping no view access');
             continue;
           }
 
           $comment_count = 0;
 	  $onecomment = '';
-          // dsm($node, 'node');
           // Look at the comment
           foreach ($value as $commobj) {
-            //dsm($commobj, 'commobj');
             if (!user_access('administer comments', $userobj) && COMMENT_NOT_PUBLISHED == $commobj->status) {
-              //dsm($node->type, 'skipping unpublished');
               continue;
             }
   	    if (!user_access('administer comments', $userobj) && !in_array($node->type, $defaultlist)) {
-              //dsm($node->type, 'skipping not subscribable');
               continue;
             }
             if (!variable_get('notify_unpublished', 1) && COMMENT_NOT_PUBLISHED == $commobj->status) {
-              //dsm($node->type, 'skipping unpublished admin');
               continue;
             }
             // Determine whether to show comment status.
@@ -1474,7 +1446,7 @@ function _notify_send() {
 
       // If there was anything new, send mail.
       if ($body) {
-        //dsm($body);  // DEBUG
+        //dpm($body);  // DEBUG
         //$headers = array();
         //'From' => "$from_name <$from>");
         if (drupal_mail('notify', 'send', $userrow['mail'], user_preferred_language($userrow), array('content' => $body, 'user' => $userobj, 'viewmode' => $userrow['teasers']))) {
@@ -1495,10 +1467,11 @@ function _notify_send() {
     }
   }
   $rest = count(variable_get('notify_users', array()));
+  // If $rest is empty, then set notify_send_last.
   if (!$rest) {
     $send_start = variable_get('notify_send_start', 0);	
-    variable_set('notify_send_last', $send_start);	/* Comment to DEBUG */
-    variable_set('notify_send_next', 0);
+    variable_set('notify_send_last', $send_start); /* Comment to DEBUGX: Don't update notify_send_last. */
+    variable_set('notify_cron_next', 0); // Force reset
     list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
     foreach ($res_nopub as $row) {
       db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
