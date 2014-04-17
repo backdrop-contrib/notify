@@ -1113,7 +1113,7 @@ function _notify_select_content() {
   }
   else {
     $q->condition('n.created', $since, '>');
-    //$q->condition('n.created', $send_start, '<=');
+    $q->condition('n.created', $send_start, '<=');
   }
   $q->orderBy('n.created', 'asc');
   //dpm((string)$q);
