@@ -203,16 +203,16 @@ function notify_admin_settings($form, &$form_state) {
  *   -1 never, 0 send instantly, else next time to notify.
  */
 function _notify_next_notificaton($send_last) {
-  $send_interval = variable_get('notify_period', 86400);
+  $period = variable_get('notify_period', 86400);
   // Two special cases: Never and instantly.
-  if ($send_interval < 0) {
+  if ($period < 0) {
     return(-1);
   }
-  elseif (!$send_interval) {
+  elseif (!$period) {
     return(0);
   }
-  $next_time_to_send = $send_last + $send_interval;
-  if ($send_interval < 86400) {
+  $next_time_to_send = $send_last + $period;
+  if ($period < 86400) {
     if (REQUEST_TIME >= $next_time_to_send) {
       return(0);
     }
@@ -224,7 +224,7 @@ function _notify_next_notificaton($send_last) {
   // Interval >= 1 day.
 
   $next_time_to_send = $send_last;
-  _debug_dpm_times('_n_next_n', 'next_time_to_send 1', $next_time_to_send);
+
   $send_hour  = variable_get('notify_send_hour',  9);
 
   // Compute the next as the sending hour today.
@@ -232,13 +232,17 @@ function _notify_next_notificaton($send_last) {
   if ($next_time_to_send < REQUEST_TIME) {
     $next_time_to_send  += 86400;
   }
+  _debug_dpm_times('_n_next_n', 'next_time_to_send', $next_time_to_send);
   return($next_time_to_send);
 }
 
 function _debug_dpm_times($id, $varname, $raw) {
    return;
-   $cooked = format_date($raw, 'short');
-   drupal_set_message($id . ': ' . $varname . ' &rarr; [' . $raw . '] ' . $cooked);
+
+   $cooked = format_date($raw, 'custom', 'Y-m-d H:i:s O');
+   //$_debug = $varname . '  ⇒ [' . $raw . '] ' . $cooked;
+   //debug($_debug, $id);
+   drupal_set_message($id . ': ' . $debug);
 }
 
 /**
@@ -246,20 +250,49 @@ function _debug_dpm_times($id, $varname, $raw) {
  *
  */
 function notify_cron() {
-  $send_last = variable_get('notify_send_last', 0);
-  $cron_next = variable_get('notify_cron_next', 0);
-  $next = _notify_next_notificaton($send_last);
-  $doitp = variable_get('notify_users', array());
 
-  _debug_dpm_times('n_cron', 'REQUEST_TIME', REQUEST_TIME);
-  _debug_dpm_times('n_cron', 'send_last', $send_last);
-  _debug_dpm_times('n_cron', 'cron_next', $cron_next);
-  _debug_dpm_times('n_cron', 'next', $next);
+  $period = variable_get("notify_period", -2);
+  if (-2 == $period) {
+    return;
+  }
 
   $period = variable_get("notify_period", 0);
-  if (($period >= 86400) && ($cron_next < REQUEST_TIME)) {
-    $doitp = TRUE;
+  if (-1 == $period) {
+    return; // Never notify.
   }
+
+  $send_last = variable_get('notify_send_last', 0);
+  $cron_next = variable_get('notify_cron_next', 0);
+  $doitp = variable_get('notify_users', array());
+
+  // DEBUG
+  /*
+  $_debug_bool = $doitp ? 'TRUE' : 'FALSE';
+  $_debug = $_debug_bool . ' || (' . $period  . ' >= 86400) && (' . $cron_next . ' < ' . REQUEST_TIME . ')';
+  $_debugtime2 = format_date($cron_next, 'custom', 'Y-m-d H:i:s');
+  debug($_debugtime2, 'hook_cron: notify_cron_next');
+  debug($_debug, 'hook_cron: $doitp =');
+  */
+
+  if ($period >= 86400) {
+    if ($doitp || ($cron_next < REQUEST_TIME)) {
+      $doitp = TRUE;
+    }
+    else {
+      return;
+    }
+  }
+  $next = _notify_next_notificaton($send_last);
+
+
+  // DEBUG
+  /*
+  $_debug_bool = $doitp ? 'TRUE' : 'FALSE';
+  $_debugtime1 = format_date(REQUEST_TIME, 'custom', 'Y-m-d H:i:s');
+  $_debugtime2 = format_date($next, 'custom', 'Y-m-d H:i:s');
+  $_debug = $_debugtime1 . ' > ' . $_debugtime2 . ' || ' . $_debug_bool;
+  debug($_debug, 'hook_cron: do it if this is TRUE');
+  */
 
   if ((REQUEST_TIME > $next) || $doitp) {
     list($num_sent, $num_fail) = _notify_send();
@@ -1116,8 +1149,6 @@ function _notify_select_content() {
     $q->condition('n.created', $send_start, '<=');
   }
   $q->orderBy('n.created', 'asc');
-  //dpm((string)$q);
-  //dpm($q->arguments());
   $res_nodes = $q->execute();
 
   // Get published nodes in unpublished queue
@@ -1198,11 +1229,14 @@ function _notify_count() {
 /**
  * Helper function to debug whithout sending mail.
  */
+/*
 function drupal_db_mail($module, $key, $to, $language, $params = array(), $from = NULL, $send = TRUE) {
+  dpm('drupal_db_mail');
   dpm($to, 'to');
   dpm($params, 'mailbody');
   return TRUE;
 }
+*/
 
 
 /**
@@ -1217,10 +1251,8 @@ function _notify_send() {
   $num_fail = 0;
   list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
 
-
   // list ($xnp, $xcp, $xnn, $xcn, $xnu, $xcu) = _notify_count(); // DEBUG
   _notify_get_content_types($defaultlist, TRUE);
-
 
   // Get the nodes and comments queued.
   $count = 0;
@@ -1284,7 +1316,8 @@ function _notify_send() {
       variable_set('notify_num_failed', 0);
     }
 
-    $batchlimit = variable_get('notify_batchsize', array(100));
+    $batchlimitarr = variable_get('notify_batchsize', array(100));
+    $batchlimit = $batchlimitarr[0];
     $batchcount = 0;
     //$queue = $uresult;
     foreach ($uresult as $index => $userrow) {
@@ -1354,6 +1387,9 @@ function _notify_send() {
             '!update' => $update,
             '!status' => $status,
           )) . "\n";
+
+	  //$debugdate = format_date($node->created, 'custom', 'Y-m-d H:i:s');
+          //$node_body .= 'DEBUG: ' . $debugdate . "\n";
 
           $node_body .= '   [ ' . url('node/' . $node->nid, array(
             'absolute' => TRUE,
@@ -1446,9 +1482,6 @@ function _notify_send() {
 
       // If there was anything new, send mail.
       if ($body) {
-        //dpm($body);  // DEBUG
-        //$headers = array();
-        //'From' => "$from_name <$from>");
         if (drupal_mail('notify', 'send', $userrow['mail'], user_preferred_language($userrow), array('content' => $body, 'user' => $userobj, 'viewmode' => $userrow['teasers']))) {
           watchdog('notify', 'User %name (%mail) notified successfully.', array('%name' => $userrow['name'], '%mail' => $userrow['mail']), WATCHDOG_INFO);
 	  $num_sent++;

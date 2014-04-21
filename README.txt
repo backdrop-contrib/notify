@@ -11,6 +11,7 @@ CONTENTS OF THIS FILE
 * Configuration
   - Administration form
   - User's settings
+* Testing
 * Maintainers
 
 
@@ -158,6 +159,14 @@ User's settings
 
 To manage your own notification preferences, click on the
 "Notification settings" on your "My account" page.
+
+
+TESTING
+-------
+
+The file notify.test contains a test suite for Notify that make use of
+the core Testing module.  See comments inside the file for details
+about the individual tests.
 
 
 MAINTAINERS
