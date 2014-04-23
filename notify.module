@@ -1023,15 +1023,12 @@ function notify_admin_users($form, &$form_state) {
     '#markup' => '<p>' . t('You may check/uncheck the checkboxes and the &#8220;How much&#8220;-selection to change the users\' subscription. Press &#8220;Save settings&#8220; to save the settings.' . '</p>'),
   );
 
-  /*
-  TODO
   $form['bulk'] = array(
-    '#title' => t('Batch subscribe all users'),
+    '#title' => t('Bulk subscribe all users'),
     '#type' => 'checkbox',
     '#default_value' => FALSE,
-    '#description' => t('Set the master switch for all users to enabled.'),
+    '#description' => t('Subscribe all non-blocked users that do not already subscribe to notifications.'),
   );
-  */
 
   $form['submit'] = array(
     '#type' => 'submit',
@@ -1046,7 +1043,26 @@ function notify_admin_users($form, &$form_state) {
 function notify_admin_users_submit($form, &$form_state) {
   unset($form);
 
-  if (!array_key_exists('users', $form_state['values'])) {
+  if (isset($form_state['values']['bulk']) && 1 == $form_state['values']['bulk']) {
+    $node = variable_get('notify_def_node', 1);
+    $comment = variable_get('notify_def_comment', 0);
+    $teasers = variable_get('notify_def_teasers', 0);
+    $result = db_query('SELECT u.uid, u.name FROM {users} u WHERE u.uid > 0 AND status = 1 AND u.uid NOT IN (SELECT n.uid FROM {notify} n)');
+
+    foreach ($result as $record) {
+      db_insert('notify')
+      ->fields(array(
+        'uid' => $record->uid,
+        'status' => 1,
+        'node' => $node,
+        'comment' => $comment,
+        'teasers' => $teasers,
+        'attempts' => 0,
+      ))
+      ->execute();
+    }
+  }
+  elseif (!array_key_exists('users', $form_state['values'])) {
     drupal_set_message(t('No users have notifications enabled.'), 'warning');
     return;
   }

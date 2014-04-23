@@ -162,6 +162,10 @@ Users
 The Users tab is to review and alter per-user settings for those users
 that have the master switch for notifications set to "Enabled".
 
+If you tick the box "Bulk subscribe all users", all non-blocked users
+that do not already subscribe to notifications will be subscribed with
+the initial settings set under the deafult tab.
+
 
 User's settings
 ---------------
