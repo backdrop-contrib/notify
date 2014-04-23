@@ -17,9 +17,14 @@ define('NOTIFY_NODE_TYPE', 'notify_node_type_');
  * Implements hook_help().
  */
 function notify_help($path, $arg) {
+  /*
+  variable_set('notify_send_start', 0); dpm(0, 'notify_send_start');
+  variable_set('notify_users', array()); dpm('cancelled batch');
+  $tt = strtotime('2014-04-17 10:05'); variable_set('notify_send_last',  $tt); dpm($tt, 'notify_send_last');
+  $tt = strtotime('2014-04-22 08:00'); variable_set('notify_cron_next',  $tt); dpm($tt, 'notify_cron_next');
+  /* */
+
   //$tt = strtotime('2014-04-16 10:05'); variable_set('notify_send_start', $tt); dpm($tt, 'notify_send_start');
-  //$tt = strtotime('2014-04-16 10:05'); variable_set('notify_send_last',  $tt); dpm($tt, 'notify_send_last');
-  //$tt = strtotime('2014-04-04 09:00'); variable_set('notify_cron_next',  $tt); dpm($tt, 'notify_cron_next');
 
   switch ($path) {
     case 'admin/help#notify':
@@ -79,6 +84,22 @@ function notify_admin_settings($form, &$form_state) {
     -1 => t('Never'),
   );
 
+  $attempts = array(
+    0 => t('Disabled'),
+    1 => 1,
+    2 => 2,
+    3 => 3,
+    4 => 4,
+    5 => 5,
+    6 => 6,
+    7 => 7,
+    8 => 8,
+    9 => 9,
+    10 => 10,
+    15 => 15,
+    20 => 20,
+  );
+
   $batch = array(
     2 => 2,
     3 => 3,
@@ -122,16 +143,16 @@ function notify_admin_settings($form, &$form_state) {
     '#type' => 'select',
     '#title' => t('Number of failed sends after which notifications are disabled'),
     '#description' => t('The maximum number of failed attempts to send e-mail to tolerate before notification is suspended.'),
-    '#default_value' => variable_get('notify_attempts', array(5)),
-    '#options' => array(t('Disabled'), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20),
+    '#default_value' => variable_get('notify_attempts', 5),
+    '#options' => $attempts,
   );
 
   $form['notify_settings']['notify_batchsize'] = array(
     '#type' => 'select',
     '#title' => t('Maximum number of notifications to send out per cron run'),
     '#description' => t('The maximum number of notification e-mails to send in each pass of  a <a href="@cron">cron maintenance task</a>. If necessary, reduce the number of items to prevent resource limit conflicts.', array('@cron' => url('admin/reports/status'))),
-    '#default_value' => variable_get('notify_batchsize', array(100)),
-    '#options' =>   $batch,
+    '#default_value' => variable_get('notify_batchsize', 100),
+    '#options' => $batch,
   );
 
   $form['notify_settings']['notify_include_updates'] = array(
@@ -223,12 +244,17 @@ function _notify_next_notificaton($send_last) {
 
   // Interval >= 1 day.
 
-  $next_time_to_send = $send_last;
+  $cron_next = variable_get('notify_cron_next', 0);
+  _debug_dpm_times('_n_next_n', 'send_last', $send_last);
+  _debug_dpm_times('_n_next_n', 'cron_next', $cron_next);
+  // $cron_next < REQUEST_TIME
+  if ($cron_next) {
+    return($cron_next);
+  }
 
   $send_hour  = variable_get('notify_send_hour',  9);
-
   // Compute the next as the sending hour today.
-  $next_time_to_send = strtotime(date('Y-m-d ', $next_time_to_send) . $send_hour . ':00:00');
+  $next_time_to_send = strtotime(date('Y-m-d ', $send_last) . $send_hour . ':00:00');
   if ($next_time_to_send < REQUEST_TIME) {
     $next_time_to_send  += 86400;
   }
@@ -240,9 +266,9 @@ function _debug_dpm_times($id, $varname, $raw) {
    return;
 
    $cooked = format_date($raw, 'custom', 'Y-m-d H:i:s O');
-   //$_debug = $varname . '  ⇒ [' . $raw . '] ' . $cooked;
+   $_debug = $varname . '  ⇒ [' . $raw . '] ' . $cooked;
    //debug($_debug, $id);
-   drupal_set_message($id . ': ' . $debug);
+   drupal_set_message($id . ': ' . $_debug);
 }
 
 /**
@@ -272,7 +298,7 @@ function notify_cron() {
   $_debugtime2 = format_date($cron_next, 'custom', 'Y-m-d H:i:s');
   debug($_debugtime2, 'hook_cron: notify_cron_next');
   debug($_debug, 'hook_cron: $doitp =');
-  */
+  /* */
 
   if ($period >= 86400) {
     if ($doitp || ($cron_next < REQUEST_TIME)) {
@@ -292,7 +318,7 @@ function notify_cron() {
   $_debugtime2 = format_date($next, 'custom', 'Y-m-d H:i:s');
   $_debug = $_debugtime1 . ' > ' . $_debugtime2 . ' || ' . $_debug_bool;
   debug($_debug, 'hook_cron: do it if this is TRUE');
-  */
+  /* */
 
   if ((REQUEST_TIME > $next) || $doitp) {
     list($num_sent, $num_fail) = _notify_send();
@@ -1236,7 +1262,7 @@ function drupal_db_mail($module, $key, $to, $language, $params = array(), $from 
   dpm($params, 'mailbody');
   return TRUE;
 }
-*/
+/* */
 
 
 /**
@@ -1301,6 +1327,7 @@ function _notify_send() {
 
   if ($count) {
     $uresult = variable_get('notify_users', array());
+    //dpm($uresult, '_notify_send: $uresult');
     if (empty($uresult)) {
       // Set up for sending a new batch. Init all variables.
       $sql = 'SELECT u.uid, u.name, u.mail, u.language, n.status, n.node, n.teasers, n.comment
@@ -1316,17 +1343,22 @@ function _notify_send() {
       variable_set('notify_num_failed', 0);
     }
 
-    $batchlimitarr = variable_get('notify_batchsize', array(100));
-    $batchlimit = $batchlimitarr[0];
+    $batchlimit = variable_get('notify_batchsize', 100);
+    //dpm($batchlimit, '$batchlimit');
     $batchcount = 0;
     //$queue = $uresult;
     foreach ($uresult as $index => $userrow) {
+      //dpm($userrow['name'], 'sending to 1');
+      //dpm($batchcount, '$batchcount');
+      //dpm($batchlimit, '$batchlimit');
       if (++$batchcount > $batchlimit) {
+        //dpm('$batchcount > $batchlimit');
         break;
       }
       $userobj = user_load($userrow['uid']);
       $node_body = $comment_body = '';
 
+      //dpm($userobj->name, 'sending to 2');
       // Consider new node content if user has permissions and nodes are ready.
       // $userrow['node']: user subscribes to nodes.
       // user_access('access content', $userobj): user allowed to view published
