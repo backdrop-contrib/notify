@@ -36,37 +36,9 @@ function notify_help($path, $arg) {
 }
 
 /**
- * Submit for the notify_admin_settings form.
- */
-function notify_admin_settings_submit($form, &$form_state) {
-  variable_set('notify_period', $form_state['values']['notify_period']);
-  variable_set('notify_batchsize', $form_state['values']['notify_batchsize']);
-  variable_set('notify_send_hour', $form_state['values']['notify_send_hour']);
-  variable_set('notify_attempts', $form_state['values']['notify_attempts']);
-  variable_set('notify_include_updates', $form_state['values']['notify_include_updates']);
-  variable_set('notify_unpublished', $form_state['values']['notify_unpublished']);
-  variable_set('notify_reg_default', $form_state['values']['notify_reg_default']);
-  foreach (node_type_get_types() as $type => $object) {
-    $ntype = NOTIFY_NODE_TYPE . $type;
-    variable_set($ntype, $form_state['values'][$ntype]);
-  }
-  $last  = variable_get('notify_send_last', 0);
-  variable_set('notify_cron_next', 0); // Force reset.
-  drupal_set_message(t('Notify admin settings saved.'));
-}
-
-
-/**
  * Menu callback, show admin notification settings form.
  */
 function notify_admin_settings($form, &$form_state) {
-
- $defnu = variable_get('notify_reg_default', 1);
- $perms = user_role_permissions(array(DRUPAL_ANONYMOUS_RID => 'anon'));
- $anonp = array_key_exists('access notify', $perms[1]);
-  if ($defnu && !$anonp) {
-    drupal_set_message(t('If you want notification enabled by default for new users, you must grant the anonymous user role the permission to access notify.'), 'warning');
-  }
 
   $period = array(
     0 => t('Cron'),
@@ -169,40 +141,6 @@ function notify_admin_settings($form, &$form_state) {
     '#default_value' => variable_get('notify_unpublished', 1),
   );
 
-  $set = 'defaults';
-  $form['notify_defaults'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Notification default for new users'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#description' => t('The default master switch for new users (check for enabled, uncheck for disabled).'),
-  );
-
-  $form['notify_defaults']['notify_reg_default'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Receive e-mail notifications'),
-    '#return_value' => 1,
-    '#default_value' => variable_get('notify_reg_default', 1),
-  );
-
-  $set = 'ntype';
-  $form[$set] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Notification subscription by node type'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#description' => t('Tick content types to make available for subscription. Having nothing checked defaults to making all content types available.'),
-  );
-
-  foreach (node_type_get_types() as $type => $object) {
-    $form[$set][NOTIFY_NODE_TYPE . $type] = array(
-      '#type' => 'checkbox',
-      '#title' => $object->name,
-      '#return_value' => 1,
-      '#default_value' => variable_get(NOTIFY_NODE_TYPE . $type, 0),
-    );
-  }
-
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save settings'),
@@ -211,6 +149,22 @@ function notify_admin_settings($form, &$form_state) {
   //return system_settings_form($form);
   return ($form);
 }
+
+/**
+ * Submit for the notify_admin_settings form.
+ */
+function notify_admin_settings_submit($form, &$form_state) {
+  variable_set('notify_period', $form_state['values']['notify_period']);
+  variable_set('notify_batchsize', $form_state['values']['notify_batchsize']);
+  variable_set('notify_send_hour', $form_state['values']['notify_send_hour']);
+  variable_set('notify_attempts', $form_state['values']['notify_attempts']);
+  variable_set('notify_include_updates', $form_state['values']['notify_include_updates']);
+  variable_set('notify_unpublished', $form_state['values']['notify_unpublished']);
+
+  variable_set('notify_cron_next', 0); // Force reset.
+  drupal_set_message(t('Notify admin settings saved.'));
+}
+
 
 /**
  * Compute the next time a notification shall be sent by adding to
@@ -353,13 +307,18 @@ function notify_form_user_register_form_alter(&$form, &$form_state, $form_id) {
  */
 function notify_user_insert(&$edit, $account, $category) {
   if (isset($edit['notify_decision']) && $edit['notify_decision'] == 1) {
+    
+    
+   
+
+
     db_insert('notify')
       ->fields(array(
       'uid' => $account->uid,
       'status' => 1,
-      'node' => 1,
-      'teasers' => 0,
-      'comment' => 0,
+      'node' => variable_get('notify_def_node', 1),
+      'comment' => variable_get('notify_def_comment', 0),
+      'teasers' => variable_get('notify_def_teasers', 0),
       'attempts' => 0,
     ))
       ->execute();
@@ -435,7 +394,7 @@ function notify_menu() {
   $items['admin/config/people/notify/settings'] = array(
     'title' => 'Settings',
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
+    'weight' => 0,
   );
   $items['admin/config/people/notify/queue'] = array(
     'title' => 'Queue',
@@ -444,7 +403,16 @@ function notify_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer notify queue'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => -9,
+    'weight' => 1,
+  );
+  $items['admin/config/people/notify/defaults'] = array(
+    'title' => 'Defaults',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('notify_admin_defaults'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer notify'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
   );
   $items['admin/config/people/notify/users'] = array(
     'title' => 'Users',
@@ -453,7 +421,7 @@ function notify_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer notify'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => -8,
+    'weight' => 3,
   );
   $items['user/%user/notify'] = array(
     'title' => 'Notification settings',
@@ -587,7 +555,7 @@ function notify_user_settings_form($form, &$form_state, $arg) {
       t('Title + Body'),
       t('Title + Body + Fields'),
     ),
-    '#description' => t('Select the amount of each item that you would like to see in your notification e-mails.'),
+    '#description' => t('Select the amount of each item to include in the notification e-mail.'),
   );
 
   $set = 'notify_page_nodetype';
@@ -711,6 +679,114 @@ function notify_user_settings_form_submit($form, &$form_state) {
   }
 
   drupal_set_message(t('Notify settings saved.'));
+}
+
+/**
+ * Menu callback, show admin list of user default settings.
+ */
+function notify_admin_defaults($form, &$form_state) {
+  $form = array();
+
+  $defnu = variable_get('notify_reg_default', 1);
+  $perms = user_role_permissions(array(DRUPAL_ANONYMOUS_RID => 'anon'));
+  $anonp = array_key_exists('access notify', $perms[1]);
+  if ($defnu && !$anonp) {
+    drupal_set_message(t('If you want notification enabled by default for new users, you must grant the anonymous user role the permission to access notify.'), 'warning');
+  }
+
+  $set = 'defaults';
+  $form['notify_defaults'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Notification default for new users'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('The default master switch for new users (check for enabled, uncheck for disabled).'),
+  );
+
+  $form['notify_defaults']['notify_reg_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Receive e-mail notifications'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('notify_reg_default', 1),
+  );
+
+  $form['notify_defs'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Initial settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('These are the initial settings that will apply to new users registering, and to users that are enrolled in notifications with batch subscription.'),
+  );
+  $form['notify_defs']['node'] = array(
+    '#type' => 'radios',
+    '#title' => t('Notify new content'),
+    '#default_value' => variable_get('notify_def_node', 1),
+    '#options' => array(t('Disabled'), t('Enabled')),
+    '#description' => t('Include new posts in the notification mail.'),
+  );
+  $form['notify_defs']['comment'] = array(
+    '#type' => 'radios',
+    '#access' => module_exists('comment'),
+    '#title' => t('Notify new comments'),
+    '#default_value' => variable_get('notify_def_comment', 0),
+    '#options' => array(t('Disabled'), t('Enabled')),
+    '#description' => t('Include new comments in the notification mail.'),
+  );
+  $form['notify_defs']['teasers'] = array(
+    '#type' => 'radios',
+    '#title' => t('How much to include?'),
+    '#default_value' => variable_get('notify_def_teasers', 0),
+    '#options' => array(
+      t('Title only'),
+      t('Title + Teaser/Excerpt'),
+      t('Title + Body'),
+      t('Title + Body + Fields'),
+    ),
+    '#description' => t('Select the amount of each item to include in the notification e-mail.'),
+  );
+
+  $set = 'ntype';
+  $form[$set] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Notification subscription by node type'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('Tick content types to make available for subscription. Having nothing checked defaults to making all content types available.'),
+  );
+
+  foreach (node_type_get_types() as $type => $object) {
+    $form[$set][NOTIFY_NODE_TYPE . $type] = array(
+      '#type' => 'checkbox',
+      '#title' => $object->name,
+      '#return_value' => 1,
+      '#default_value' => variable_get(NOTIFY_NODE_TYPE . $type, 0),
+    );
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save settings'),
+  );
+
+  //return system_settings_form($form);
+  return ($form);
+}
+
+/**
+ * Submit for the notify_admin_defaults form.
+ */
+function notify_admin_defaults_submit($form, &$form_state) {
+  variable_set('notify_reg_default', $form_state['values']['notify_reg_default']);
+  variable_set('notify_def_node',    $form_state['values']['node']);
+  variable_set('notify_def_comment', $form_state['values']['comment']);
+  variable_set('notify_def_teasers', $form_state['values']['teasers']);
+
+  foreach (node_type_get_types() as $type => $object) {
+    $ntype = NOTIFY_NODE_TYPE . $type;
+    variable_set($ntype, $form_state['values'][$ntype]);
+  }
+
+  drupal_set_message(t('Notify default settings saved.'));
 }
 
 /**

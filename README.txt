@@ -84,11 +84,12 @@ Administration form
 The administrative interface is at: Administer » Configuration »
 People » Notification settings.
 
-There are three tabs:
+There are four tabs:
 
 1. Settings: All the main options for this module.
-2. Queue: Process and inspect the notification queue.
-3. Users: Review and alter per-user settings.
+2. Defaults: Default settings for new users.
+3. Queue: Process and inspect the notification queue.
+4. Users: Review and alter per-user settings.
 
 
 Settings
@@ -117,15 +118,6 @@ about unpublished content.  This is mainly to make the module useful
 to manage moderation queues.  Note that notifications about
 unpublished content are only sent once.
 
-The checkbox under "Notification default for new users" is used as the
-default value for the notification master switch on the new user
-registration.  Note that this setting has no effect unless you grant
-the anonymous user the right to access notify.
-
-The final section under the Settings tab let you set up notification
-subscriptions by node type.  Having nothing checked defaults to making
-all content types available for subscription.
-
 
 Queue
 
@@ -148,17 +140,51 @@ The status panel gives the administrator a rough overview of the
 current state of the notification queue.
 
 
+Defaults
+
+The checkbox under "Notification default for new users" is used as the
+default value for the notification master switch on the new user
+registration.  Note that this setting has no effect unless you grant
+the anonymous user the right to access notify.
+
+The "Initial settings panel" let you set up the initial settings that
+will apply to new users registering, and to users that are enrolled in
+notifications with batch subscription. These settings have no effect
+on users that already have the master switch set to "Enabled".
+
+The final panel under the Settings tab let you set up notification
+subscriptions by node type.  Having nothing checked defaults to making
+all content types available for subscription.
+
+
 Users
 
 The Users tab is to review and alter per-user settings for those users
-that have the master switch for notifications set to Enabled.
+that have the master switch for notifications set to "Enabled".
 
 
 User's settings
 ---------------
 
 To manage your own notification preferences, click on the
-"Notification settings" on your "My account" page.
+"Notification settings" tab on your "My account" page.
+
+The "Master switch" overrides all other settings for Notify. You can
+use it to suspend notifications without having to disturb any of your
+settings under "Detailed settings" and "Subscriptions".
+
+The "Detailed" settings" determine what is included in each
+notification.  You can turn on or off notification of new content and
+new comments, and specify how much of the original content to include
+in the notification email.
+
+The "Subscriptions" panel allow each user to manage individual
+notifications by content type.
+
+Note that for user with the permission "administer notify queue", it
+is possible to subscribe to content type that is not generally
+available for subscription.  This allows to monitor all new content on
+the site, without making it available for subscription.
 
 
 TESTING
