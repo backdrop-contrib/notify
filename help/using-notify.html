@@ -20,10 +20,11 @@ running.</p>
  <a href="&base_url&/admin/config/people/notify">Administer » Configuration » People » Notification settings</a>.</p>
 
 
-<p>There are three tabs:</p>
+<p>There are four tabs:</p>
 
 <ol>
 <li><strong>Settings</strong>: All the main options for this module.</li>
+<li><strong>Defaults</strong>: Default settings for new users.</li>
 <li><strong>Queue</strong>: Process and inspect the notification queue.</li>
 <li><strong>Users</strong>: Review and alter per-user settings.</li>
 </ol>
@@ -55,10 +56,17 @@ about unpublished content.  This is mainly to make the module useful
 to manage moderation queues.  Note that notifications about
 unpublished content are only sent once.</p>
 
+<h3>Defaults</h3>
+
 <p>The checkbox under &#8220;Notification default for new users&#8221; is used as the
 default value for the notification master switch on the new user
 registration.  Note that this setting has no effect unless you grant
 the anonymous user the right to access notify.</p>
+
+<p>The &#8220;Initial settings panel&#8221; let you set up the initial settings that
+will apply to new users registering, and to users that are enrolled in
+notifications with batch subscription. These settings have no effect
+on users that already have the master switch set to &#8220;Enabled&#8221;.</p>
 
 <p>The final section under the <strong>Settings</strong> tab let you
 set up notification subscriptions by node type.  Having nothing
@@ -87,6 +95,11 @@ the following meanings:</p>
 <p>The <em>Status</em> panel gives the administrator a rough overview of the
 current state of the notification queue.</p>
 
+<p>If you tick the box &#8220;Bulk subscribe all users&#8221;, all
+non-blocked users that do not already subscribe to notifications will
+be subscribed with the initial settings set under the deafult tab.</p>
+
+
 <h3>Users</h3>
 
 <p>The <strong>Users</strong> tab is to review and alter per-user settings for those users
@@ -97,3 +110,22 @@ that have the master switch for notifications set to <em>Enabled</em>.</p>
 
 <p>To manage your own notification preferences, click on the
 &#8220;Notification settings&#8221; on your &#8220;My account&#8221; page.</p>
+
+<p>The &#8220;Master switch&#8221; overrides all other settings for Notify. You can
+use it to suspend notifications without having to disturb any of your
+settings under &#8220;Detailed settings&#8221; and &#8220;Subscriptions&#8221;.</p>
+
+<p>The &#8220;Detailed settings&#8221; determine what is included in each
+notification.  You can turn on or off notification of new content and
+new comments, and specify how much of the original content to include
+in the notification email.</p>
+
+<p>The &#8220;Subscriptions&#8221; panel allow each user to manage individual
+notifications by content type.</p>
+
+<p>Note that for user with the permission &#8220;administer notify queue&#8221;, it
+is possible to subscribe to content type that is not generally
+available for subscription.  This allows to monitor all new content on
+the site, without making it available for subscription.</p>
+
+

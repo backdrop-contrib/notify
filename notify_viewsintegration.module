@@ -16,7 +16,7 @@ function notify_viewsintegration_help($path, $arg) {
   switch ($path) {
     case 'admin/help#notify_viewsintegration':
       $output = '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('This submodule of <strong>Notify</strong> provides integartion with the Views module.') . '</p>';
+      $output .= '<p>' . t('This submodule of <strong>Notify</strong> provides integration with the Views module.') . '</p>';
       $output .= '<p>' . t('It tells the Views module about the Notify database so you can create listings of users by Notify subscriptions status for export or administration.') . '</p>';
       $output .= '<p>' . t('There is no configuration page for this submodule.  Simply create a view of type <em>User</em> and you\'ll see that under <em>Fields</em> and <em>Filters</em> there are additional options under the category <em>Notify.</em>') . '</p>';
       return $output;

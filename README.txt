@@ -119,6 +119,23 @@ to manage moderation queues.  Note that notifications about
 unpublished content are only sent once.
 
 
+Defaults
+
+The checkbox under "Notification default for new users" is used as the
+default value for the notification master switch on the new user
+registration.  Note that this setting has no effect unless you grant
+the anonymous user the right to access notify.
+
+The "Initial settings panel" let you set up the initial settings that
+will apply to new users registering, and to users that are enrolled in
+notifications with batch subscription. These settings have no effect
+on users that already have the master switch set to "Enabled".
+
+The final panel under the Settings tab let you set up notification
+subscriptions by node type.  Having nothing checked defaults to making
+all content types available for subscription.
+
+
 Queue
 
 The Queue tab is to process and inspect the notification queue.
@@ -138,23 +155,6 @@ the following meanings:
 
 The status panel gives the administrator a rough overview of the
 current state of the notification queue.
-
-
-Defaults
-
-The checkbox under "Notification default for new users" is used as the
-default value for the notification master switch on the new user
-registration.  Note that this setting has no effect unless you grant
-the anonymous user the right to access notify.
-
-The "Initial settings panel" let you set up the initial settings that
-will apply to new users registering, and to users that are enrolled in
-notifications with batch subscription. These settings have no effect
-on users that already have the master switch set to "Enabled".
-
-The final panel under the Settings tab let you set up notification
-subscriptions by node type.  Having nothing checked defaults to making
-all content types available for subscription.
 
 
 Users
@@ -177,7 +177,7 @@ The "Master switch" overrides all other settings for Notify. You can
 use it to suspend notifications without having to disturb any of your
 settings under "Detailed settings" and "Subscriptions".
 
-The "Detailed" settings" determine what is included in each
+The "Detailed settings" determine what is included in each
 notification.  You can turn on or off notification of new content and
 new comments, and specify how much of the original content to include
 in the notification email.
