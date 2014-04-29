@@ -17,15 +17,6 @@ define('NOTIFY_NODE_TYPE', 'notify_node_type_');
  * Implements hook_help().
  */
 function notify_help($path, $arg) {
-  /*
-  variable_set('notify_send_start', 0); dpm(0, 'notify_send_start');
-  variable_set('notify_users', array()); dpm('cancelled batch');
-  $tt = strtotime('2014-04-17 10:05'); variable_set('notify_send_last',  $tt); dpm($tt, 'notify_send_last');
-  $tt = strtotime('2014-04-22 08:00'); variable_set('notify_cron_next',  $tt); dpm($tt, 'notify_cron_next');
-  /* */
-
-  //$tt = strtotime('2014-04-16 10:05'); variable_set('notify_send_start', $tt); dpm($tt, 'notify_send_start');
-
   switch ($path) {
     case 'admin/help#notify':
       $output = '<p>' . t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
@@ -39,7 +30,6 @@ function notify_help($path, $arg) {
  * Menu callback, show admin notification settings form.
  */
 function notify_admin_settings($form, &$form_state) {
-
   $period = array(
     0 => t('Cron'),
     3600 => format_interval(3600),
@@ -166,10 +156,20 @@ function notify_admin_settings_submit($form, &$form_state) {
 }
 
 
+function _notify_cron_next($next_time_to_send) {
+  $send_hour  = variable_get('notify_send_hour',  9);
+  // Compute the next as the sending hour today.
+  $cron_next = strtotime(date('Y-m-d ', $next_time_to_send) . $send_hour . ':00:00');
+  return $cron_next;
+}
+
+
 /**
  * Compute the next time a notification shall be sent by adding to
- * $send_last if required, Don't update the variable (leave that to
- * caller).
+ * $send_last if required.  Update $cron_next if it is has been reset
+ * (= 0), otherwise leave it to caller.
+
+
  * 
  * @param int $send_last
  *   timestamp of last notification
@@ -199,30 +199,11 @@ function _notify_next_notificaton($send_last) {
   // Interval >= 1 day.
 
   $cron_next = variable_get('notify_cron_next', 0);
-  _debug_dpm_times('_n_next_n', 'send_last', $send_last);
-  _debug_dpm_times('_n_next_n', 'cron_next', $cron_next);
-  // $cron_next < REQUEST_TIME
-  if ($cron_next) {
-    return($cron_next);
+  if (!$cron_next) {
+    $cron_next = _notify_cron_next($next_time_to_send);
+    variable_set('notify_cron_next', $cron_next);
   }
-
-  $send_hour  = variable_get('notify_send_hour',  9);
-  // Compute the next as the sending hour today.
-  $next_time_to_send = strtotime(date('Y-m-d ', $send_last) . $send_hour . ':00:00');
-  if ($next_time_to_send < REQUEST_TIME) {
-    $next_time_to_send  += 86400;
-  }
-  _debug_dpm_times('_n_next_n', 'next_time_to_send', $next_time_to_send);
-  return($next_time_to_send);
-}
-
-function _debug_dpm_times($id, $varname, $raw) {
-   return;
-
-   $cooked = format_date($raw, 'custom', 'Y-m-d H:i:s O');
-   $_debug = $varname . '  ⇒ [' . $raw . '] ' . $cooked;
-   //debug($_debug, $id);
-   drupal_set_message($id . ': ' . $_debug);
+  return($cron_next);
 }
 
 /**
@@ -231,12 +212,11 @@ function _debug_dpm_times($id, $varname, $raw) {
  */
 function notify_cron() {
 
-  $period = variable_get("notify_period", -2);
+  $period = variable_get("notify_period", 86400);
   if (-2 == $period) {
     return;
   }
 
-  $period = variable_get("notify_period", 0);
   if (-1 == $period) {
     return; // Never notify.
   }
@@ -244,15 +224,6 @@ function notify_cron() {
   $send_last = variable_get('notify_send_last', 0);
   $cron_next = variable_get('notify_cron_next', 0);
   $doitp = variable_get('notify_users', array());
-
-  // DEBUG
-  /*
-  $_debug_bool = $doitp ? 'TRUE' : 'FALSE';
-  $_debug = $_debug_bool . ' || (' . $period  . ' >= 86400) && (' . $cron_next . ' < ' . REQUEST_TIME . ')';
-  $_debugtime2 = format_date($cron_next, 'custom', 'Y-m-d H:i:s');
-  debug($_debugtime2, 'hook_cron: notify_cron_next');
-  debug($_debug, 'hook_cron: $doitp =');
-  /* */
 
   if ($period >= 86400) {
     if ($doitp || ($cron_next < REQUEST_TIME)) {
@@ -263,16 +234,6 @@ function notify_cron() {
     }
   }
   $next = _notify_next_notificaton($send_last);
-
-
-  // DEBUG
-  /*
-  $_debug_bool = $doitp ? 'TRUE' : 'FALSE';
-  $_debugtime1 = format_date(REQUEST_TIME, 'custom', 'Y-m-d H:i:s');
-  $_debugtime2 = format_date($next, 'custom', 'Y-m-d H:i:s');
-  $_debug = $_debugtime1 . ' > ' . $_debugtime2 . ' || ' . $_debug_bool;
-  debug($_debug, 'hook_cron: do it if this is TRUE');
-  /* */
 
   if ((REQUEST_TIME > $next) || $doitp) {
     list($num_sent, $num_fail) = _notify_send();
@@ -381,6 +342,15 @@ function notify_permission() {
  */
 function notify_menu() {
   $items = array();
+
+/*
+  $items['admin/help_notify'] = array(
+    'title' => 'Notify help',
+    'page callback' => 'notify_index_page',
+    'access arguments' => array('view advanced help index'),
+    'weight' => 9,
+  );
+*/
 
   $items['admin/config/people/notify'] = array(
     'title' => 'Notification settings',
@@ -515,12 +485,17 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     $notify->teasers = 0;
     $notify->comment = 0;
   }
+  $output = theme('advanced_help_topic', array(
+    'module' => 'notify',
+    'topic' => 'users',
+  ));
+
   $form['notify_page_master']['status'] = array(
     '#type' => 'radios',
     '#title' => t('Notify status'),
     '#default_value' => $notify->status,
     '#options' => array(t('Disabled'), t('Enabled')),
-    '#description' => t('The master switch overrides all other settings for Notify.  You can use it to suspend notifications without having to disturb any of your settings under &#8220;Detailed settings&#8221; and &#8220;Subscriptions&#8221;.'),
+    '#description' => $output . '&nbsp;' . t('The master switch overrides all other settings for Notify.  You can use it to suspend notifications without having to disturb any of your settings under &#8220;Detailed settings&#8221; and &#8220;Subscriptions&#8221;.'),
   );
 
   $form['notify_page_detailed'] = array(
@@ -655,7 +630,6 @@ function notify_user_settings_form_submit($form, &$form_state) {
   foreach ($form_state['values'] as $key => $value) {
     if (preg_match("/^" . NOTIFY_NODE_TYPE . "/", $key)) {
       $key = substr($key, 17);
-      //drupal_set_message($uid . '|' . $key . '|' . $value . '|'); // DEBUG
       $id = db_query('SELECT id FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :key)', array(':uid' => $uid, ':key' => $key))->fetchObject();
       if ($id) {
         $id = $id->id;
@@ -957,7 +931,7 @@ function notify_admin_queue_submit($form, &$form_state) {
       db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => $row->cid, ':nid' => $row->nid));
     }
     variable_set('notify_send_start', REQUEST_TIME);
-    variable_set('notify_send_last', REQUEST_TIME); /* Comment to DEBUGX: Don't update notify_send_last. */
+    variable_set('notify_send_last', REQUEST_TIME);
     variable_set('notify_cron_next', 0); // Force reset
     variable_set('notify_users', array());
     drupal_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
@@ -1345,19 +1319,6 @@ function _notify_count() {
 }
 
 /**
- * Helper function to debug whithout sending mail.
- */
-/*
-function drupal_db_mail($module, $key, $to, $language, $params = array(), $from = NULL, $send = TRUE) {
-  dpm('drupal_db_mail');
-  dpm($to, 'to');
-  dpm($params, 'mailbody');
-  return TRUE;
-}
-/* */
-
-
-/**
  * Helper function to send the notification e-mail batch.
  */
 function _notify_send() {
@@ -1369,7 +1330,6 @@ function _notify_send() {
   $num_fail = 0;
   list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
 
-  // list ($xnp, $xcp, $xnn, $xcn, $xnu, $xcu) = _notify_count(); // DEBUG
   _notify_get_content_types($defaultlist, TRUE);
 
   // Get the nodes and comments queued.
@@ -1419,7 +1379,6 @@ function _notify_send() {
 
   if ($count) {
     $uresult = variable_get('notify_users', array());
-    //dpm($uresult, '_notify_send: $uresult');
     if (empty($uresult)) {
       // Set up for sending a new batch. Init all variables.
       $sql = 'SELECT u.uid, u.name, u.mail, u.language, n.status, n.node, n.teasers, n.comment
@@ -1436,21 +1395,15 @@ function _notify_send() {
     }
 
     $batchlimit = variable_get('notify_batchsize', 100);
-    //dpm($batchlimit, '$batchlimit');
     $batchcount = 0;
     //$queue = $uresult;
     foreach ($uresult as $index => $userrow) {
-      //dpm($userrow['name'], 'sending to 1');
-      //dpm($batchcount, '$batchcount');
-      //dpm($batchlimit, '$batchlimit');
       if (++$batchcount > $batchlimit) {
-        //dpm('$batchcount > $batchlimit');
         break;
       }
       $userobj = user_load($userrow['uid']);
       $node_body = $comment_body = '';
 
-      //dpm($userobj->name, 'sending to 2');
       // Consider new node content if user has permissions and nodes are ready.
       // $userrow['node']: user subscribes to nodes.
       // user_access('access content', $userobj): user allowed to view published
@@ -1511,9 +1464,6 @@ function _notify_send() {
             '!update' => $update,
             '!status' => $status,
           )) . "\n";
-
-	  //$debugdate = format_date($node->created, 'custom', 'Y-m-d H:i:s');
-          //$node_body .= 'DEBUG: ' . $debugdate . "\n";
 
           $node_body .= '   [ ' . url('node/' . $node->nid, array(
             'absolute' => TRUE,
@@ -1627,7 +1577,7 @@ function _notify_send() {
   // If $rest is empty, then set notify_send_last.
   if (!$rest) {
     $send_start = variable_get('notify_send_start', 0);	
-    variable_set('notify_send_last', $send_start); /* Comment to DEBUGX: Don't update notify_send_last. */
+    variable_set('notify_send_last', $send_start);
     variable_set('notify_cron_next', 0); // Force reset
     list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
     foreach ($res_nopub as $row) {

@@ -185,10 +185,11 @@ in the notification email.
 The "Subscriptions" panel allow each user to manage individual
 notifications by content type.
 
-Note that for user with the permission "administer notify queue", it
-is possible to subscribe to content type that is not generally
-available for subscription.  This allows to monitor all new content on
-the site, without making it available for subscription.
+Note that for users with the permission "administer notify queue", it
+is possible to subscribe to content types that is not generally
+available for subscription.  This allows administrators to monitor all
+new content on the site, without making it subscribable for
+non-administrators.
 
 
 TESTING
