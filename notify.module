@@ -539,7 +539,7 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#title' => t('Subscriptions'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#description' => t('Tick the content type you want to subscribe to.'),
+    '#description' => t('Tick the content types you want to subscribe to.'),
   );
   $alltypes = node_type_get_types();
   $enatypes = array();
