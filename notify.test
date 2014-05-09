@@ -253,19 +253,19 @@ class TestNotify extends SharedTestFunctions {
   }
 }
 
-class TestSendingTime extends SharedTestFunctions {
+class TestSendingHour extends SharedTestFunctions {
   protected $user;
 
   public static function getInfo() {
     return array(
-      'name' => t('Test Notify sending time'),
-      'description' => t('Various notify test cases for the sending time.'),
+      'name' => t('Test Notify sending hour'),
+      'description' => t('Various notify test cases for the sending hour being respected.'),
       'group' => t('Notify'),
     );
   }
 
   public function setUp() {
-    debug('DEBUG INIT: Test Notify sending time');
+    debug('DEBUG INIT: Test Notify sending hour');
     // Use testing mail system.
     variable_set('mail_system', array('default-system' => 'TestingMailSystem'));
 
@@ -292,8 +292,8 @@ class TestSendingTime extends SharedTestFunctions {
   // send_last yesterday
   // send_hour two hours in the past
   // send_start and send_cron reset to zero
-  public function testRespectSendingTime() {
-    debug('DEBUG START: testRespectSendingTime');
+  public function testRespectSendingHour() {
+    debug('DEBUG START: testRespectSendingHour');
     // Set up notify environment.
     variable_set('notify_attempts', 5);
     variable_set('notify_include_updates', 0);
@@ -301,7 +301,7 @@ class TestSendingTime extends SharedTestFunctions {
     variable_set('notify_period', 172800);  // every 2 days 
     $hour = date('G', REQUEST_TIME);
     if ($hour < 3) {
-      return $this->assert('exception', 'Test "testRespectSendingTime" can only be run after 0300 hours.', 'Notify');
+      return $this->assert('exception', 'Test "testRespectSendingHour" can only be run after 0300 hours.', 'Notify');
     }
     $hour = date('G', REQUEST_TIME-7200);  // Two hours ago
     variable_set('notify_send_hour',  (int)$hour);
@@ -320,20 +320,17 @@ class TestSendingTime extends SharedTestFunctions {
     $send_hour = variable_get('notify_send_hour',  8);
     //debug($send_hour, 'notify_send_hour (about two hours ago)');
 
+    variable_set('notify_send_start', 0); // reset
+    variable_set('notify_send_last',  $yesterday);
     //$cron_next = $now + 6000; // +1:40 (future)
     //$_debug = format_date($cron_next, 'custom', 'Y-m-d H:i:s O');
     //debug($_debug, 'notify_cron_next (string) #1');
     debug('DEBUG: Not setting $cron_next.');
 
-    variable_set('notify_send_start', 0); // reset
-    variable_set('notify_send_last',  $yesterday);
-    //variable_set('notify_cron_next',  $cron_next);
-
     $this->cronRun();
     $mails = $this->drupalGetMails();
     $howmany = count($mails);
     $this->assertEqual($howmany, 0, 'No emails are sent.');
-
 
     $cron_next = $now - 6000; // -1:40 (past)
     //$_debug = format_date($cron_next, 'custom', 'Y-m-d H:i:s O');
@@ -357,8 +354,8 @@ class TestSendingTime extends SharedTestFunctions {
   // send_last yesterday
   // send_hour two hours in the past
   // send_start and send_cron reset to zero
-  public function testSendingTimeNoneToSend() {
-    debug('DEBUG START: testSendingTimeNoneToSend');
+  public function testSendingHourNoneToSend() {
+    debug('DEBUG START: testSendingHourNoneToSend');
     // Set up notify environment.
     variable_set('notify_attempts', 5);
     variable_set('notify_include_updates', 0);
@@ -366,7 +363,7 @@ class TestSendingTime extends SharedTestFunctions {
     variable_set('notify_period', 172800);  // every 2 days 
     $hour = date('G', REQUEST_TIME);
     if ($hour < 3) {
-      return $this->assert('exception', 'Test "testRespectSendingTime" can only be run after 0300 hours.', 'Notify');
+      return $this->assert('exception', 'Test "testRespectSendingHour" can only be run after 0300 hours.', 'Notify');
     }
     $hour = date('G', REQUEST_TIME-7200);  // Two hours ago
     $hour = '1';
@@ -556,6 +553,104 @@ class TestNotifyBatch extends SharedTestFunctions {
     */
     $howmany = count($mails);
     $this->assertEqual($howmany, 23, 'Twentythree emails are sent.');
+  }
+}
+
+class TestNotifyPeriods extends SharedTestFunctions {
+  protected $user;
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Test Notify periods'),
+      'description' => t('Test notification with different periods.'),
+      'group' => t('Notify'),
+    );
+  }
+
+  public function setUp() {
+    // Use testing mail system.
+    variable_set('mail_system', array('default-system' => 'TestingMailSystem'));
+
+    // Enable any modules required for the test. This should be an array of
+    // module names.
+    parent::setUp(array('notify'));
+    // Create and log in our admin user. Give permissions.
+    $admin = $this->drupalCreateAdminUser(array(
+      'access notify',
+      'administer notify',
+      'administer notify queue',
+      'administer nodes', 
+      'bypass node access', 
+      'create article content',
+      ));
+    $user = $this->drupalCreateNotifyUsers(2);
+    $this->user = $user;
+    // Login admin user
+    $this->drupalLogin($admin);
+
+  }
+
+  // Test notification when period is next cron, last is reset.
+  public function testPeriodNextCron() {
+    // Set up notify environment.
+    variable_set('notify_attempts', 1);
+    variable_set('notify_include_updates', 0);
+    variable_set('notify_reg_default', 1);
+    variable_set('notify_period', 0);
+    variable_set('notify_send_hour',  9);
+    variable_set('notify_batchsize', 100);
+    // $now = REQUEST_TIME; $tt = $now - 86400; 
+    variable_set('notify_send_start', 0); // We haven't started
+    variable_set('notify_send_last',  0); // Last reset
+    variable_set('notify_cron_next',  0); // Cron reset
+
+    $this->createContent(3);
+    $this->cronRun();
+    $mails = $this->drupalGetMails();
+    $howmany = count($mails);
+    $this->assertEqual($howmany, 3, 'Three emails are sent.');
+  }
+
+  // Test notification when period is next cron, last yesterday.
+  public function testPeriodNextCronLastYd() {
+    // Set up notify environment.
+    variable_set('notify_attempts', 1);
+    variable_set('notify_include_updates', 0);
+    variable_set('notify_reg_default', 1);
+    variable_set('notify_period', 0);
+    variable_set('notify_send_hour',  9);
+    variable_set('notify_batchsize', 100);
+    $yd = REQUEST_TIME - 86400; 
+    variable_set('notify_send_start', 0);  // We haven't started
+    variable_set('notify_send_last', $yd); // Last reset
+    variable_set('notify_cron_next',  0);  // Cron reset
+
+    $this->createContent(3);
+    $this->cronRun();
+    $mails = $this->drupalGetMails();
+    $howmany = count($mails);
+    $this->assertEqual($howmany, 3, 'Three emails are sent.');
+  }
+
+  // Test notification when period is 1 hour cron, last is reset.
+  public function testPeriodOneHour() {
+    // Set up notify environment.
+    variable_set('notify_attempts', 1);
+    variable_set('notify_include_updates', 0);
+    variable_set('notify_reg_default', 1);
+    variable_set('notify_period', 3600);
+    variable_set('notify_send_hour',  9);
+    variable_set('notify_batchsize', 100);
+    // $now = REQUEST_TIME; $tt = $now - 86400; 
+    variable_set('notify_send_start', 0); // We haven't started
+    variable_set('notify_send_last',  0); // Last reset
+    variable_set('notify_cron_next',  0); // Cron reset
+
+    $this->createContent(3);
+    $this->cronRun();
+    $mails = $this->drupalGetMails();
+    $howmany = count($mails);
+    $this->assertEqual($howmany, 3, 'Three emails are sent.');
   }
 
 }

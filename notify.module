@@ -884,12 +884,14 @@ function notify_admin_queue($form, &$form_state) {
       $sent_msg .= ', ' . t('no failures');
     }
   }
+  $mailsystem = variable_get('mail_system', NULL);
   $form['batch']['schedule'] = array(
-    '#markup' => $creat_msg . $publ_msg . ' ' . $intrv_msg . '.<br/>'
-    . $unpub_msg . '.<br/>'
-    . $queue_msg . '.<br/>'
-    . $sent_msg . '.<br/>'
-    . $batch_msg . '.'
+    '#markup' => $creat_msg . $publ_msg . ' ' . $intrv_msg . '.<br>'
+    . $unpub_msg . '.<br>'
+    . $queue_msg . '.<br>'
+    . $sent_msg . '.<br>'
+    . $batch_msg . '.<br>'
+    . t('Default MailSystem: ') . $mailsystem['default-system'] . '.'
   );
   return $form;
 }
@@ -1211,12 +1213,6 @@ function _notify_select_content() {
     $period = variable_get('notify_period', 86400);
     if ($period > 0) {
       $since = $send_start - $period;
-    }
-    elseif (!$period) {
-      $since = $send_start;
-    }
-    else {
-      $since = 0;
     }
   }
 
