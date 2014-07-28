@@ -420,7 +420,7 @@ function notify_theme() {
 /**
  * Helper function to check whether user has custom subscriptions.
  */
-function _notify_subscriberp($uid) {
+function _notify_user_has_subscriptions($uid) {
   $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE uid = :uid', array(':uid' => $uid))->fetchObject();
   $subscriber = $field ? TRUE : FALSE;
   return $subscriber;
@@ -539,7 +539,7 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     }
   }
 
-  $exists = _notify_subscriberp($user->uid);
+  $exists = _notify_user_has_subscriptions($user->uid);
   if ($exists) {
     // Custom subscriptions exists, use those.
     foreach ($enatypes as $type) {
@@ -600,7 +600,7 @@ function notify_user_settings_form_submit($form, &$form_state) {
     ->execute();
   $subscriptions = array();
   // Remember that this is a custom subscriber.
-  $subscriber = _notify_subscriberp($uid);
+  $subscriber = _notify_user_has_subscriptions($uid);
   if (!$subscriber) {
     db_insert('notify_subscriptions')
     ->fields(array(
@@ -1397,9 +1397,7 @@ function _notify_send() {
             continue;
           }
 
-	  $sss = _notify_subscriberp($userrow['uid']);
-
-	  if (_notify_subscriberp($userrow['uid'])) {
+	  if (_notify_user_has_subscriptions($userrow['uid'])) {
 	    // Custom subscriptions exists, use those.
 	    $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :type)', array(':uid' => $userrow['uid'], ':type' => $node->type))->fetchObject();
 	    $default = $field ? TRUE : FALSE;
