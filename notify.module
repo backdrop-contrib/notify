@@ -168,8 +168,6 @@ function _notify_cron_next($next_time_to_send) {
  * Compute the next time a notification shall be sent by adding to
  * $send_last if required.  Update $cron_next if it is has been reset
  * (= 0), otherwise leave it to caller.
-
-
  * 
  * @param int $send_last
  *   timestamp of last notification
@@ -268,11 +266,6 @@ function notify_form_user_register_form_alter(&$form, &$form_state, $form_id) {
  */
 function notify_user_insert(&$edit, $account, $category) {
   if (isset($edit['notify_decision']) && $edit['notify_decision'] == 1) {
-    
-    
-   
-
-
     db_insert('notify')
       ->fields(array(
       'uid' => $account->uid,
@@ -342,16 +335,6 @@ function notify_permission() {
  */
 function notify_menu() {
   $items = array();
-
-/*
-  $items['admin/help_notify'] = array(
-    'title' => 'Notify help',
-    'page callback' => 'notify_index_page',
-    'access arguments' => array('view advanced help index'),
-    'weight' => 9,
-  );
-*/
-
   $items['admin/config/people/notify'] = array(
     'title' => 'Notification settings',
     'description' => 'Adjust settings for new content notifications sent by e-mail.',
@@ -1057,12 +1040,6 @@ function notify_admin_users_submit($form, &$form_state) {
   }
 
   drupal_set_message(t('Notify settings saved.'));
-
-/*
-  if ($form_state['values']['bulk']) {
-    drupal_set_message(t('Batch subscribe is planned for a future release, but not implemented yet.'));
-  }
-*/
 }
 
 /**
