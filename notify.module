@@ -1107,7 +1107,7 @@ function _notify_content($node, $comment, $view_mode) {
     $children = element_children($content, TRUE);
 
     foreach ($children as $child) {
-      if (isset($content[$child]['#title']) && isset($content[$child][0]['#markup'])) {
+      if (isset($content[$child]['#title']) && isset($content[$child][0]['#markup']) && $content[$child]['#access']) {
         //We don't want field name included in the e-mail.
         //$txt .= $content[$child]['#title'] . ': ';
         $txt .= $content[$child][0]['#markup'];
@@ -1295,6 +1295,8 @@ function _notify_count() {
  * Helper function to send the notification e-mail batch.
  */
 function _notify_send() {
+  global $user;
+
   $separator = "------------------------------------------------------------------------------\n";
   $mini_separator = "----\n";
 
@@ -1369,12 +1371,22 @@ function _notify_send() {
 
     $batchlimit = variable_get('notify_batchsize', 100);
     $batchcount = 0;
-    //$queue = $uresult;
+
+    // Allow to safely impersonate the recipient so that the node is rendered
+    // with correct field permissions.
+    $original_user = $user;
+    $old_state = drupal_save_session();
+    drupal_save_session(FALSE);
+
     foreach ($uresult as $index => $userrow) {
       if (++$batchcount > $batchlimit) {
         break;
       }
       $userobj = user_load($userrow['uid']);
+
+      // Intentionally replacing the Global $user.
+      $user = $userobj;
+
       $node_body = $comment_body = '';
 
       // Consider new node content if user has permissions and nodes are ready.
@@ -1396,6 +1408,9 @@ function _notify_send() {
 	  if (!variable_get('notify_unpublished', 1) && NODE_NOT_PUBLISHED == $node->status) {
             continue;
           }
+          if (!node_access('view', $node, $userobj)) {
+            continue;
+          }
 
 	  if (_notify_user_has_subscriptions($userrow['uid'])) {
 	    // Custom subscriptions exists, use those.
@@ -1405,7 +1420,6 @@ function _notify_send() {
               continue;
 	    }
           }
-
 
           $node_revs_list = node_revision_list($node);
           $nrl_vals = array_values($node_revs_list);
@@ -1543,6 +1557,9 @@ function _notify_send() {
       unset($uresult[$index]);
       variable_set('notify_users', $uresult);
     }
+    // Restore the original user session.
+    $user = $original_user;
+    drupal_save_session($old_state);
   }
   $rest = count(variable_get('notify_users', array()));
   // If $rest is empty, then set notify_send_last.
