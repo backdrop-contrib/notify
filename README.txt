@@ -118,22 +118,13 @@ about unpublished content.  This is mainly to make the module useful
 to manage moderation queues.  Note that notifications about
 unpublished content are only sent once.
 
-
-Defaults
-
-The checkbox under "Notification default for new users" is used as the
-default value for the notification master switch on the new user
-registration.  Note that this setting has no effect unless you grant
-the anonymous user the right to access notify.
-
-The "Initial settings panel" let you set up the initial settings that
-will apply to new users registering, and to users that are enrolled in
-notifications with batch subscription. These settings have no effect
-on users that already have the master switch set to "Enabled".
-
-The final panel under the Settings tab let you set up notification
-subscriptions by node type.  Having nothing checked defaults to making
-all content types available for subscription.
+The "Watchdog log level" setting lets you specify how much to log.
+The setting "All" will make a log record of every notification mail
+sent.  The setting "Failures+Summary" will only log failed
+notification attempts. It will also insert a summary of how many sent
+and how many failures at the end of each batch.  The "Failures"
+setting will omit the summary.  The "Nothing" setting will turn of
+logging for Notify.
 
 
 Queue
@@ -155,6 +146,23 @@ the following meanings:
 
 The status panel gives the administrator a rough overview of the
 current state of the notification queue.
+
+
+Defaults
+
+The checkbox under "Notification default for new users" is used as the
+default value for the notification master switch on the new user
+registration.  Note that this setting has no effect unless you grant
+the anonymous user the right to access notify.
+
+The "Initial settings panel" let you set up the initial settings that
+will apply to new users registering, and to users that are enrolled in
+notifications with batch subscription. These settings have no effect
+on users that already have the master switch set to "Enabled".
+
+The final panel under the Settings tab let you set up notification
+subscriptions by node type.  Having nothing checked defaults to making
+all content types available for subscription.
 
 
 Users
