@@ -468,10 +468,15 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     $notify->teasers = 0;
     $notify->comment = 0;
   }
-  $output = theme('advanced_help_topic', array(
-    'module' => 'notify',
-    'topic' => 'users',
-  ));
+  if (module_exists('advanced_help')) {
+    $output = theme('advanced_help_topic', array(
+      'module' => 'notify',
+      'topic' => 'users',
+    ));
+  }
+  else {
+    $output = '';
+  }
 
   $form['notify_page_master']['status'] = array(
     '#type' => 'radios',
