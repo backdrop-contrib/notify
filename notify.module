@@ -124,9 +124,16 @@ function notify_admin_settings($form, &$form_state) {
     '#default_value' => variable_get('notify_include_updates', 0),
   );
 
+  $form['notify_settings']['notify_unverified'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Exclude contents from unverified authors from user notifications.'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('notify_unverified', 0),
+  );
+
   $form['notify_settings']['notify_unpublished'] = array(
     '#type' => 'checkbox',
-   '#title' => t('Administrators shall be notified about unpublished content of tracked types.'),
+    '#title' => t('Administrators shall be notified about unpublished content of tracked types.'),
     '#return_value' => 1,
     '#default_value' => variable_get('notify_unpublished', 1),
   );
@@ -167,6 +174,7 @@ function notify_admin_settings_submit($form, &$form_state) {
   variable_set('notify_send_hour', $form_state['values']['notify_send_hour']);
   variable_set('notify_attempts', $form_state['values']['notify_attempts']);
   variable_set('notify_include_updates', $form_state['values']['notify_include_updates']);
+  variable_set('notify_unverified', $form_state['values']['notify_unverified']);
   variable_set('notify_unpublished', $form_state['values']['notify_unpublished']);
   if (isset($form_state['values']['notify_multilingual'])) {
     variable_set('notify_multilingual', $form_state['values']['notify_multilingual']);
@@ -1460,7 +1468,6 @@ function _notify_send() {
 	    }
           }
 
-
           $ml_level = variable_get('notify_multilingual', 1);
           if (!user_access('administer notify')) {
             if ($ml_level && $node->tnid) {
@@ -1471,8 +1478,13 @@ function _notify_send() {
 	    if ((2 == $ml_level) && (0 == $node->tnid) && ('und' != $node->language)) {
 	      continue;
             }
+	    $ignore_unverified = variable_get('notify_unverified', 0);
+  	    if ($ignore_unverified && !$node->uid) {
+	      continue;
+ 	    }
 	  }
           
+
           $node_revs_list = node_revision_list($node);
           $nrl_vals = array_values($node_revs_list);
           $vers = array_shift($nrl_vals);
