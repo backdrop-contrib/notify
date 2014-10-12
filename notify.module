@@ -131,6 +131,16 @@ function notify_admin_settings($form, &$form_state) {
     '#default_value' => variable_get('notify_unpublished', 1),
   );
 
+  if (drupal_multilingual()) {
+    $form['notify_settings']['notify_multilingual'] = array(
+      '#type' => 'radios',
+      '#title' => t('Multilingual setting &ndash; new contents to include:'),
+      '#default_value' => variable_get('notify_multilingual', 1),
+      '#options' => array(t('All contents'), t("Contents in the user's preferred language + contents not yet translated"), t("Only contents in the user's preferred language")),
+      '#description' => t('This setting lets you specfy what to include in user notifications on a multilingual site.  (Please note that new contents that are marked as "language neutral" will always be uncluded, and that administrators will always be notified about all new contents.)'),
+    );
+  }
+
   $form['notify_settings']['notify_watchdog'] = array(
     '#type' => 'radios',
     '#title' => t('Watchdog log level'),
@@ -158,12 +168,14 @@ function notify_admin_settings_submit($form, &$form_state) {
   variable_set('notify_attempts', $form_state['values']['notify_attempts']);
   variable_set('notify_include_updates', $form_state['values']['notify_include_updates']);
   variable_set('notify_unpublished', $form_state['values']['notify_unpublished']);
+  if (isset($form_state['values']['notify_multilingual'])) {
+    variable_set('notify_multilingual', $form_state['values']['notify_multilingual']);
+  }
   variable_set('notify_watchdog', $form_state['values']['notify_watchdog']);
 
   variable_set('notify_cron_next', 0); // Force reset.
   drupal_set_message(t('Notify admin settings saved.'));
 }
-
 
 function _notify_cron_next($next_time_to_send) {
   $send_hour  = variable_get('notify_send_hour',  9);
@@ -171,7 +183,6 @@ function _notify_cron_next($next_time_to_send) {
   $cron_next = strtotime(date('Y-m-d ', $next_time_to_send) . $send_hour . ':00:00');
   return $cron_next;
 }
-
 
 /**
  * Compute the next time a notification shall be sent by adding to
@@ -1207,7 +1218,6 @@ function _notify_get_content_types(&$ntype, $foop) {
  */
 function _notify_select_content() {
   $since = variable_get('notify_send_last', 0);
-  //$since= 1409133590; // DEBUG
   $send_start = variable_get('notify_send_start', 0);
   if ($send_start == $since || !$send_start) {
     $send_start = REQUEST_TIME;
@@ -1416,15 +1426,6 @@ function _notify_send() {
       $user = $userobj;
       $upl = user_preferred_language($user, 'en');
 
-      /*
-      // DEBUG multilingual 
-      $multilingual = drupal_multilingual(); // Check if multilingual.
-      //drupal_set_message('Notifications for: ' . $user->name . ' [' . $upl->language . ']'); // DEBUG
-      $langs = language_list();
-      //debug($langs, '$langs');
-      //dpm($langs['nb'], '$langs[nb]');
-      */
-
       $node_body = $comment_body = '';
 
       // Consider new node content if user has permissions and nodes are ready.
@@ -1459,6 +1460,19 @@ function _notify_send() {
 	    }
           }
 
+
+          $ml_level = variable_get('notify_multilingual', 1);
+          if (!user_access('administer notify')) {
+            if ($ml_level && $node->tnid) {
+	      if ($node->language != $upl->language) {
+	        continue;
+              }
+	    }
+	    if ((2 == $ml_level) && (0 == $node->tnid) && ('und' != $node->language)) {
+	      continue;
+            }
+	  }
+          
           $node_revs_list = node_revision_list($node);
           $nrl_vals = array_values($node_revs_list);
           $vers = array_shift($nrl_vals);
@@ -1490,14 +1504,8 @@ function _notify_send() {
 
           $node_body .= '   [ ' . url('node/' . $node->nid, array(
             'absolute' => TRUE,
+	    'language' => (object)array('language' => FALSE),
           )) . " ]\n"; 
-
-          /* DEBUG *
-          $fullurl = url('node/' . $node->nid, array(
-            'absolute' => TRUE,
-          ));
-          //dpm($fullurl, '$fullurl');
-          * DEBUG */
 
           $node_body .= _notify_content($node, NULL, $userrow['teasers']) . "\n";
         }

@@ -122,6 +122,22 @@ about unpublished content.  This is mainly to make the module useful
 to manage moderation queues.  Note that notifications about
 unpublished content are only sent once.
 
+If you've set up a multilingual site, there should also be three radio
+buttons that allow you to filter notifications about new nodes against
+the users language setting (may be set by editing the user profile).
+The first setting ("All cintents") will notify a user about all new
+content on the site. If a piece of contents exists in more than one
+language, all versions will be notified about.  The setting "Contents
+in the user's preferred language + contents not yet translated" will
+notify about content in the user's preferred language and also about
+content that is in some other language if no translation of it
+exists. The last setting, "Only contents in the user's preferred
+language ", will only notify about new contents in the user's
+preferred language.  However, please note that new contents that are
+marked as "language neutral" will always be uncluded in notifications.
+The multilingual settings do not apply to administrators.
+Administrators will always be notified about all new contents.
+
 The "Watchdog log level" setting lets you specify how much to log.
 The setting "All" will make a log record of every notification mail
 sent.  The setting "Failures+Summary" will only log failed
