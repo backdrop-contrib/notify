@@ -1207,6 +1207,7 @@ function _notify_get_content_types(&$ntype, $foop) {
  */
 function _notify_select_content() {
   $since = variable_get('notify_send_last', 0);
+  //$since= 1409133590; // DEBUG
   $send_start = variable_get('notify_send_start', 0);
   if ($send_start == $since || !$send_start) {
     $send_start = REQUEST_TIME;
@@ -1397,6 +1398,8 @@ function _notify_send() {
     $batchlimit = variable_get('notify_batchsize', 100);
     $batchcount = 0;
 
+    //$s1 = t('Never', array(), array('langcode' => 'nb'));
+
     // Allow to safely impersonate the recipient so that the node is rendered
     // with correct field permissions.
     $original_user = $user;
@@ -1411,6 +1414,16 @@ function _notify_send() {
 
       // Intentionally replacing the Global $user.
       $user = $userobj;
+      $upl = user_preferred_language($user, 'en');
+
+      /*
+      // DEBUG multilingual 
+      $multilingual = drupal_multilingual(); // Check if multilingual.
+      //drupal_set_message('Notifications for: ' . $user->name . ' [' . $upl->language . ']'); // DEBUG
+      $langs = language_list();
+      //debug($langs, '$langs');
+      //dpm($langs['nb'], '$langs[nb]');
+      */
 
       $node_body = $comment_body = '';
 
@@ -1457,13 +1470,13 @@ function _notify_send() {
           if (count($node_revs_list) > 1) {
             $update = '(' . t('last updated by !author', array(
               '!author' => (format_username($vers) ? format_username($vers) : variable_get('anonymous', 'Anonymous')),
-            )) . ') ';
+            ), array('langcode' => $upl->language)) . ') ';
           }
           else {
             $update = '';
           }
           if (user_access('administer nodes', $userobj)) {
-            $status = $node->status == NODE_PUBLISHED ? t('[Published]') : t('[Unpublished]');
+            $status = $node->status == NODE_PUBLISHED ? t('[Published]', array(), array('langcode' => $upl->language)) : t('[Unpublished]', array(), array('langcode' => $upl->language));
           }
           else {
             $status = '';
@@ -1473,11 +1486,19 @@ function _notify_send() {
             '!author' => (format_username($node) ? format_username($node) : variable_get('anonymous', 'Anonymous')),
             '!update' => $update,
             '!status' => $status,
-          )) . "\n";
+          ), array('langcode' => $upl->language)) . "\n";
 
           $node_body .= '   [ ' . url('node/' . $node->nid, array(
             'absolute' => TRUE,
-          )) . " ]\n";
+          )) . " ]\n"; 
+
+          /* DEBUG *
+          $fullurl = url('node/' . $node->nid, array(
+            'absolute' => TRUE,
+          ));
+          //dpm($fullurl, '$fullurl');
+          * DEBUG */
+
           $node_body .= _notify_content($node, NULL, $userrow['teasers']) . "\n";
         }
 
@@ -1485,11 +1506,10 @@ function _notify_send() {
         // least one node.
         if ($node_count > 0) {
           $node_body = $separator . t('Recent nodes - !count', array(
-            '!count' => format_plural($node_count, '1 new post', '@count new posts'),
-          )) . "\n" . $separator . $node_body;
+            '!count' => format_plural($node_count, '1 new post', '@count new posts', array(), array('langcode' => $upl->language)),
+          ), array('langcode' => $upl->language)) . "\n" . $separator . $node_body;
         }
       }
-
       // Consider new comments if user has permissions and comments are ready.
       // $userrow['comment']: user subscribes to nodes.
       // user_access('access comments', $userobj): user allowed to view published
@@ -1524,7 +1544,7 @@ function _notify_send() {
             }
             // Determine whether to show comment status.
             if (user_access('administer comments', $userobj)) {
-              $status = $commobj->status == COMMENT_PUBLISHED ? t('[Published]') : t('[Unpublished]');
+              $status = $commobj->status == COMMENT_PUBLISHED ? t('[Published]', array(), array('langcode' => $upl->language)) : t('[Unpublished]', array(), array('langcode' => $upl->language));
             }
             else {
               $status = '';
@@ -1533,7 +1553,7 @@ function _notify_send() {
               '!title' => $commobj->subject,
               '!author' => (format_username($commobj) ? format_username($commobj) : variable_get('anonymous', 'Anonymous')),
               '!status' => $status,
-            )) . "\n"
+            ), array('langcode' => $upl->language)) . "\n"
               . '      [ ' . url('node/' . $nid, array('fragment' => 'comment-' . $commobj->cid, 'absolute' => TRUE)) . " ]\n\n";
 
             $total_comment_count++;
@@ -1549,14 +1569,14 @@ function _notify_send() {
               '!title' => $node->title,
               '!type'  => node_type_get_name($node),
               '!author' => format_username($node) ? format_username($node) : variable_get('anonymous', 'Anonymous'),
-            )) . "\n\n" . $onecomment;
+            ), array('langcode' => $upl->language)) . "\n\n" . $onecomment;
           }
         }
 
         if ($total_comment_count > 0) {
           $comment_body = $separator . t('Recent comments - !count', array(
             '!count' => format_plural($total_comment_count, '1 new comment', '@count new comments'),
-          )) . "\n" . $separator . $comment_body;
+          ), array('langcode' => $upl->language)) . "\n" . $separator . $comment_body;
         }
       }
 
@@ -1618,34 +1638,35 @@ function notify_mail($key, &$message, $params) {
   $useruid = $params['user']->uid;
   $viewmode = $params['viewmode'];
   $sitename = variable_get('site_name', 'Drupal');
+  $upl = user_preferred_language($params['user'], 'en');
 
   $message['headers']['MIME-Version'] = '1.0';
   $message['headers']['Content-Type'] = 'text/plain;charset=utf-8';
   $message['subject'] = t('New content notification for !username from !sitename', array(
     '!username' => $username,
     '!sitename' => $sitename,
-  ));
+      ), array('langcode' => $upl->language));
   $message['body'][] = t('Greetings !user, this is a notification about new content from !sitename.', array(
     '!user' => $username,
     '!sitename' => $sitename,
-  ));
-  $fulltext = t('Click on the links below to see the whole node/comment.');
+  ), array('langcode' => $upl->language));
+  $fulltext = t('Click on the links below to see the whole node/comment.', array(), array('langcode' => $upl->language));
   if (0 == $viewmode) {
-    $message['body'][] = t('This e-mail only lists the titles.') . ' ' . $fulltext;
+    $message['body'][] = t('This e-mail only lists the titles.', array(), array('langcode' => $upl->language)) . ' ' . $fulltext;
   }
   elseif (1 == $viewmode) {
-    $message['body'][] = t('This e-mail may only shows excerpts.') . ' ' . $fulltext;
+    $message['body'][] = t('This e-mail may only shows excerpts.', array(), array('langcode' => $upl->language)) . ' ' . $fulltext;
   }
   else {
-    $message['body'][] = t('The full text is included in this e-mail, but to see the original node, you can click on the links below.');
+    $message['body'][] = t('The full text is included in this e-mail, but to see the original node, you can click on the links below.', array(), array('langcode' => $upl->language));
   }
   $message['body'][] = $params['content'];
   $message['body'][] = "-- \n" .
     t('This is an automatic e-mail from !sitename.',
-      array('!sitename' => variable_get('site_name', 'Drupal'))) . "\n" .
+      array('!sitename' => variable_get('site_name', 'Drupal')), array('langcode' => $upl->language)) . "\n" .
     t('To stop receiving these e-mails, change your notification preferences at !notify-url', array(
       '!notify-url' => url('user/' . $useruid . '/notify', array('absolute' => TRUE)),
-    ));
+    ), array('langcode' => $upl->language));
 }
 
 

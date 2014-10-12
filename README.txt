@@ -104,6 +104,10 @@ of notifications to send out per cron run.
 When setting how often notifications are sent, note that e-mail
 updates can only happen as frequently as the cron is set to run.
 
+To reset the count of failed sends to zero, look at the notification
+settings in the user's profile and save it press "Save settings"
+(there is no need to change anything).
+
 If you check "Include updated posts in notifications", any change to a
 node or content will cause it to be included in the next notification.
 Note that even minor changes, such as correcting a trivial typo or
