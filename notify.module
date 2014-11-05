@@ -144,7 +144,7 @@ function notify_admin_settings($form, &$form_state) {
       '#title' => t('Multilingual setting &ndash; new contents to include:'),
       '#default_value' => variable_get('notify_multilingual', 1),
       '#options' => array(t('All contents'), t("Contents in the user's preferred language + contents not yet translated"), t("Only contents in the user's preferred language")),
-      '#description' => t('This setting lets you specfy what to include in user notifications on a multilingual site.  (Please note that new contents that are marked as "language neutral" will always be uncluded, and that administrators will always be notified about all new contents.)'),
+      '#description' => t('This setting lets you specfy what to include in user notifications on a multilingual site.  (Please note that new contents that are marked as "language neutral" will always be included, and that administrators will always be notified about all new contents.)'),
     );
   }
 
@@ -1514,8 +1514,10 @@ function _notify_send() {
             '!status' => $status,
           ), array('langcode' => $upl->language)) . "\n";
 
-          $node_body .= '   [ ' . url('node/' . $node->nid, array(
+	  $alias = drupal_multilingual() ? TRUE : FALSE;
+	  $node_body .= '   [ ' . url('node/' . $node->nid, array(
             'absolute' => TRUE,
+            'alias' => $alias,
 	    'language' => (object)array('language' => FALSE),
           )) . " ]\n"; 
 
