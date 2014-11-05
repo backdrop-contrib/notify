@@ -572,11 +572,11 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     }
   }
 
-  $exists = _notify_user_has_subscriptions($user->uid);
+  $exists = _notify_user_has_subscriptions($account->uid);
   if ($exists) {
     // Custom subscriptions exists, use those.
     foreach ($enatypes as $type) {
-      $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :type)', array(':uid' => $user->uid, ':type' => $type[0]))->fetchObject();
+      $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :type)', array(':uid' => $account->uid, ':type' => $type[0]))->fetchObject();
       $default = $field ? TRUE : FALSE;
       $form[$set][NOTIFY_NODE_TYPE . $type[0]] = array(
         '#type' => 'checkbox',
