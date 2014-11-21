@@ -11,6 +11,7 @@ CONTENTS OF THIS FILE
 * Configuration
   - Administration form
   - User's settings
+* Troubleshooting
 * Testing
 * Maintainers
 
@@ -118,7 +119,7 @@ notificatons.
 If you check "Exclude contents from unverified authors from user
 notifications", notify will not notify about postings from unverified
 (i.e. anonymous) authors.  You need only care about this setting if
-you you permit postings from anonymous authors.  Even if you have spam
+you permit postings from anonymous authors.  Even if you have spam
 protection in the shape of CAPTCHA or other measures, you may
 experience that some spammers still manage to post contents on your
 site.  By checking this setting, you will at least save your
@@ -126,7 +127,7 @@ subscribers from being notified about spam.  As with most of these
 settings, it doesn't apply to administrators. Even when checked
 administrators will be notified, in order to intervene and delete the
 spam before it gets much exposure.  Note that if you check this
-settings, there is currently no keeping track of the content that is
+setting, there is currently no keeping track of the content that is
 excluded due this setting.  If you use it, your users will never
 receive any notification email about new content from unverified
 authors.  That's not a bug, it is a feature.
@@ -140,30 +141,30 @@ unpublished content are only sent once.
 
 If you've set up a multilingual site, there should also be three radio
 buttons that allow you to filter notifications about new nodes against
-the user's language setting (may be set by editing the user profile).
-The first setting ("All contents") will notify a user about all new
-content on the site. If a piece of contents exists in more than one
-language, all versions will be notified about.  The setting "Contents
-in the user's preferred language + contents not yet translated" will
-notify about content in the user's preferred language and also about
-content that is in some other language if no translation of it
-exists. The last setting, "Only contents in the user's preferred
-language ", will only notify about new contents in the user's
-preferred language.  However, please note that new contents that are
-marked as "language neutral" will always be included in notifications.
-The multilingual settings do not apply to administrators.
-Administrators will always be notified about all new contents.  Note
-that if you use the second setting, contents that is not in the user's
-preferred language will be excluded from the notification if some
-translation of exists, even if that translation is not to the user's
-preferred language.
+the user's language setting (it may be set by editing the user
+profile).  The first setting ("All contents") will notify a user about
+all new content on the site. If a piece of contents exists in more
+than one language, all versions will be notified about.  The setting
+"Contents in the user's preferred language + contents not yet
+translated" will notify about content in the user's preferred language
+and also about content that is in some other language if no
+translation of it exists. The last setting, "Only contents in the
+user's preferred language", will only notify about new contents in
+the user's preferred language.  However, please note that new contents
+that are marked as "language neutral" will always be included in
+notifications.  The multilingual settings do not apply to
+administrators.  Administrators will always be notified about all new
+contents.  Note that if you use the second setting, contents that is
+not in the user's preferred language will be excluded from the
+notification if some translation of exists, even if that translation
+is not to the user's preferred language.
 
 The "Watchdog log level" setting lets you specify how much to log.
 The setting "All" will make a log record of every notification mail
 sent.  The setting "Failures+Summary" will only log failed
 notification attempts. It will also insert a summary of how many sent
 and how many failures at the end of each batch.  The "Failures"
-setting will omit the summary.  The "Nothing" setting will turn of
+setting will omit the summary.  The "Nothing" setting will turn off
 logging for Notify.
 
 
@@ -240,6 +241,29 @@ new content on the site, without making it subscribable for
 non-administrators.
 
 
+TROUBLESHOOTING
+---------------
+
+* If Notify does not send out <em>any</em> notification emails, first
+  check that Drupal can send email otherwise (e.g. request a password
+  reset email).  If this does not work, the problem is with your
+  site's email configuration, not Notify.
+
+* If inbound links in the notification e-mail is rendered as
+  http://default, you may need to set the $base_url in your
+  settings.php file. Examples for how to do this are provided in
+  settings.php.
+
+* If Notify makes the site crash, and you have the core PHP Filter
+  module enabled, nodes which include bad PHP code will break your
+  site when they're processed by Notify. Please see the following
+  issue for further details: https://www.drupal.org/node/146521. If
+  this happens, you may try to disable the PHP Filter module.
+
+If the above does not help you, to file bug reports, use the issue
+queue linked to from the Notify project page.
+
+
 TESTING
 -------
 
@@ -252,15 +276,14 @@ MAINTAINERS
 -----------
 
 Kjartan Mannes <kjartan@drop.org> is the original author.
-
 Rob Barreca <rob@electronicinsight.com> was a previous maintainer.
-
-Matt Chapman <matt@ninjitsuweb.com> is the current maintainer.
+Matt Chapman <matt@ninjitsuweb.com> is the project owner.
+Gisle Hannemyr <gisle@hannemyr.no> maintains the Drupal 7 branch.
 
 Marton Bodonyi (http://www.interactivejunky.com/),
 Mark Lindsey,
 John Oltman <john.oltman@sitebasin.com>,
 Ward Poelmans <wpoely86@gmail.com>,
-Ishmael Sanchez (http://ishmaelsanchez.com),
-Ajit Shinde (https://www.facebook.com/shinde.ajit), and 
-Gisle Hannemyr <gisle@hannemyr.no> contributed to the Drupal 7 port.
+Ishmael Sanchez (http://ishmaelsanchez.com), and
+Ajit Shinde (https://www.facebook.com/shinde.ajit)
+contributed to the Drupal 7 port.
