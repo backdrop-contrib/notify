@@ -167,6 +167,14 @@ and how many failures at the end of each batch.  The "Failures"
 setting will omit the summary.  The "Nothing" setting will turn off
 logging for Notify.
 
+The "Weight of notification field in user registration form" setting
+lets you specify the weight that determines the position of the
+notification field group when it appears in the user registration
+form.  The number is relative to the row weights that can be inspected
+on Administer » Configuration » People » Account settings.  Pick a
+higher (heavier) weight to make the field group positoned below a
+specific field, and vice versa.
+
 
 Queue
 

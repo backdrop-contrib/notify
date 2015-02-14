@@ -156,6 +156,15 @@ function notify_admin_settings($form, &$form_state) {
     '#description' => t('This setting lets you specify how much to log.'),
   );
 
+  $form['notify_settings']['notify_weightur'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Weight of notification field in user registration form'),
+    '#default_value' => variable_get('notify_weightur', 0),
+    '#size' => 3,
+    '#maxlength' => 5,
+    '#description' => t('The weight you set here will determine the position of the notification field when it appears in the user registration form.'),
+  );
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save settings'),
@@ -180,6 +189,7 @@ function notify_admin_settings_submit($form, &$form_state) {
     variable_set('notify_multilingual', $form_state['values']['notify_multilingual']);
   }
   variable_set('notify_watchdog', $form_state['values']['notify_watchdog']);
+  variable_set('notify_weightur', $form_state['values']['notify_weightur']);
 
   variable_set('notify_cron_next', 0); // Force reset.
   drupal_set_message(t('Notify admin settings saved.'));
@@ -322,6 +332,7 @@ function _notify_user_reg_fields() {
   // Add a fieldset containing a checkbox for users to accept
   // getting updates on the registration form.
   $fields['notify_agree'] = array(
+    '#weight' => variable_get('notify_weightur', 0),
     '#type' => 'fieldset',
     '#title' => t('E-mail Notifications'),
   );
