@@ -1432,7 +1432,7 @@ function _notify_send() {
 
       // Intentionally replacing the Global $user.
       $user = $userobj;
-      $upl = user_preferred_language($user, 'en');
+      $upl = user_preferred_language($user);
 
       $node_body = $comment_body = '';
 
@@ -1660,7 +1660,7 @@ function notify_mail($key, &$message, $params) {
   $useruid = $params['user']->uid;
   $viewmode = $params['viewmode'];
   $sitename = variable_get('site_name', 'Drupal');
-  $upl = user_preferred_language($params['user'], 'en');
+  $upl = user_preferred_language($params['user']);
 
   $message['headers']['MIME-Version'] = '1.0';
   $message['headers']['Content-Type'] = 'text/plain;charset=utf-8';
