@@ -7,6 +7,7 @@ CONTENTS OF THIS FILE
 
 * Introduction
 * Requirements
+* Recommended modules
 * Installation
 * Configuration
   - Administration form
@@ -39,6 +40,13 @@ REQUIREMENTS
 
 This module requires a supported version of Drupal and cron to be
 running.
+
+RECOMMENDED MODULES
+-------------------
+
+* Advanced help (https://www.drupal.org/project/advanced_help)
+  When this module is enabled the administrator will have access to
+  more online help.
 
 
 INSTALLATION
@@ -85,12 +93,13 @@ Administration form
 The administrative interface is at: Administer » Configuration »
 People » Notification settings.
 
-There are four tabs:
+There are five tabs:
 
 1. Settings: All the main options for this module.
-2. Defaults: Default settings for new users.
-3. Queue: Process and inspect the notification queue.
-4. Users: Review and alter per-user settings.
+2. Queue: Operations on the notification queue.
+3. Skip flags: Inspect the notification queue and flag postings to skip.
+4. Defaults: Default settings for new users.
+5. Users: Review and alter per-user settings.
 
 
 Settings
@@ -106,15 +115,15 @@ When setting how often notifications are sent, note that e-mail
 updates can only happen as frequently as the cron is set to run.
 
 To reset the count of failed sends to zero, look at the notification
-settings in the user's profile and save it press "Save settings"
+settings in the user's profile and save it by pressing "Save settings"
 (there is no need to change anything).
 
 If you check "Include updated posts in notifications", any change to a
 node or content will cause it to be included in the next notification.
 Note that even minor changes, such as correcting a trivial typo or
 setting or unsetting the "sticky" attribute for the node will flag it
-as updated, so use this option with caution in order to avoid excess
-notificatons.
+as updated, so use this option with caution, or in combination with
+skip flags (see below) in order to avoid excess notificatons.
 
 If you check "Exclude contents from unverified authors from user
 notifications", notify will not notify about postings from unverified
@@ -127,8 +136,8 @@ subscribers from being notified about spam.  As with most of these
 settings, it doesn't apply to administrators. Even when checked
 administrators will be notified, in order to intervene and delete the
 spam before it gets much exposure.  Note that if you check this
-setting, there is currently no keeping track of the content that is
-excluded due this setting.  If you use it, your users will never
+setting, there is currently no way to keep track of the content that
+is excluded due this setting.  If you use it, your users will never
 receive any notification email about new content from unverified
 authors.  That's not a bug, it is a feature.
 
@@ -136,8 +145,7 @@ If you check "Administrators shall be notified about unpublished
 content", users belonging to roles with the "administer nodes" and
 "administer comments" permissions granted will receive notifications
 about unpublished content.  This is mainly to make the module useful
-to manage moderation queues.  Note that notifications about
-unpublished content are only sent once.
+to manage moderation queues.
 
 If you've set up a multilingual site, there should also be three radio
 buttons that allow you to filter notifications about new nodes against
@@ -178,10 +186,11 @@ specific field, and vice versa.
 
 Queue
 
-The Queue tab is to process and inspect the notification queue.
+The Queue tab gives access to notification queue operatons and the
+notification queue status panel.
 
-The radio buttons below the heading "Process notification queue" has
-the following meanings:
+The radio buttons below the heading "Notification queue operations"
+has the following meanings:
 
  - Send batch now: Force sending a notification batch without waiting
    for the next cron run.  Note that if the number of notifications
@@ -193,8 +202,25 @@ the following meanings:
  - Truncate queue: Truncate the queue of pending notifications without
    sending out any notifications.
 
-The status panel gives the administrator a rough overview of the
-current state of the notification queue.
+ - Override timestamp: Change the value of the last notification
+   timestamp.  To resend postings that has already been sent, set pick
+   a value before the oldest posting you want to resend.
+
+The text field "Last notification timestamp" can be used to override
+the value of the last notification timestamp.  This value is only used
+to override of the operation "Override timestamp" is selected.
+
+The status panel at the bottom of the page gives the administrator a
+rough overview of the current state of the notification queue. Its
+main use is for debugging.
+
+
+Skip flags
+
+The Skip flags tab will show a list of all the postings that are
+candidates for being sent in the next notification.  Each has a
+checkbox that can be checked to exclude the posting from all
+notification emails, including the one sent to the administrator.
 
 
 Defaults

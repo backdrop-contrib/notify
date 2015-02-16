@@ -397,6 +397,15 @@ function notify_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 1,
   );
+  $items['admin/config/people/notify/skip'] = array(
+    'title' => 'Skip flags',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('notify_admin_skip'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer notify'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+  );
   $items['admin/config/people/notify/defaults'] = array(
     'title' => 'Defaults',
     'page callback' => 'drupal_get_form',
@@ -404,7 +413,7 @@ function notify_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer notify'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => 2,
+    'weight' => 3,
   );
   $items['admin/config/people/notify/users'] = array(
     'title' => 'Users',
@@ -413,7 +422,7 @@ function notify_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer notify'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => 3,
+    'weight' => 4,
   );
   $items['user/%user/notify'] = array(
     'title' => 'Notification settings',
@@ -450,6 +459,9 @@ function notify_user_access($account = NULL) {
 function notify_theme() {
   return array(
     'notify_admin_users' => array(
+      'render element' => 'form',
+    ),
+    'notify_admin_skip' => array(
       'render element' => 'form',
     ),
   );
@@ -683,6 +695,439 @@ function notify_user_settings_form_submit($form, &$form_state) {
 }
 
 /**
+ * Menu callback, show admin list of queue status.
+ */
+function notify_admin_queue($form, &$form_state) {
+  $period = variable_get('notify_period', 86400);
+  $since = variable_get('notify_send_last', REQUEST_TIME - $period);
+  $lastdate = format_date($since, 'short');
+  $start = variable_get('notify_send_start', 0);
+  $startdate = format_date($start, 'short');
+  $notify_send_last  = variable_get('notify_send_last', 0);
+  $next_last = _notify_next_notificaton($notify_send_last);
+
+  if ($next_last == -1) {
+    $batch_msg = t('No more notifications scheduled');
+  } elseif ($next_last == 0) {
+    $batch_msg = t('The next notification is scheduled for the next cron run');
+  }
+  else {
+    $next = format_date($next_last, 'short');
+    $batch_msg = t('The next notification is scheduled for the first cron run after ') . $next;
+  }
+
+  $form = array();
+
+  $form['process'] = array(
+    '#type' => 'radios',
+    '#title' => t('Notification queue operations'),
+    '#default_value' => 0,
+    '#options' => array(t('Send batch now'), t('Truncate queue'), t('Override timestamp')),
+    '#description' => t('Select &#8220;Send batch now&#8220; to send next batch of e-mails queued for notifications. Select &#8220;Truncate queue&#8220; to empty queue of pending notification <em>without</em> sending e-mails. Select &#8220;Override timestamp&#8220; to override the last notification timestamp. Press &#8220;Submit&#8220; to execute.'),
+  );
+
+  $send_last = format_date($notify_send_last, 'custom', 'Y-m-d H:i:s');
+  
+  $form['lastdate'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Last notification timestamp'),
+    '#default_value' => $send_last,
+    '#size' => 19,
+    '#maxlength' => 19,
+    '#description' => t('To explicitly set the last notification timestamp, change the value of this field and select the &#8220;Override timestamp&#8220; option above, then press &#8220;Submit&#8220; to execute.'),
+  ); 
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  $form['batch'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Status'),
+    '#collapsible' => TRUE,
+  );
+
+  list ($np, $cp, $nn, $cn, $nu, $cu) = _notify_count();
+
+  $npcp = $np + $cp;
+  if ($npcp) {
+    $queue_msg = t('Notifications about at least !item queued', array(
+      '!item' => format_plural($npcp, '1 item is', '@count items are'),
+    ));
+  } else {
+    $queue_msg = t('No notifications queued');
+  }
+  $flagcnt = count(variable_get('notify_skip_nodes', array())) + count(variable_get('notify_skip_comments', array()));
+  if ($flagcnt) {
+    $skip_msg = t('!item flagged for skipping', array(
+      '!item' => format_plural($flagcnt, '1 item is', '@count items are'),
+    ));
+  } else {
+    $skip_msg = t('No item is flagged for skipping');
+  }
+
+  if (($np && $nu) || ($cp && $cu)) {
+    $nonew_msg = '';
+  }
+  else {
+    $nonew_msg = t(', no notification about unpublished items are queued');
+  }
+  if ($nu + $cu) {
+    $unpub_msg = t('Unpublished: !nodeup and !commup', array(
+      '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
+      '!commup' => format_plural($cu, '1 comment', '@count comments'),
+    )) . $nonew_msg;
+  }
+  else {
+    $unpub_msg = t('No unpublished items');
+  }
+
+  $sent = variable_get('notify_num_sent', 0);
+  $fail = variable_get('notify_num_failed', 0);
+  $batch_remain = count(variable_get('notify_users', array()));
+
+  $creat_msg = t('There are !nodes and !comms created', array(
+    '!nodes' => format_plural($np, '1 node', '@count nodes'),
+    '!comms' => format_plural($cp, '1 comment', '@count comments'),
+  ));
+  if ($nn + $cn) {
+    $publ_msg = t(', and in addition !noderp and !commrp published,', array(
+      '!noderp' => format_plural($nn, '1 node', '@count nodes'),
+      '!commrp' => format_plural($cn, '1 comment', '@count comments'),
+    ));
+  }
+  else {
+    $publ_msg = '';
+  }
+  if ($batch_remain) {
+    $intrv_msg = t('between !last and !start', array(
+       '!last' => $lastdate,
+       '!start' => $startdate,
+    ));
+    $sent_msg = t('Batch not yet complete.  So far !sent has been sent (!fail, !remain to go)', array(
+      '!sent' => format_plural($sent, '1 e-mail', '@count e-mails'),
+      '!fail' => format_plural($fail, '1 failure', '@count failures'),
+      '!remain' => format_plural($batch_remain, '1 user', '@count users'),
+    ));
+  }
+  else {
+    $intrv_msg = t('since !last', array(
+      '!last' => $lastdate,
+    ));
+    $sent_msg = t('Last batch:') . ' ';
+    if ($sent == 0) {
+      $sent_msg = t('No e-mails were sent');
+    }
+    else {
+      $sent_msg .= t('sent !sent', array(
+        '!sent' => format_plural($sent, '1 e-mail', '@count e-mails'),
+      ));
+    }
+    if ($fail > 0) {
+      $sent_msg .= ', ' . t('!fail', array(
+        '!fail' => format_plural($fail, '1 failure', '@count failures'),
+      ));
+    }
+    elseif ($sent) {
+      $sent_msg .= ', ' . t('no failures');
+    }
+  }
+  $mailsystem = variable_get('mail_system', NULL);
+  $ms = isset($mailsystem['default-system']) ? $mailsystem['default-system'] : t('system default');
+  $form['batch']['schedule'] = array(
+    '#markup' => $creat_msg . $publ_msg . ' ' . $intrv_msg . '.<br>'
+    . $unpub_msg . '.<br>'
+    . $queue_msg . '.<br>'
+    . $skip_msg . '.<br>'
+    . $sent_msg . '.<br>'
+    . $batch_msg . '.<br>'
+    . t('Default MailSystem: ') . $ms . '.'
+  );
+  return $form;
+}
+
+/**
+ * Submit for the notify_admin_queue form.
+ */
+function notify_admin_queue_submit($form, &$form_state) {
+  unset($form);
+
+  $process= $form_state['values']['process'];
+  $notify_send_last = variable_get('notify_send_last', 0);
+  $frform_send_last = strtotime($form_state['values']['lastdate']);
+  if (FALSE ===  $frform_send_last) {
+    form_set_error('notify_admin_queue', t('This does not look like a valid date format.'));
+    return;
+  }
+  $frform_string = format_date($frform_send_last. 'short');
+  if ($process < 2) {
+    if ($notify_send_last != $frform_send_last) {
+      form_set_error('notify_admin_queue', t('You must select &#8220;Override timestamp&#8221; to override the timestamp.'));
+      return;
+    }
+  }
+  elseif ($process == 2) {
+    if ($notify_send_last == $frform_send_last) {
+      form_set_error('notify_admin_queue', t('You selected &#8220;Override timestamp&#8221;, but the timestamp is not altered.'));
+      return;
+    }
+  }
+
+  $watchdog_level = variable_get('notify_watchdog', 0);
+  if (0 == $form_state['values']['process']) { // flush
+    list($num_sent, $num_fail) = _notify_send();
+
+    if ($num_fail > 0) {
+      drupal_set_message(t('!sent notification !emsent sent successfully, !fail !emfail could not be sent.',
+        array(
+          '!sent' => $num_sent, '!emsent' =>  format_plural($num_sent, 'e-mail', 'e-mails'),
+          '!fail' => $num_fail, '!emfail' =>  format_plural($num_fail, 'notification', 'notifications'),
+        )
+      ), 'error');
+      $watchdog_status = WATCHDOG_ERROR;
+    }
+    elseif ($num_sent > 0) {
+      drupal_set_message(t('!count pending notification !emails have been sent in this pass.', array('!count' => $num_sent, '!emails' =>  format_plural($num_sent, 'e-mail', 'e-mails'))));
+      $watchdog_status = WATCHDOG_INFO;
+    }
+    if (0 == ($num_sent + $num_fail)) {
+      drupal_set_message(t('No notifications needed to be sent in this pass.'));
+    }
+    else {
+      if ($watchdog_level <= 1) {
+        watchdog('notify', 'Notifications sent: !sent, failures: !fail.', array('!sent' => $num_sent, '!fail' => $num_fail), $watchdog_status);
+      }
+    }
+    $num_sent += variable_get('notify_num_sent', 0);
+    $num_fail += variable_get('notify_num_failed', 0);
+    variable_set('notify_num_sent', $num_sent);
+    variable_set('notify_num_failed', $num_fail);
+  }
+  elseif (1 == $form_state['values']['process']) { // truncate
+    list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
+    foreach ($res_nopub as $row) {
+      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
+    }
+    foreach ($res_copub as $row) {
+      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => $row->cid, ':nid' => $row->nid));
+    }
+    variable_set('notify_send_start', REQUEST_TIME);
+    variable_set('notify_send_last', REQUEST_TIME);
+    variable_set('notify_cron_next', 0); // Force reset
+    variable_set('notify_users', array());
+    drupal_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
+    if ($watchdog_level <= 1) {
+      watchdog('notify', 'Notification queue truncated.', NULL, WATCHDOG_INFO);
+    }
+    return;
+  }
+  elseif (2 == $form_state['values']['process']) { // override
+    $date = strtotime($form_state['values']['lastdate']);
+    variable_set('notify_send_last', $date);
+  }
+  variable_del('notify_skip_nodes');
+  variable_del('notify_skip_comments');
+}
+
+/**
+ * Menu callback, show admin list of queued notification settings.
+ */
+function notify_admin_skip($form, &$form_state) {
+  // Fetch list of nodes and comments scheduled for notification
+  list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
+
+  // Get the nodes and comments queued.
+  $count = 0;
+  $nodes = $comments = array();
+  // Ordinary nodes
+  foreach ($res_nodes as $row) {
+    $nodes[$row->nid] = node_load($row->nid);
+    $count++;
+  }
+  // Ordinary comments
+  if ($res_comms) {
+    foreach ($res_nopub as $row) {
+      if (!isset($nodes[$row->nid])) {
+        $nodes[$row->nid] = node_load($row->nid);
+        $count++;
+      }
+    }
+    foreach ($res_comms as $row) {
+      $comment = comment_load($row->cid);
+      $comments[$comment->nid][$row->cid] = $comment;
+      $count++;
+    }
+    foreach ($res_copub as $row) {
+      if (!isset($comments[$row->nid][$row->cid])) {
+        $comments[$row->nid][$row->cid] = comment_load($row->cid);
+        $count++;
+      }
+    }
+  }
+  // Published nodes in unpublished queue
+  foreach ($res_nopub as $row) {
+    if (!isset($nodes[$row->nid])) {
+      $nodes[$row->nid] = node_load($row->nid);
+      $count++;
+    }
+  }
+  // Unpublished nodes in unpublished queue
+  foreach ($res_nounp as $row) {
+    if (!isset($nodes[$row->nid])) {
+      $nodes[$row->nid] = node_load($row->nid);
+      $count++;
+    }
+  }
+  $form = array();
+
+  $form['#tree'] = TRUE;
+  $form['info'] = array(
+    '#markup' => '<p>' . t('The following table shows all messages that are candidates for bulk notifications:' . '</p>'),
+  );
+
+  $skpnodes = variable_get('notify_skip_nodes', array());
+  $skpcomts = variable_get('notify_skip_comments', array());
+  $ii = 0;
+  $entities = array();
+  foreach ($nodes as $node) {
+    $ii++;
+    $entities[$ii] = array();
+    $entities[$ii]['nid'] = array(
+      '#markup' => $node->nid,
+    );
+    $entities[$ii]['cid'] = array(
+      '#markup' => '-',
+    );
+    $entities[$ii]['created'] = array(
+      '#markup' => format_date($node->created, 'short'),
+    );
+    $entities[$ii]['updated'] = array(
+      '#markup' => ($node->changed != $node->created) ? format_date($node->changed, 'short') : '-',
+    );
+    $entities[$ii]['title'] = array(
+      '#markup' => $node->title,
+    );
+    $flag = in_array($node->nid, $skpnodes) ? 1 : 0;
+    $entities[$ii]['dist'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $flag,
+    );
+  }
+  foreach ($comments as $thread) {
+    foreach ($thread as $comment) {
+      $ii++;
+      $entities[$ii] = array();
+      $entities[$ii]['nid'] = array(
+        '#markup' => $comment->nid,
+      );
+      $entities[$ii]['cid'] = array(
+        '#markup' => $comment->cid,
+      );
+      $entities[$ii]['created'] = array(
+        '#markup' => format_date($comment->created, 'short'),
+      );
+      $entities[$ii]['updated'] = array(
+        '#markup' => ($comment->changed != $comment->created) ? format_date($comment->changed, 'short') : '-',
+      );
+      $entities[$ii]['title'] = array(
+        '#markup' => $comment->subject,
+      );
+      $flag = in_array($comment->cid, $skpcomts) ? 1 : 0;
+      $entities[$ii]['dist'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => $flag,
+      );
+    }
+  }
+  $form['entities'] = $entities;
+  $batch_remain = count(variable_get('notify_users', array()));
+  if ($batch_remain) {
+    $form['info2'] = array(
+      '#markup' => '<p>' . t('Please note that the list above may be out of sync.  Saving an altered list of skip flags is disabled as long as notifications are being processed.') . '</p> ',
+    );
+  }
+  else {
+    $form['info2'] = array(
+      '#markup' => '<p>' . t('To flag that <em>no</em> notification about a particular message should be sent, check the checkbox in the &#8220;Skip&#8220; column. Press &#8220;Save skip flags&#8220; to save the flags.') . '</p> ',
+    );
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save skip flags'),
+    '#disabled' => $batch_remain,
+  );
+  return $form;
+}
+
+/**
+ * Submit for the notify_admin_skip form.
+ */
+function notify_admin_skip_submit($form, &$form_state) {
+  unset($form);
+  $nodes = array();
+  $comts = array();
+  if (isset($form_state['values']['entities']) && $form_state['values']['entities']) {
+    foreach ($form_state['values']['entities'] as $dist => $ii) {
+      if ($ii['dist']) {
+        $nid = $form_state['complete form']['entities'][$dist]['nid']['#markup'];
+        $cid = $form_state['complete form']['entities'][$dist]['cid']['#markup'];
+	if ('-' == $cid) {
+          array_push($nodes, (int)$nid);
+	}
+	else {
+          array_push($comts, (int)$cid);
+	}
+      }
+    }
+    variable_set('notify_skip_nodes', $nodes);
+    variable_set('notify_skip_comments', $comts);
+  }
+
+  drupal_set_message(t('Skip flags saved.'));
+  // notify_skip_nodes
+}
+
+/**
+ * Theme function to theme the admin skip flag settings form in a table format.
+ */
+function theme_notify_admin_skip($variables) {
+  $form = $variables['form'];
+  $output = drupal_render($form['info']);
+  $header = array(
+    t('Nid'),
+    t('Cid'),
+    t('Created'),
+    t('Updated'),
+    t('Title'),
+    t('Skip'),
+  );
+
+  $rows = array();
+  foreach (element_children($form['entities']) as $uid) {
+    $row = array();
+    foreach (element_children($form['entities'][$uid]) as $entry_key) {
+      unset($form['entities'][$uid][$entry_key]['#title']);
+
+      $row[] = drupal_render($form['entities'][$uid][$entry_key]);
+    }
+    $rows[] = $row;
+  }
+
+  if (!$rows) {
+    $rows[] = array(array(
+        'data' => t('No notifications are scheduled.'),
+        'colspan' => 5,
+      ));
+  }
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
+
+  $output .= drupal_render_children($form);
+  return $output;
+}
+
+
+/**
  * Menu callback, show admin list of user default settings.
  */
 function notify_admin_defaults($form, &$form_state) {
@@ -788,195 +1233,6 @@ function notify_admin_defaults_submit($form, &$form_state) {
   }
 
   drupal_set_message(t('Notify default settings saved.'));
-}
-
-/**
- * Menu callback, show admin list of user notification settings.
- */
-function notify_admin_queue($form, &$form_state) {
-  $period = variable_get('notify_period', 86400);
-  $since = variable_get('notify_send_last', REQUEST_TIME - $period);
-  $lastdate = format_date($since, 'short');
-  $start = variable_get('notify_send_start', 0);
-  $startdate = format_date($start, 'short');
-  $notify_send_last  = variable_get('notify_send_last', 0);
-  $next_last = _notify_next_notificaton($notify_send_last);
-
-  if ($next_last == -1) {
-    $batch_msg = t('No more notifications scheduled');
-  } elseif ($next_last == 0) {
-    $batch_msg = t('The next notification is scheduled for the next cron run');
-  }
-  else {
-    $next = format_date($next_last, 'short');
-    $batch_msg = t('The next notification is scheduled for the first cron run after ') . $next;
-  }
-
-  $form = array();
-
-  $form['process'] = array(
-    '#type' => 'radios',
-    '#title' => t('Process notification queue'),
-    '#default_value' => 0,
-    '#options' => array(t('Send batch now'), t('Truncate queue')),
-    '#description' => t('Select &#8220;Send batch now&#8220; to send next batch of e-mails queued for notifications. Select &#8220;Truncate queue&#8220; to empty queue of pending notification <em>without</em> sending e-mails. Press &#8220;Process queue&#8220; to execute.'),
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Process queue'),
-  );
-
-  $form['batch'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Status'),
-    '#collapsible' => TRUE,
-  );
-
-  list ($np, $cp, $nn, $cn, $nu, $cu) = _notify_count();
-
-  $npcp = $np + $cp;
-  if ($npcp) {
-    $queue_msg = t('Notifications about at least !item queued', array(
-      '!item' => format_plural($npcp, '1 item is', '@count items are'),
-    ));
-  } else {
-    $queue_msg = t('No notifications queued');
-  }
-
-  if (($np && $nu) || ($cp && $cu)) {
-    $nonew_msg = '';
-  }
-  else {
-    $nonew_msg = t(', no notification about unpublished items are queued');
-  }
-  if ($nu + $cu) {
-    $unpub_msg = t('Unpublished: !nodeup and !commup', array(
-      '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
-      '!commup' => format_plural($cu, '1 comment', '@count comments'),
-    )) . $nonew_msg;
-  }
-  else {
-    $unpub_msg = t('No unpublished items');
-  }
-
-  $sent = variable_get('notify_num_sent', 0);
-  $fail = variable_get('notify_num_failed', 0);
-  $remn = count(variable_get('notify_users', array()));
-
-
-  $creat_msg = t('There are !nodes and !comms created', array(
-    '!nodes' => format_plural($np, '1 node', '@count nodes'),
-    '!comms' => format_plural($cp, '1 comment', '@count comments'),
-  ));
-  if ($nn + $cn) {
-    $publ_msg = t(', and in addition !noderp and !commrp published,', array(
-      '!noderp' => format_plural($nn, '1 node', '@count nodes'),
-      '!commrp' => format_plural($cn, '1 comment', '@count comments'),
-    ));
-  }
-  else {
-    $publ_msg = '';
-  }
-  if ($remn) {
-    $intrv_msg = t('between !last and !start', array(
-       '!last' => $lastdate,
-       '!start' => $startdate,
-    ));
-    $sent_msg = t('Batch not yet complete.  So far !sent has been sent (!fail, !remain to go)', array(
-      '!sent' => format_plural($sent, '1 e-mail', '@count e-mails'),
-      '!fail' => format_plural($fail, '1 failure', '@count failures'),
-      '!remain' => format_plural($remn, '1 user', '@count users'),
-    ));
-  }
-  else {
-    $intrv_msg = t('since !last', array(
-      '!last' => $lastdate,
-    ));
-    $sent_msg = t('Last batch:') . ' ';
-    if ($sent == 0) {
-      $sent_msg = t('No e-mails were sent');
-    }
-    else {
-      $sent_msg .= t('sent !sent', array(
-        '!sent' => format_plural($sent, '1 e-mail', '@count e-mails'),
-      ));
-    }
-    if ($fail > 0) {
-      $sent_msg .= ', ' . t('!fail', array(
-        '!fail' => format_plural($fail, '1 failure', '@count failures'),
-      ));
-    }
-    elseif ($sent) {
-      $sent_msg .= ', ' . t('no failures');
-    }
-  }
-  $mailsystem = variable_get('mail_system', NULL);
-  $form['batch']['schedule'] = array(
-    '#markup' => $creat_msg . $publ_msg . ' ' . $intrv_msg . '.<br>'
-    . $unpub_msg . '.<br>'
-    . $queue_msg . '.<br>'
-    . $sent_msg . '.<br>'
-    . $batch_msg . '.<br>'
-    . t('Default MailSystem: ') . $mailsystem['default-system'] . '.'
-  );
-  return $form;
-}
-
-/**
- * Submit for the notify_admin_queue form.
- */
-function notify_admin_queue_submit($form, &$form_state) {
-  unset($form);
-
-  $watchdog_level = variable_get('notify_watchdog', 0);
-  if (0 == $form_state['values']['process']) { // flush
-    list($num_sent, $num_fail) = _notify_send();
-
-    if ($num_fail > 0) {
-      drupal_set_message(t('!sent notification !emsent sent successfully, !fail !emfail could not be sent.',
-        array(
-          '!sent' => $num_sent, '!emsent' =>  format_plural($num_sent, 'e-mail', 'e-mails'),
-          '!fail' => $num_fail, '!emfail' =>  format_plural($num_fail, 'notification', 'notifications'),
-        )
-      ), 'error');
-      $watchdog_status = WATCHDOG_ERROR;
-    }
-    elseif ($num_sent > 0) {
-      drupal_set_message(t('!count pending notification !emails have been sent in this pass.', array('!count' => $num_sent, '!emails' =>  format_plural($num_sent, 'e-mail', 'e-mails'))));
-      $watchdog_status = WATCHDOG_INFO;
-    }
-    if (0 == ($num_sent + $num_fail)) {
-      drupal_set_message(t('No notifications needed to be sent in this pass.'));
-    }
-    else {
-      if ($watchdog_level <= 1) {
-        watchdog('notify', 'Notifications sent: !sent, failures: !fail.', array('!sent' => $num_sent, '!fail' => $num_fail), $watchdog_status);
-      }
-    }
-    $num_sent += variable_get('notify_num_sent', 0);
-    $num_fail += variable_get('notify_num_failed', 0);
-    variable_set('notify_num_sent', $num_sent);
-    variable_set('notify_num_failed', $num_fail);
-  }
-  else { // truncate
-    list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
-    foreach ($res_nopub as $row) {
-      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
-    }
-    foreach ($res_copub as $row) {
-      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => $row->cid, ':nid' => $row->nid));
-    }
-    variable_set('notify_send_start', REQUEST_TIME);
-    variable_set('notify_send_last', REQUEST_TIME);
-    variable_set('notify_cron_next', 0); // Force reset
-    variable_set('notify_users', array());
-    drupal_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
-    if ($watchdog_level <= 1) {
-      watchdog('notify', 'Notification queue truncated.', NULL, WATCHDOG_INFO);
-    }
-    return;
-  }
 }
 
 /**
@@ -1236,9 +1492,12 @@ function _notify_get_content_types(&$ntype, $foop) {
  *   res_nodes, res_comms, res_nopub, res_copub, res_nounp, res_counp
  */
 function _notify_select_content() {
+  $batch_remain = count(variable_get('notify_users', array()));
   $since = variable_get('notify_send_last', 0);
-  $send_start = variable_get('notify_send_start', 0);
-  if ($send_start == $since || !$send_start) {
+  if ($batch_remain) {
+    $send_start = variable_get('notify_send_start', 0);
+  }
+  else {
     $send_start = REQUEST_TIME;
   }
   if (!$since) {
@@ -1385,7 +1644,7 @@ function _notify_send() {
     }
     foreach ($res_copub as $row) {
       if (!isset($comments[$row->nid][$row->cid])) {
-        $comments[$row->nid][$row->cid] =comment_load($row->cid);
+        $comments[$row->nid][$row->cid] = comment_load($row->cid);
         $count++;
       }
     }
@@ -1404,8 +1663,6 @@ function _notify_send() {
       $count++;
     }
   }
-  drupal_set_message(t('Total !count messages queued for notification.',
-    array('!count' => $count)));
 
   if ($count) {
     $uresult = variable_get('notify_users', array());
@@ -1435,6 +1692,9 @@ function _notify_send() {
     $old_state = drupal_save_session();
     drupal_save_session(FALSE);
 
+    $notify_skip_nodes = variable_get('notify_skip_nodes', array());
+    $notify_skip_comments = variable_get('notify_skip_comments', array());
+
     foreach ($uresult as $index => $userrow) {
       if (++$batchcount > $batchlimit) {
         break;
@@ -1456,6 +1716,10 @@ function _notify_send() {
         $node_count = 0;
         // Look at the node
         foreach ($nodes as $node) {
+          // Skip to next if skip flag set for node.
+          if (in_array($node->nid, $notify_skip_nodes)){
+	    continue;
+	  }
           // Skip to next if user is not allowed to view this node.
           if (!user_access('administer nodes', $userobj) && NODE_NOT_PUBLISHED == $node->status) {
             continue;
@@ -1566,7 +1830,10 @@ function _notify_send() {
 	  $onecomment = '';
           // Look at the comment
           foreach ($value as $commobj) {
-            if (!user_access('administer comments', $userobj) && COMMENT_NOT_PUBLISHED == $commobj->status) {
+            if (in_array($commobj->cid, $notify_skip_comments)){
+	      continue;
+	    }
+	    if (!user_access('administer comments', $userobj) && COMMENT_NOT_PUBLISHED == $commobj->status) {
               continue;
             }
   	    if (!user_access('administer comments', $userobj) && !in_array($node->type, $defaultlist)) {
