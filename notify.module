@@ -452,7 +452,7 @@ function _notify_content($node, $comment, $view_mode) {
   if ($comment) {
     //@TODO Get trim_length from type.
     if ('teaser' == $vmode) {
-      $comment->comment_body['und'][0]['value'] = text_summary($comment->comment_body['und'][0]['value'], NULL, 200);
+      $comment->comment_body[LANGUAGE_NONE][0]['value'] = text_summary($comment->comment_body[LANGUAGE_NONE][0]['value'], NULL, 200);
     }
     $content = comment_view($comment, $node, $vmode);
     if (isset($content['comment_body'][0]['#markup'])) {
@@ -767,7 +767,7 @@ function _notify_send() {
 	        continue;
               }
 	    }
-	    if ((2 == $ml_level) && (0 == $node->tnid) && ('und' != $node->language)) {
+	    if ((2 == $ml_level) && (0 == $node->tnid) && (LANGUAGE_NONE != $node->language)) {
 	      continue;
             }
 	    $ignore_unverified = variable_get('notify_unverified', 0);
