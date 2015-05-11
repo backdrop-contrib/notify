@@ -27,10 +27,13 @@ Drupal web site.
 * For a full description of the module, visit the project page:
   https://drupal.org/project/notify
 
+* For more documentation about its use, visit the documentation page:
+  https://www.drupal.org/documentation/modules/notify
+
 * To submit bug reports and feature suggestions, or to track changes:
   https://drupal.org/project/issues/notify
 
-If you enable node revisions (http://drupal.org/node/320614), the
+If you enable node revisions (https://www.drupal.org/node/320614), the
 notification e-mail will also mention the name of the last person to
 edit the node.
 
@@ -44,23 +47,25 @@ running.
 RECOMMENDED MODULES
 -------------------
 
+* Advanced help hint (https://www.drupal.org/project/advanced_help_hint)
+  Will link link standard help text to online help and advanced help.
+
 * Advanced help (https://www.drupal.org/project/advanced_help)
   When this module is enabled the administrator will have access to
-  more online help.
-
+  more extensive help.
 
 INSTALLATION
 ------------
 
-1. Extract the notify project directory into the directory where you
-   keep contributed modules (e.g. sites/all/modules/).
+1. Install as you would normally install a contributed drupal
+   module. See: Installing modules
+   (https://www.drupal.org/documentation/install/modules-themes/modules-7)
+   for further information.
 
-2. Enable the notify module on the Modules list page.  The database
-   tables will be created automagically for you at this point.
+2. Check if you need to run the update script by visting the Status
+   Report.
 
-3. Run the update script if you're upgrading from 7.x-1.0-alpha1.
-
-4. Modify permissions on the People » Permissions page.
+3. Modify permissions on the People » Permissions page.
 
    To adminster the notify main settings and user notfification
    settings, grant the permission "administer notify".
@@ -75,7 +80,7 @@ INSTALLATION
    settings (recommended) you must also grant authenticated users the
    right to "access notify".
 
-5. Configure the other general notification settings.
+4. Configure the other general notification settings.
 
    See the "Administration form" section below for details.
 

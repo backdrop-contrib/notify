@@ -21,7 +21,9 @@ function notify_help($path, $arg) {
     case 'admin/help#notify':
       $output = '<p>' . t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
       $output .= '<p>' . t('The administrator sets the frequency of the e-mails in the notify administration interface. They can also set how many e-mail failures should occur before notify stops sending notifications.  Note that cron must be enabled for notifications to be sent out.') . '</p>';
-      $output .= '<p>'  . t('For more information please read the community documentation handbook <a href="@notifyhb">Notify page</a>.', array('@notifyhb' => url('http://www.drupal.org/handbook/modules/notify/'))) . '</p>';
+      if (function_exists('advanced_help_hint_docs')) {
+        $output .= '<p>' . advanced_help_hint_docs('notify', 'http://www.drupal.org/handbook/modules/notify/', TRUE) . '</p>';
+      }
       return $output;
   }
 }

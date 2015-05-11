@@ -4,3 +4,5 @@ package = Mail
 files[] = notify.test
 core = 7.x
 configure = admin/config/people/notify
+
+; dependencies[] = advanced_help_hint
