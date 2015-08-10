@@ -38,7 +38,7 @@ running.</p>
 <p>You can specify how often notifications are sent, the hour to send
 them (if the frequency is one day or greater), the number of failed
 sends after which notifications are disabled, and the maximum number
-of notifications to send out per cron run.</p>
+of users to process out per cron.</p>
 
 <p>When setting how often notifications are sent, note that e-mail
 updates can only happen as frequently as the cron is set to run.</p>
@@ -76,25 +76,26 @@ content&#8221;, users belonging to roles with the &#8220;administer nodes&#8221;
 about unpublished content.  This is mainly to make the module useful
 to manage moderation queues.</p>
 
-<p>If you've set up a multilingual site, there should also be three radio
-buttons that allow you to filter notifications about new nodes against
-the user's language setting (it may be set by editing the user
-profile).  The first setting (&#8220;All contents&#8221;) will notify a user about
-all new content on the site. If a piece of contents exists in more
-than one language, all versions will be notified about.  The setting
-&#8220;Contents in the user's preferred language + contents not yet
-translated&#8221; will notify about content in the user's preferred language
-and also about content that is in some other language if no
-translation of it exists. The last setting, &#8220;Only contents in the
-user's preferred language&#8221;, will only notify about new contents in
-the user's preferred language.  However, please note that new contents
-that are marked as &#8220;language neutral&#8221; will always be included in
-notifications.  The multilingual settings do not apply to
-administrators.  Administrators will always be notified about all new
-contents.  Note that if you use the second setting, contents that is
-not in the user's preferred language will be excluded from the
-notification if some translation of exists, even if that translation
-is not to the user's preferred language.</p>
+<p>If you've set up a multilingual site, there should also be three
+radio buttons that allow you to filter notifications about new nodes
+against the user's language setting (it may be set by editing the user
+profile).  The first setting (&#8220;All contents&#8221;) will notify
+a user about all content on the site the user subscribes to. If a
+piece of contents exists in more than one language, all versions will
+be notified about.  The setting &#8220;Contents in the user's
+preferred language + contents not yet translated&#8221; will notify
+about subscribed content in the user's preferred language and also
+about subscribed content that is in some other language if no
+translation of it exists. The last setting, &#8220;Only contents in
+the user's preferred language&#8221;, will only notify about
+subscribed contents in the user's preferred language.  However, please
+note that contents that are marked as &#8220;language neutral&#8221;
+will always be included in notifications.  The multilingual settings
+do not apply to administrators.  Administrators will always be
+notified about all new contents.  Note that if you use the second
+setting, contents that is not in the user's preferred language will be
+excluded from the notification if some translation of exists, even if
+that translation is not to the user's preferred language.</p>
 
 <p>The &#8220;Watchdog log level&#8221; setting lets you specify how much to log.  The
 setting &#8220;All&#8221; will make a log record of every notification mail sent.
@@ -122,12 +123,12 @@ operatons and the notification queue status panel.</p>
 the following meanings:</p>
 
 <ul>
-<li><em>Send batch now</em>: Force sending a notification batch without waiting
-   for the next cron run.  Note that if the number of notifications
-   queue exceeds the maximum number of notifications to send out per
-   cron run, only the maximum number is sent.  The rest will be queued
-   for the next cron run or the next manual send batch (whatever
-   happens first).</li>
+<li><em>Send batch now</em>: Force sending a notification batch
+   without waiting for the next cron run.  Note that if the number of
+   notifications queue exceeds the maximum number of users to process
+   out per cron run, only the maximum number of users are processed.
+   The rest will be queued for the next cron run or the next manual
+   send batch (whatever happens first).</li>
 
 <li><em>Truncate queue</em>: Truncate the queue of pending notifications without
    sending out any notifications.</li>

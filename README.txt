@@ -114,7 +114,7 @@ The Settings tab allow you to configure how the module shall work.
 You can specify how often notifications are sent, the hour to send
 them (if the frequency is one day or greater), the number of failed
 sends after which notifications are disabled, and the maximum number
-of notifications to send out per cron run.
+of users to process out per cron run.
 
 When setting how often notifications are sent, note that e-mail
 updates can only happen as frequently as the cron is set to run.
@@ -156,21 +156,23 @@ If you've set up a multilingual site, there should also be three radio
 buttons that allow you to filter notifications about new nodes against
 the user's language setting (it may be set by editing the user
 profile).  The first setting ("All contents") will notify a user about
-all new content on the site. If a piece of contents exists in more
-than one language, all versions will be notified about.  The setting
-"Contents in the user's preferred language + contents not yet
+all new content on the site. If a piece of subscribed contents exists
+in more than one language, all versions will be notified about.  The
+setting "Contents in the user's preferred language + contents not yet
 translated" will notify about content in the user's preferred language
 and also about content that is in some other language if no
 translation of it exists. The last setting, "Only contents in the
-user's preferred language", will only notify about new contents in
-the user's preferred language.  However, please note that new contents
-that are marked as "language neutral" will always be included in
-notifications.  The multilingual settings do not apply to
-administrators.  Administrators will always be notified about all new
-contents.  Note that if you use the second setting, contents that is
-not in the user's preferred language will be excluded from the
+user's preferred language", will only notify about subscribed contents
+in the user's preferred language.  However, please note that
+subscribed contents that are marked as "language neutral" will always
+be included in notifications.  The multilingual settings do not apply
+to administrators.  Administrators will always be notified about all
+new contents.  Note that if you use the second setting, contents that
+is not in the user's preferred language will be excluded from the
 notification if some translation of exists, even if that translation
-is not to the user's preferred language.
+is not to the user's preferred language.  To avoid this having
+unexpected effects, when you provide translation of a node, you should
+translate it to all langauages the site supports.
 
 The "Watchdog log level" setting lets you specify how much to log.
 The setting "All" will make a log record of every notification mail
@@ -199,10 +201,10 @@ has the following meanings:
 
  - Send batch now: Force sending a notification batch without waiting
    for the next cron run.  Note that if the number of notifications
-   queue exceeds the maximum number of notifications to send out per
-   cron run, only the maximum number is sent.  The rest will be queued
-   for the next cron run or the next manual send batch (whatever
-   happens first).
+   queue exceeds the maximum number of users to process out per cron
+   run, only the maximum number of users are processed.  The rest will
+   be queued for the next cron run or the next manual send batch
+   (whatever happens first).
 
  - Truncate queue: Truncate the queue of pending notifications without
    sending out any notifications.
@@ -293,11 +295,20 @@ TROUBLESHOOTING
   settings.php file. Examples for how to do this are provided in
   settings.php.
 
+* If your site is multilingual, and your problem is that Notify is not
+  sending all notifications to all subscribed users, the first thing
+  to try is to visit the multilingual settings and turn off any
+  language filter (i.e. set Notify to notify about "All contents").
+  If changing this setting makes a difference, you need to review your
+  multiligual settings for nodes, users and Notify and make sure that
+  they match.
+
 * If Notify makes the site crash, and you have the core PHP Filter
   module enabled, nodes which include bad PHP code will break your
   site when they're processed by Notify. Please see the following
   issue for further details: https://www.drupal.org/node/146521. If
   this happens, you may try to disable the PHP Filter module.
+
 
 If the above does not help you, to file bug reports, use the issue
 queue linked to from the Notify project page.
