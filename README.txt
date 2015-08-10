@@ -9,6 +9,7 @@ CONTENTS OF THIS FILE
 * Requirements
 * Recommended modules
 * Installation
+* Permissions
 * Configuration
   - Administration form
   - User's settings
@@ -67,11 +68,11 @@ INSTALLATION
 
 3. Modify permissions on the People » Permissions page.
 
-   To adminster the notify main settings and user notfification
-   settings, grant the permission "administer notify".
+   To adminster the notify general settings, default settings and
+   users grant the permission "administer notify".
 
-   To adminster the notificaton queue (flush and truncate), grant the
-   permission "administer notify queue".
+   To adminster the notificaton queue (flush, truncate and skip
+   flags), grant the permission "administer notify queue".
 
    To set the notification checkbox default on new user registration
    form, or let new users opt in for notifications during
@@ -89,13 +90,27 @@ installation.  Before anyone is subscribed, no notifications will be
 sent.
 
 
+PERMISSIONS
+-----------
+
+To set up permissions for Notify navigate to: Administration » People
+» Permissions.
+
+There are three permissions:
+
+1. access notify: to subscribe to and receive notifications when there is new content
+2. administer notify: to administer general notify settings, default settings, and users
+3. dminister notify queue: to administer the notify queue operations and skip flags
+
+
+
 CONFIGURATION
 -------------
 
 Administration form
 -------------------
 
-The administrative interface is at: Administer » Configuration »
+The administrative interface is at: Administration » Configuration »
 People » Notification settings.
 
 There are five tabs:

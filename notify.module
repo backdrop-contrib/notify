@@ -115,15 +115,11 @@ function notify_permission() {
     ),
     'administer notify' => array(
       'title' => t('administer notify'),
-      'description' => t('Administer the notify module'),
+      'description' => t('Administer the notify module general settings, default settings and users'),
     ),
     'administer notify queue' => array(
       'title' => t('administer notify queue'),
-      'description' => t('Administer the notify queue'),
-    ),
-    'administer notify skip flags' => array(
-      'title' => t('administer notify skip flags'),
-      'description' => t('Administer the notify skip flags'),
+      'description' => t('Administer the notify queue operations and skip flags'),
     ),
   );
 }
@@ -163,7 +159,7 @@ function notify_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('notify_admin_skip'),
     'access callback' => 'user_access',
-    'access arguments' => array('administer notify skip flags'),
+    'access arguments' => array('administer notify queue'),
     'file' => 'notify.admin.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,

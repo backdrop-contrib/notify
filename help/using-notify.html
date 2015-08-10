@@ -14,10 +14,39 @@ edit the node.</p>
 running.</p>
 
 
+<h2>Permissions</h2>
+
+<p>To set up permissions for <strong>Notify</strong> navigate to:
+<a href="&base_url&/admin/people/permissions#module-notify">Administration » People  » Permissions</a>.</p>
+
+<p>There are three permissions:</p>
+
+<ol>
+<li><strong>access notify</strong> &ndash; to subscribe to and receive notifications when there is new content</li>
+<li><strong>administer notify</strong> &ndash; to administer general notify settings, default settings, and users</li>
+<li><strong>administer notify queue</strong> &ndash; to administer the notify queue operations and skip flags</li>
+</ol>
+
+<p>The <strong>access notify</strong> permission will enable a tab
+(<em>Notification settings</em>) on the users <em>My account</em>-page
+where the user can view and change personal notofication settings.
+This permission is suitable for all users.</p>
+
+<p>Note that you must also enable <strong>access notify</strong> for
+the <em>anonymous user role</em> if you want notification enabled by
+<em>default</em> for new users.</p>
+
+<p>The two permissions to <em>administer notify</em> should only be
+given to trusted users.  They give access to various parts of
+the <strong>Notify</strong> administration GUI (described in the next
+section).</p>
+
+
+
 <h2>Configuration</h2>
 
 <p>The administrative interface is at:
- <a href="&base_url&/admin/config/people/notify">Administer » Configuration » People » Notification settings</a>.</p>
+ <a href="&base_url&/admin/config/people/notify">Administration » Configuration » People » Notification settings</a>.</p>
 
 
 <p>There are five tabs:</p>
@@ -33,9 +62,10 @@ running.</p>
   
 <h3>Settings</h3>
 
-<p>The <strong>Settings</strong> tab allow you to configure how the module shall work.</p>
+<p>The <strong>Settings</strong> tab gives the administrator access to
+the general settings for the module.</p>
 
-<p>You can specify how often notifications are sent, the hour to send
+<p>It can be use to specify how often notifications are sent, the hour to send
 them (if the frequency is one day or greater), the number of failed
 sends after which notifications are disabled, and the maximum number
 of users to process out per cron.</p>
@@ -95,7 +125,10 @@ do not apply to administrators.  Administrators will always be
 notified about all new contents.  Note that if you use the second
 setting, contents that is not in the user's preferred language will be
 excluded from the notification if some translation of exists, even if
-that translation is not to the user's preferred language.</p>
+that translation is not to the user's preferred language.  To avoid
+this having unexpected effects, when you provide translation of a
+node, you should translate it to <em>all</em> langauages the site
+supports.</p>
 
 <p>The &#8220;Watchdog log level&#8221; setting lets you specify how much to log.  The
 setting &#8220;All&#8221; will make a log record of every notification mail sent.
@@ -154,10 +187,11 @@ notification emails, including the one sent to the administrator.</p>
 
 <h3>Defaults</h3>
 
-<p>The checkbox under &#8220;Notification default for new users&#8221; is used as the
-default value for the notification master switch on the new user
-registration.  Note that this setting has no effect unless you grant
-the anonymous user the right to access notify.</p>
+<p>The checkbox under &#8220;Notification default for new users&#8221;
+is used as the default value for the notification master switch on the
+new user registration.  Note that this setting has no effect unless
+you grant the <em>anonymous user role</em> the right to <strong>access
+notify</strong>.</p>
 
 <p>The &#8220;Initial settings panel&#8221; let you set up the initial settings that
 will apply to new users registering, and to users that are enrolled in
@@ -177,4 +211,3 @@ that have the master switch for notifications set to <em>Enabled</em>.</p>
 <p>If you tick the box &#8220;Bulk subscribe all users&#8221;, all
 non-blocked users that do not already subscribe to notifications will
 be subscribed with the initial settings set under the deafult tab.</p>
-
