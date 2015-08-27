@@ -548,7 +548,7 @@ function _notify_select_content() {
   if (count($ntype) >= 1) {
     $q->condition('n.type', $ntype, 'IN');
   }
-  if (variable_get('notify_include_updates', 1)) {
+  if (variable_get('notify_include_updates', 0)) {
     $q->condition(db_or()->condition(db_and()->condition('n.created', $since, '>')->condition('n.created', $send_start, '<='))
                          ->condition(db_and()->condition('n.changed', $since, '>')->condition('n.changed', $send_start, '<=')));
   }
@@ -585,7 +585,7 @@ function _notify_select_content() {
     if (count($ntype) >= 1) {
       $q->condition('n.type', $ntype, 'IN');
     }
-    if (variable_get('notify_include_updates', 1)) {
+    if (variable_get('notify_include_updates', 0)) {
       $q->condition(db_or()->condition(db_and()->condition('c.created', $since, '>')->condition('c.created', $send_start, '<='))
                            ->condition(db_and()->condition('c.changed', $since, '>')->condition('c.changed', $send_start, '<=')));
     }

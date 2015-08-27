@@ -266,9 +266,10 @@ function notify_admin_queue($form, &$form_state) {
   $fail = variable_get('notify_num_failed', 0);
   $batch_remain = count(variable_get('notify_users', array()));
 
-  $creat_msg = t('There are !nodes and !comms created', array(
+  $creat_msg = t('There are !nodes and !comms !created', array(
     '!nodes' => format_plural($np, '1 node', '@count nodes'),
     '!comms' => format_plural($cp, '1 comment', '@count comments'),
+    '!created' =>   variable_get('notify_include_updates', 0) ? t('updated') : t('created'),
   ));
   if ($nn + $cn) {
     $publ_msg = t(', and in addition !noderp and !commrp published,', array(
