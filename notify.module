@@ -4,7 +4,7 @@
  * @file
  * Notify module sends e-mail digests of new content and comments.
  *
- * The notification module allows users to subscribe to periodic e-mails which
+ * The Notify module allows users to subscribe to periodic e-mails which
  * include all new or revised content and/or comments much like the daily news
  * letters sent by some websites.  Even if this feature is not configured for
  * normal site users, it can be a useful feature for an administrator of a site
@@ -19,8 +19,18 @@ define('NOTIFY_NODE_TYPE', 'notify_node_type_');
 function notify_help($path, $arg) {
   switch ($path) {
     case 'admin/help#notify':
-      $output = '<p>' . t('The notification module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
-      $output .= '<p>' . t('The administrator sets the frequency of the e-mails in the notify administration interface. They can also set how many e-mail failures should occur before notify stops sending notifications.  Note that cron must be enabled for notifications to be sent out.') . '</p>';
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Notify module allows users to subscribe to periodic e-mails which include all new or revised content and/or comments much like the daily news letters sent by some websites.  Even if this feature is not configured for normal site users, it can be a useful feature for an administrator of a site to monitor content submissions and comment posts.') . '</p>';
+
+       $output .= '<p>' . t('The administrator sets the frequency of the e-mails in the notify administration interface. They can also set how many e-mail failures should occur before notify stops sending notifications.  Note that cron must be enabled for notifications to be sent out. For more information, see the online documentation for the <a href="@notify">Notify module</a>.', array('@notify' => 'http://drupal.org/documentation/modules/notify/')) . '</p>';
+
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Site Monitoring') . '</dt>';
+      $output .= '<dd>' . t('Lets the administrator monitor new content on a site without having to log on to the site to check. Useful if you are the administrator of a fairly static site that only rarely gets user generated content.') . '</dd>';
+      $output .= '<dt>' . t('Newsletter Automation') . '</dt>';
+      $output .= '<dd>' . t('Allows for automatic distribution of a site newsletter by email. Create a content type named "Newsletter" and make that content type available for subscription. The content of new newsletter nodes will automatically be mailed to all users that have opted in for notifications of that type.') . '</dd>';
       if (function_exists('advanced_help_hint_docs')) {
         $output .= '<p>' . advanced_help_hint_docs('notify', 'http://www.drupal.org/handbook/modules/notify/', TRUE) . '</p>';
       }

@@ -21,9 +21,9 @@ CONTENTS OF THIS FILE
 INTRODUCTION
 ------------
 
-Notify is a simple, lightweight notification module. It provides
-e-mail notifications to subscribers about updates and changes to the
-Drupal web site.
+Notify is a simple, lightweight module for sending e-mail
+notifications about new content and comments posted on a Drupal web
+site.
 
 * For a full description of the module, visit the project page:
   https://drupal.org/project/notify
@@ -49,7 +49,7 @@ RECOMMENDED MODULES
 -------------------
 
 * Advanced help hint (https://www.drupal.org/project/advanced_help_hint)
-  Will link link standard help text to online help and advanced help.
+  Will link standard help text to online help and advanced help.
 
 * Advanced help (https://www.drupal.org/project/advanced_help)
   When this module is enabled the administrator will have access to
@@ -71,8 +71,8 @@ INSTALLATION
    To adminster the notify general settings, default settings and
    users grant the permission "administer notify".
 
-   To adminster the notificaton queue (flush, truncate and skip
-   flags), grant the permission "administer notify queue".
+   To adminster the queue (flush, truncate and skip flags), grant the
+   permission "administer notify queue".
 
    To set the notification checkbox default on new user registration
    form, or let new users opt in for notifications during
