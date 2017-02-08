@@ -1,8 +1,6 @@
 name = Notify
 description = "Enables notifications of new content and comments by e-mail."
 package = Mail
-files[] = notify.test
-core = 7.x
+backdrop = 1.x
+type = module
 configure = admin/config/people/notify
-
-; dependencies[] = advanced_help_hint

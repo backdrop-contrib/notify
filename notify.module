@@ -44,7 +44,7 @@ function notify_help($path, $arg) {
  */
 function notify_cron() {
 
-  $period = variable_get("notify_period", 86400);
+  $period = config_get('notify.settings',"notify_period");
   if (-2 == $period) {
     return;
   }
@@ -53,9 +53,9 @@ function notify_cron() {
     return; // Never notify.
   }
 
-  $send_last = variable_get('notify_send_last', 0);
-  $cron_next = variable_get('notify_cron_next', 0);
-  $doitp = variable_get('notify_users', array());
+  $send_last = config_get('notify.settings','notify_send_last');
+  $cron_next = config_get('notify.settings','notify_cron_next');
+  $doitp = config_get('notify.settings','notify_users');
 
   if ($period >= 86400) {
     if ($doitp || ($cron_next < REQUEST_TIME)) {
@@ -69,12 +69,12 @@ function notify_cron() {
 
   if ((REQUEST_TIME > $next) || $doitp) {
     list($num_sent, $num_fail) = _notify_send();
-    $num_sent += variable_get('notify_num_sent', 0);
-    $num_fail += variable_get('notify_num_failed', 0);
-    variable_set('notify_num_sent', $num_sent);
-    variable_set('notify_num_failed', $num_fail);
+    $num_sent += config_get('notify.settings','notify_num_sent');
+    $num_fail += config_get('notify.settings','notify_num_failed');
+    config_set('notify.settings','notify_num_sent', $num_sent);
+    config_set('notify.settings','notify_num_failed', $num_fail);
     $next = _notify_next_notificaton(REQUEST_TIME);
-    variable_set('notify_cron_next', $next);
+    config_set('notify.settings','notify_cron_next', $next);
   }
 }
 
@@ -104,9 +104,9 @@ function notify_user_insert(&$edit, $account, $category) {
       ->fields(array(
       'uid' => $account->uid,
       'status' => 1,
-      'node' => variable_get('notify_def_node', 1),
-      'comment' => variable_get('notify_def_comment', 0),
-      'teasers' => variable_get('notify_def_teasers', 0),
+      'node' => config_get('notify.settings','notify_def_node'),
+      'comment' => config_get('notify.settings','notify_def_comment'),
+      'teasers' => config_get('notify.settings','notify_def_teasers'),
       'attempts' => 0,
     ))
       ->execute();
@@ -142,7 +142,7 @@ function notify_menu() {
   $items['admin/config/people/notify'] = array(
     'title' => 'Notification settings',
     'description' => 'Adjust settings for new content notifications sent by e-mail.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('notify_admin_settings'),
     'access callback' => 'user_access',
     'access arguments' => array('administer notify'),
@@ -156,7 +156,7 @@ function notify_menu() {
   );
   $items['admin/config/people/notify/queue'] = array(
     'title' => 'Queue',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('notify_admin_queue'),
     'access callback' => 'user_access',
     'access arguments' => array('administer notify queue'),
@@ -166,7 +166,7 @@ function notify_menu() {
   );
   $items['admin/config/people/notify/skip'] = array(
     'title' => 'Skip flags',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('notify_admin_skip'),
     'access callback' => 'user_access',
     'access arguments' => array('administer notify queue'),
@@ -176,7 +176,7 @@ function notify_menu() {
   );
   $items['admin/config/people/notify/defaults'] = array(
     'title' => 'Defaults',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('notify_admin_defaults'),
     'access callback' => 'user_access',
     'access arguments' => array('administer notify'),
@@ -186,7 +186,7 @@ function notify_menu() {
   );
   $items['admin/config/people/notify/users'] = array(
     'title' => 'Users',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('notify_admin_users'),
     'access callback' => 'user_access',
     'access arguments' => array('administer notify'),
@@ -196,7 +196,7 @@ function notify_menu() {
   );
   $items['user/%user/notify'] = array(
     'title' => 'Notification settings',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('notify_user_settings_form', 1),
     'access callback' => 'notify_user_access',
     'access arguments' => array(1),
@@ -214,7 +214,7 @@ function notify_mail($key, &$message, $params) {
   $username = format_username($params['user']);
   $useruid = $params['user']->uid;
   $viewmode = $params['viewmode'];
-  $sitename = variable_get('site_name', 'Drupal');
+  $sitename = config_get('system.core','site_name');
   $upl = user_preferred_language($params['user']);
 
   $message['headers']['MIME-Version'] = '1.0';
@@ -240,7 +240,7 @@ function notify_mail($key, &$message, $params) {
   $message['body'][] = $params['content'];
   $message['body'][] = "-- \n" .
     t('This is an automatic e-mail from !sitename.',
-      array('!sitename' => variable_get('site_name', 'Drupal')), array('langcode' => $upl->language)) . "\n" .
+      array('!sitename' => config_get('system.core','site_name')), array('langcode' => $upl->language)) . "\n" .
     t('To stop receiving these e-mails, change your notification preferences at !notify-url', array(
       '!notify-url' => url('user/' . $useruid . '/notify', array('absolute' => TRUE)),
     ), array('langcode' => $upl->language));
@@ -314,7 +314,7 @@ function notify_theme() {
 // Helper functions
 
 function _notify_cron_next($next_time_to_send) {
-  $send_hour  = variable_get('notify_send_hour',  9);
+  $send_hour  = config_get('notify.settings','notify_send_hour');
   // Compute the next as the sending hour today.
   $cron_next = strtotime(date('Y-m-d ', $next_time_to_send) . $send_hour . ':00:00');
   return $cron_next;
@@ -332,7 +332,7 @@ function _notify_cron_next($next_time_to_send) {
  *   -1 never, 0 send instantly, else next time to notify.
  */
 function _notify_next_notificaton($send_last) {
-  $period = variable_get('notify_period', 86400);
+  $period = config_get('notify.settings','notify_period');
   // Two special cases: Never and instantly.
   if ($period < 0) {
     return(-1);
@@ -352,10 +352,10 @@ function _notify_next_notificaton($send_last) {
 
   // Interval >= 1 day.
 
-  $cron_next = variable_get('notify_cron_next', 0);
+  $cron_next = config_get('notify.settings','notify_cron_next');
   if (!$cron_next) {
     $cron_next = _notify_cron_next($next_time_to_send);
-    variable_set('notify_cron_next', $cron_next);
+    config_set('notify.settings','notify_cron_next', $cron_next);
   }
   return($cron_next);
 }
@@ -369,12 +369,12 @@ function _notify_user_reg_fields() {
   }
 
   // Get the variable for how often the notifications are sent out.
-  $period = variable_get("notify_period", 86400);
+  $period = config_get('notify.settings',"notify_period");
 
   // Add a fieldset containing a checkbox for users to accept
   // getting updates on the registration form.
   $fields['notify_agree'] = array(
-    '#weight' => variable_get('notify_weightur', 0),
+    '#weight' => config_get('notify.settings','notify_weightur'),
     '#type' => 'fieldset',
     '#title' => t('E-mail Notifications'),
   );
@@ -384,7 +384,7 @@ function _notify_user_reg_fields() {
     '#type' => 'checkbox',
     '#title' => t('Receive e-mail notifications of new content posted to this site. Notifications are sent every @interval.', array('@interval' => format_interval($period))),
     '#return_value' => 1,
-    '#default_value' => variable_get('notify_reg_default', 1),
+    '#default_value' => config_get('notify.settings','notify_reg_default'),
   );
 
   return $fields;
@@ -449,7 +449,7 @@ function _notify_content($node, $comment, $view_mode) {
         $txt .= $content[$child][0]['#markup'];
       }
     }
-    return drupal_html_to_text($txt);
+    return backdrop_html_to_text($txt);
   }
 
   if (1 == $view_mode) {
@@ -475,7 +475,7 @@ function _notify_content($node, $comment, $view_mode) {
       $txt = $content['body'][0]['#markup'];
     }
   }
-  return drupal_html_to_text($txt);
+  return backdrop_html_to_text($txt);
 }
 
 /**
@@ -491,7 +491,7 @@ function _notify_content($node, $comment, $view_mode) {
 function _notify_get_content_types(&$ntype, $foop) {
   $ntype = array();
   foreach (node_type_get_types() as $type => $name) {
-    if (variable_get(NOTIFY_NODE_TYPE . $type, 0)) {
+    if (config_get('notify.settings',NOTIFY_NODE_TYPE . $type)) {
       $ntype[] = $type;
     }
   }
@@ -531,16 +531,16 @@ function _notify_count() {
  *   res_nodes, res_comms, res_nopub, res_copub, res_nounp, res_counp
  */
 function _notify_select_content() {
-  $batch_remain = count(variable_get('notify_users', array()));
-  $since = variable_get('notify_send_last', 0);
+  $batch_remain = count(config_get('notify.settings','notify_users'));
+  $since = config_get('notify.settings','notify_send_last');
   if ($batch_remain) {
-    $send_start = variable_get('notify_send_start', 0);
+    $send_start = config_get('notify.settings','notify_send_start');
   }
   else {
     $send_start = REQUEST_TIME;
   }
   if (!$since) {
-    $period = variable_get('notify_period', 86400);
+    $period = config_get('notify.settings','notify_period');
     if ($period > 0) {
       $since = $send_start - $period;
     }
@@ -558,7 +558,7 @@ function _notify_select_content() {
   if (count($ntype) >= 1) {
     $q->condition('n.type', $ntype, 'IN');
   }
-  if (variable_get('notify_include_updates', 0)) {
+  if (config_get('notify.settings','notify_include_updates')) {
     $q->condition(db_or()->condition(db_and()->condition('n.created', $since, '>')->condition('n.created', $send_start, '<='))
                          ->condition(db_and()->condition('n.changed', $since, '>')->condition('n.changed', $send_start, '<=')));
   }
@@ -595,7 +595,7 @@ function _notify_select_content() {
     if (count($ntype) >= 1) {
       $q->condition('n.type', $ntype, 'IN');
     }
-    if (variable_get('notify_include_updates', 0)) {
+    if (config_get('notify.settings','notify_include_updates')) {
       $q->condition(db_or()->condition(db_and()->condition('c.created', $since, '>')->condition('c.created', $send_start, '<='))
                            ->condition(db_and()->condition('c.changed', $since, '>')->condition('c.changed', $send_start, '<=')));
     }
@@ -641,7 +641,7 @@ function _notify_send() {
   $separator = "------------------------------------------------------------------------------\n";
   $mini_separator = "----\n";
 
-  $send_start = variable_get('notify_send_start', 0);
+  $send_start = config_get('notify.settings','notify_send_start');
   $num_sent = 0;
   $num_fail = 0;
   list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
@@ -692,7 +692,7 @@ function _notify_send() {
   }
 
   if ($count) {
-    $uresult = variable_get('notify_users', array());
+    $uresult = config_get('notify.settings','notify_users');
     if (empty($uresult)) {
       // Set up for sending a new batch. Init all variables.
       $sql = 'SELECT u.uid, u.name, u.mail, u.language, n.status, n.node, n.teasers, n.comment
@@ -702,13 +702,13 @@ function _notify_send() {
         WHERE (n.status = :nstatus) AND (u.status = :ustatus) AND (n.attempts <= :attempts)
         ORDER BY u.uid asc';
       $uresult = db_query($sql, array(':nstatus' => 1, 'ustatus' => 1, ':attempts' => 5))->fetchAll(PDO::FETCH_ASSOC);
-      variable_set('notify_send_start', REQUEST_TIME);
-      variable_set('notify_users', $uresult);
-      variable_set('notify_num_sent', 0);
-      variable_set('notify_num_failed', 0);
+      config_set('notify.settings','notify_send_start', REQUEST_TIME);
+      config_set('notify.settings','notify_users', $uresult);
+      config_set('notify.settings','notify_num_sent', 0);
+      config_set('notify.settings','notify_num_failed', 0);
     }
 
-    $batchlimit = variable_get('notify_batchsize', 100);
+    $batchlimit = config_get('notify.settings','notify_batchsize');
     $batchcount = 0;
 
     //$s1 = t('Never', array(), array('langcode' => 'nb'));
@@ -716,11 +716,11 @@ function _notify_send() {
     // Allow to safely impersonate the recipient so that the node is rendered
     // with correct field permissions.
     $original_user = $user;
-    $old_state = drupal_save_session();
-    drupal_save_session(FALSE);
+    $old_state = backdrop_save_session();
+    backdrop_save_session(FALSE);
 
-    $notify_skip_nodes = variable_get('notify_skip_nodes', array());
-    $notify_skip_comments = variable_get('notify_skip_comments', array());
+    $notify_skip_nodes = config_get('notify.settings','notify_skip_nodes');
+    $notify_skip_comments = config_get('notify.settings','notify_skip_comments');
 
     foreach ($uresult as $index => $userrow) {
       if (++$batchcount > $batchlimit) {
@@ -754,7 +754,7 @@ function _notify_send() {
 	  if (!user_access('administer nodes', $userobj) && !in_array($node->type, $defaultlist)) {
             continue;
           }
-	  if (!variable_get('notify_unpublished', 1) && NODE_NOT_PUBLISHED == $node->status) {
+	  if (!config_get('notify.settings','notify_unpublished') && NODE_NOT_PUBLISHED == $node->status) {
             continue;
           }
           if (!node_access('view', $node, $userobj)) {
@@ -770,7 +770,7 @@ function _notify_send() {
 	    }
           }
 
-          $ml_level = variable_get('notify_multilingual', 1);
+          $ml_level = config_get('notify.settings','notify_multilingual');
           if (!user_access('administer notify')) {
             if ($ml_level && $node->tnid) {
 	      if ($node->language != $upl->language) {
@@ -780,7 +780,7 @@ function _notify_send() {
 	    if ((2 == $ml_level) && (0 == $node->tnid) && (LANGUAGE_NONE != $node->language)) {
 	      continue;
             }
-	    $ignore_unverified = variable_get('notify_unverified', 0);
+	    $ignore_unverified = config_get('notify.settings','notify_unverified');
   	    if ($ignore_unverified && !$node->uid) {
 	      continue;
  	    }
@@ -797,7 +797,7 @@ function _notify_send() {
           $node_body .= ++$node_count . '. ' . $node->title . '. ';
           if (count($node_revs_list) > 1) {
             $update = '(' . t('last updated by !author', array(
-              '!author' => (format_username($vers) ? format_username($vers) : variable_get('anonymous', 'Anonymous')),
+              '!author' => (format_username($vers) ? format_username($vers) : config_get('system.core','anonymous')),
             ), array('langcode' => $upl->language)) . ') ';
           }
           else {
@@ -811,12 +811,12 @@ function _notify_send() {
           }
           $node_body .= t('!type by !author !update!status', array(
             '!type' => node_type_get_name($node),
-            '!author' => (format_username($node) ? format_username($node) : variable_get('anonymous', 'Anonymous')),
+            '!author' => (format_username($node) ? format_username($node) : config_get('system.core','anonymous')),
             '!update' => $update,
             '!status' => $status,
           ), array('langcode' => $upl->language)) . "\n";
 
-	  $alias = drupal_multilingual() ? TRUE : FALSE;
+	  $alias = backdrop_multilingual() ? TRUE : FALSE;
 	  $node_body .= '   [ ' . url('node/' . $node->nid, array(
             'absolute' => TRUE,
             'alias' => $alias,
@@ -866,7 +866,7 @@ function _notify_send() {
   	    if (!user_access('administer comments', $userobj) && !in_array($node->type, $defaultlist)) {
               continue;
             }
-            if (!variable_get('notify_unpublished', 1) && COMMENT_NOT_PUBLISHED == $commobj->status) {
+            if (!config_get('notify.settings','notify_unpublished') && COMMENT_NOT_PUBLISHED == $commobj->status) {
               continue;
             }
             // Determine whether to show comment status.
@@ -878,7 +878,7 @@ function _notify_send() {
             }
             $onecomment .= '   ' . ++$comment_count . '. ' . t('!title by !author !status', array(
               '!title' => $commobj->subject,
-              '!author' => (format_username($commobj) ? format_username($commobj) : variable_get('anonymous', 'Anonymous')),
+              '!author' => (format_username($commobj) ? format_username($commobj) : config_get('system.core','anonymous')),
               '!status' => $status,
             ), array('langcode' => $upl->language)) . "\n"
               . '      [ ' . url('node/' . $nid, array('fragment' => 'comment-' . $commobj->cid, 'absolute' => TRUE)) . " ]\n\n";
@@ -895,7 +895,7 @@ function _notify_send() {
               '!count' => format_plural($comment_count, '1 new comment', '@count new comments'),
               '!title' => $node->title,
               '!type'  => node_type_get_name($node),
-              '!author' => format_username($node) ? format_username($node) : variable_get('anonymous', 'Anonymous'),
+              '!author' => format_username($node) ? format_username($node) : config_get('system.core','anonymous'),
             ), array('langcode' => $upl->language)) . "\n\n" . $onecomment;
           }
         }
@@ -909,12 +909,12 @@ function _notify_send() {
 
       $body = $node_body . $comment_body;
 
-      //if (variable_get('notify_unpublished', 1)) {}
+      //if (config_get('notify.settings','notify_unpublished')) {}
 
       // If there was anything new, send mail.
       if ($body) {
-        $watchdog_level = variable_get('notify_watchdog', 0);
-        if (drupal_mail('notify', 'send', $userrow['mail'], user_preferred_language($userrow), array('content' => $body, 'user' => $userobj, 'viewmode' => $userrow['teasers']))) {
+        $watchdog_level = config_get('notify.settings','notify_watchdog');
+        if (backdrop_mail('notify', 'send', $userrow['mail'], user_preferred_language($userrow), array('content' => $body, 'user' => $userobj, 'viewmode' => $userrow['teasers']))) {
           if ($watchdog_level == 0) {
             watchdog('notify', 'User %name (%mail) notified successfully.', array('%name' => $userrow['name'], '%mail' => $userrow['mail']), WATCHDOG_INFO);
           }
@@ -932,18 +932,18 @@ function _notify_send() {
         }
       }
       unset($uresult[$index]);
-      variable_set('notify_users', $uresult);
+      config_set('notify.settings','notify_users', $uresult);
     }
     // Restore the original user session.
     $user = $original_user;
-    drupal_save_session($old_state);
+    backdrop_save_session($old_state);
   }
-  $rest = count(variable_get('notify_users', array()));
+  $rest = count(config_get('notify.settings','notify_users'));
   // If $rest is empty, then set notify_send_last.
   if (!$rest) {
-    $send_start = variable_get('notify_send_start', 0);	
-    variable_set('notify_send_last', $send_start);
-    variable_set('notify_cron_next', 0); // Force reset
+    $send_start = config_get('notify.settings','notify_send_start');
+    config_set('notify.settings','notify_send_last', $send_start);
+    config_set('notify.settings','notify_cron_next', 0); // Force reset
     list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
     foreach ($res_nopub as $row) {
       db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
@@ -955,4 +955,19 @@ function _notify_send() {
     }
   }
   return array($num_sent, $num_fail);
+}
+
+
+/**
+ * Implements hook_autoload_info().
+ */
+function rules_autoload_info() {
+  return array(
+    'SharedTestFunctions' => 'notify.test',
+    'TestNotify' => 'notify.test',
+    'TestSendingHour' => 'notify.test',
+    'TestNotifyVariables' => 'notify.test',
+    'TestNotifyBatch' => 'notify.test',
+    'TestNotifyPeriods' => 'notify.test',
+  );
 }

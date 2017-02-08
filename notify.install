@@ -159,131 +159,63 @@ function notify_uninstall() {
 }
 
 /**
- * Add notify_bytecount table.  Add notify_subscriptions table.
+ * Move settings from variables to config.
  */
-function notify_update_7003() {
+function notify_update_1000() {
+  // Migrate variables to config.
+  $config = config('notify.settings');
+  $config->set('notify_attempts', update_variable_get('notify_attempts', '1'));
+  $config->set('notify_batchsize', update_variable_get('notify_batchsize', '100'));
+  $config->set('notify_cron_next', update_variable_get('notify_cron_next', '0'));
+  $config->set('notify_def_comment', update_variable_get('notify_def_comment', '0'));
+  $config->set('notify_def_node', update_variable_get('notify_def_node', '1'));
+  $config->set('notify_def_teasers', update_variable_get('notify_def_teasers', '0'));
+  $config->set('notify_include_updates', update_variable_get('notify_include_updates', '0'));
+  $config->set('notify_multilingual', update_variable_get('notify_multilingual', '1'));
+  $config->set('notify_num_sent', update_variable_get('notify_num_sent', '0'));
+  $config->set('notify_num_failed', update_variable_get('notify_num_failed', '0'));
+  $config->set('notify_period', update_variable_get('notify_period', '86400'));
+  $config->set('notify_reg_default', update_variable_get('notify_reg_default', '1'));
+  $config->set('notify_send_hour', update_variable_get('notify_send_hour', '9'));
+  $config->set('notify_send_last', update_variable_get('notify_send_last', '0'));
+  $config->set('notify_send_start', update_variable_get('notify_send_start', '0'));
+  $config->set('notify_skip_comments', update_variable_get('notify_skip_comments', ''));
+  $config->set('notify_skip_nodes', update_variable_get('notify_skip_nodes', ''));
+  $config->set('notify_unpublished', update_variable_get('notify_unpublished', '1'));
+  $config->set('notify_unverified', update_variable_get('notify_unverified', '0'));
+  $config->set('notify_users', update_variable_get('notify_users', ''));
+  $config->set('notify_watchdog', update_variable_get('notify_watchdog', '0'));
+  $config->set('notify_weightur', update_variable_get('notify_weightur', '0'));
+  $config->save();
 
-  $schema['notify_bytecount'] = array(
-    'description' => 'Stores a some signature used to determine if node has really changed.',
-    'fields' => array(
-      'id' => array(
-        'description' => 'primary key',
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'nid' => array(
-        'description' => '{node}.nid of the node the byte count is associated with.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'bytes' => array(
-        'description' => 'number of bytes it held last time we notified about it.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-    'primary key' => array('id'),
-  );
-
-  $schema['notify_subscriptions'] = array(
-    'description' => 'Stores custom subscriptions to content types.',
-    'fields' => array(
-      'id' => array(
-        'description' => 'primary key',
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'uid' => array(
-        'description' => '{users}.uid that subscribes to this type.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'nid' => array(
-        'description' => '{node}.nid of the subscribed node.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'type' => array(
-        'description' => 'machine-readable name of the subscribed type',
-        'type' => 'varchar',
-        'length' => 32,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-    ),
-    'primary key' => array('id'),
-  );
-
-  db_create_table('notify_bytecount', $schema['notify_bytecount']);
-  db_create_table('notify_subscriptions', $schema['notify_subscriptions']);
-
+  // Delete variables.
+  update_variable_del('notify_attempts');
+  update_variable_del('notify_batchsize');
+  update_variable_del('notify_cron_next');
+  update_variable_del('notify_def_comment');
+  update_variable_del('notify_def_node');
+  update_variable_del('notify_def_teasers');
+  update_variable_del('notify_include_updates');
+  update_variable_del('notify_multilingual');
+  update_variable_del('notify_num_sent');
+  update_variable_del('notify_num_failed');
+  update_variable_del('notify_period');
+  update_variable_del('notify_reg_default');
+  update_variable_del('notify_send_hour');
+  update_variable_del('notify_send_last');
+  update_variable_del('notify_send_start');
+  update_variable_del('notify_skip_comments');
+  update_variable_del('notify_skip_nodes');
+  update_variable_del('notify_unpublished');
+  update_variable_del('notify_unverified');
+  update_variable_del('notify_users');
+  update_variable_del('notify_watchdog');
+  update_variable_del('notify_weightur');
 }
 
 /**
- * Add notify_unpublished_queue table.
- * Drop notify_unpublished_comments_queue table.
+ * Implements hook_update_last_removed().
  */
-function notify_update_7002() {
-  $schema['notify_unpublished_queue'] = array(
-    'description' => 'Stores list of unpublished contents to determine what content have been published since last notification.',
-    'fields' => array(
-      'id' => array(
-        'description' => 'primary key',
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'cid' => array(
-        'description' => 'The {comment}.cid of the unpublished comment, or 0 if it is a node.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'nid' => array(
-        'description' => 'The {node}.nid of the uinpublished node, or {node}.nid to the node which the comment is a reply.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-    'primary key' => array('id'),
-  );
-
-  db_create_table('notify_unpublished_queue', $schema['notify_unpublished_queue']);
-  db_drop_table('notify_unpublished_comments_queue');
-}
-
-/**
- * Add notify_unpublished_comments_queue table.
- */
-function notify_update_7001() {
-  $schema['notify_unpublished_comments_queue'] = array(
-    'description' => 'Stores list of unpublished comments to determine which comments have since been published when sending out notifications.',
-    'fields' => array(
-      'cid' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'The {comment}.cid of the unpublished comment.',
-      ),
-      'nid' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'The {node}.nid to which this comment is a reply.',
-      ),
-    ),
-    'primary key' => array('cid'),
-  );
-
-  db_create_table('notify_unpublished_comments_queue', $schema['notify_unpublished_comments_queue']);
+function notify_update_last_removed() {
+  return 7003;
 }
