@@ -30,13 +30,31 @@ This port to Backdrop is not yet fully ported and tested.
 Install this module using the official Backdrop CMS instructions at
 https://backdropcms.org/guide/modules
 
-Notify includes one submodule Notify Views Integration which tells the 
-Views module about the Notify database so you can create listings 
-of users by Notify subscriptions status for export or administration.
+Notify includes one submodule Notify Views Integration.
+ 
+## Use 
+
+Once installed the configuration and other administrative settings are available
+at admin/config/people/notify, i.e. under 'User accounts' in the Configuration 
+menu.
+
+The submodule Notify Views Integration tells the Views module 
+about the Notify database so that listings of current per user
+settings can be created.
+
+When adding such a view choose 'Show User accounts'. Then when adding
+fields to the view six types of notify field are available:
++ How much to notify about : Title only; Title + Teaser; etc.
++ Master switch status : 1 = enabled
++ New comments : 1 = enabled
++ New content : 1 = enabled
++ Number of failed attempts for the user.
++ UID : The ID of the user
 
 ## Tests
 
 The module includes some tests - see file notify.test.
+These have not yet been ported to Backdrop.
 
 ## License
 
