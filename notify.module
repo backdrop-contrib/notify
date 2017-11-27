@@ -961,7 +961,7 @@ function _notify_send() {
 /**
  * Implements hook_autoload_info().
  */
-function rules_autoload_info() {
+function notify_autoload_info() {
   return array(
     'SharedTestFunctions' => 'notify.test',
     'TestNotify' => 'notify.test',
