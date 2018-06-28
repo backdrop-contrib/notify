@@ -98,7 +98,7 @@ function notify_form_user_register_form_alter(&$form, &$form_state, $form_id) {
 /**
  * Implements hook_user_insert().
  */
-function notify_user_insert(&$edit, $account, $category) {
+function notify_user_insert($account) {
   if (isset($edit['notify_decision']) && $edit['notify_decision'] == 1) {
     db_insert('notify')
       ->fields(array(
