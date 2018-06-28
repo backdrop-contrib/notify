@@ -99,7 +99,7 @@ function notify_form_user_register_form_alter(&$form, &$form_state, $form_id) {
  * Implements hook_user_insert().
  */
 function notify_user_insert($account) {
-  if (isset($edit['notify_decision']) && $edit['notify_decision'] == 1) {
+  if (isset($account->notify_decision) && $account->notify_decision == 1) {
     db_insert('notify')
       ->fields(array(
       'uid' => $account->uid,
@@ -110,7 +110,7 @@ function notify_user_insert($account) {
       'attempts' => 0,
     ))
       ->execute();
-    $edit['notify_decision'] = NULL;
+    $account->notify_decision = NULL;
   }
 }
 
