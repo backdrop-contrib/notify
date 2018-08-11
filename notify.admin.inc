@@ -63,7 +63,7 @@ function notify_admin_settings($form, &$form_state) {
   $form['notify_settings']['notify_period'] = array(
     '#type' => 'select',
     '#title' => t('Send notifications every'),
-    '#default_value' => config_get('notify.settings','notify_period'),
+    '#default_value' => config_get('notify.settings', 'notify_period'),
     '#options' => $period,
     '#description' => t('How often should new content notifications be sent? Requires cron to be running at least this often.'),
   );
@@ -72,11 +72,32 @@ function notify_admin_settings($form, &$form_state) {
     '#type' => 'select',
     '#title' => t('Hour to send notifications'),
     '#description' => t('Specify the hour (24-hour clock) in which notifications should be sent, if the frequency is one day or greater.'),
-    '#default_value' => config_get('notify.settings','notify_send_hour'),
+    '#default_value' => config_get('notify.settings', 'notify_send_hour'),
     '#options' => array(
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-      10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-      20, 21, 22, 23,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
     ),
   );
 
@@ -84,7 +105,7 @@ function notify_admin_settings($form, &$form_state) {
     '#type' => 'select',
     '#title' => t('Number of failed sends after which notifications are disabled'),
     '#description' => t('The maximum number of failed attempts to send e-mail to tolerate before notification is suspended.'),
-    '#default_value' => config_get('notify.settings','notify_attempts'),
+    '#default_value' => config_get('notify.settings', 'notify_attempts'),
     '#options' => $attempts,
   );
 
@@ -92,7 +113,7 @@ function notify_admin_settings($form, &$form_state) {
     '#type' => 'select',
     '#title' => t('Maximum number of users to process out per cron run'),
     '#description' => t('The maximum number of users to process in each pass of  a <a href="@cron">cron maintenance task</a>. If necessary, reduce the number of users to prevent resource limit conflicts.', array('@cron' => url('admin/reports/status'))),
-    '#default_value' => config_get('notify.settings','notify_batchsize'),
+    '#default_value' => config_get('notify.settings', 'notify_batchsize'),
     '#options' => $batch,
   );
 
@@ -100,29 +121,33 @@ function notify_admin_settings($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Include updated posts in notifications.'),
     '#return_value' => 1,
-    '#default_value' => config_get('notify.settings','notify_include_updates'),
+    '#default_value' => config_get('notify.settings', 'notify_include_updates'),
   );
 
   $form['notify_settings']['notify_unverified'] = array(
     '#type' => 'checkbox',
     '#title' => t('Exclude contents from unverified authors from user notifications.'),
     '#return_value' => 1,
-    '#default_value' => config_get('notify.settings','notify_unverified'),
+    '#default_value' => config_get('notify.settings', 'notify_unverified'),
   );
 
   $form['notify_settings']['notify_unpublished'] = array(
     '#type' => 'checkbox',
     '#title' => t('Administrators shall be notified about unpublished content of tracked types.'),
     '#return_value' => 1,
-    '#default_value' => config_get('notify.settings','notify_unpublished'),
+    '#default_value' => config_get('notify.settings', 'notify_unpublished'),
   );
 
   if (language_multilingual()) {
     $form['notify_settings']['notify_multilingual'] = array(
       '#type' => 'radios',
       '#title' => t('Multilingual setting &ndash; new contents to include:'),
-      '#default_value' => config_get('notify.settings','notify_multilingual'),
-      '#options' => array(t('All contents'), t("Contents in the user's preferred language + contents not yet translated"), t("Only contents in the user's preferred language")),
+      '#default_value' => config_get('notify.settings', 'notify_multilingual'),
+      '#options' => array(
+        t('All contents'),
+        t("Contents in the user's preferred language + contents not yet translated"),
+        t("Only contents in the user's preferred language")
+      ),
       '#description' => t('This setting lets you specfy what subscribed contents to include in user notifications on a multilingual site.  (Please note that new contents that are marked as "language neutral" will always be included, and that administrators will always be notified about all new contents.)'),
     );
   }
@@ -130,15 +155,20 @@ function notify_admin_settings($form, &$form_state) {
   $form['notify_settings']['notify_watchdog'] = array(
     '#type' => 'radios',
     '#title' => t('Watchdog log level'),
-    '#default_value' => config_get('notify.settings','notify_watchdog'),
-    '#options' => array(t('All'), t('Failures+Summary'), t('Failures'), t('Nothing')),
+    '#default_value' => config_get('notify.settings', 'notify_watchdog'),
+    '#options' => array(
+      t('All'),
+      t('Failures+Summary'),
+      t('Failures'),
+      t('Nothing')
+    ),
     '#description' => t('This setting lets you specify how much to log.'),
   );
 
   $form['notify_settings']['notify_weightur'] = array(
     '#type' => 'textfield',
     '#title' => t('Weight of notification field in user registration form'),
-    '#default_value' => config_get('notify.settings','notify_weightur'),
+    '#default_value' => config_get('notify.settings', 'notify_weightur'),
     '#size' => 3,
     '#maxlength' => 5,
     '#description' => t('The weight you set here will determine the position of the notification field when it appears in the user registration form.'),
@@ -156,20 +186,20 @@ function notify_admin_settings($form, &$form_state) {
  * Submit for the notify_admin_settings form.
  */
 function notify_admin_settings_submit($form, &$form_state) {
-  config_set('notify.settings','notify_period', $form_state['values']['notify_period']);
-  config_set('notify.settings','notify_batchsize', $form_state['values']['notify_batchsize']);
-  config_set('notify.settings','notify_send_hour', $form_state['values']['notify_send_hour']);
-  config_set('notify.settings','notify_attempts', $form_state['values']['notify_attempts']);
-  config_set('notify.settings','notify_include_updates', $form_state['values']['notify_include_updates']);
-  config_set('notify.settings','notify_unverified', $form_state['values']['notify_unverified']);
-  config_set('notify.settings','notify_unpublished', $form_state['values']['notify_unpublished']);
+  config_set('notify.settings', 'notify_period', $form_state['values']['notify_period']);
+  config_set('notify.settings', 'notify_batchsize', $form_state['values']['notify_batchsize']);
+  config_set('notify.settings', 'notify_send_hour', $form_state['values']['notify_send_hour']);
+  config_set('notify.settings', 'notify_attempts', $form_state['values']['notify_attempts']);
+  config_set('notify.settings', 'notify_include_updates', $form_state['values']['notify_include_updates']);
+  config_set('notify.settings', 'notify_unverified', $form_state['values']['notify_unverified']);
+  config_set('notify.settings', 'notify_unpublished', $form_state['values']['notify_unpublished']);
   if (isset($form_state['values']['notify_multilingual'])) {
-    config_set('notify.settings','notify_multilingual', $form_state['values']['notify_multilingual']);
+    config_set('notify.settings', 'notify_multilingual', $form_state['values']['notify_multilingual']);
   }
-  config_set('notify.settings','notify_watchdog', $form_state['values']['notify_watchdog']);
-  config_set('notify.settings','notify_weightur', $form_state['values']['notify_weightur']);
+  config_set('notify.settings', 'notify_watchdog', $form_state['values']['notify_watchdog']);
+  config_set('notify.settings', 'notify_weightur', $form_state['values']['notify_weightur']);
 
-  config_set('notify.settings','notify_cron_next', 0); // Force reset.
+  config_set('notify.settings', 'notify_cron_next', 0); // Force reset.
   backdrop_set_message(t('Notify admin settings saved.'));
 }
 
@@ -177,17 +207,18 @@ function notify_admin_settings_submit($form, &$form_state) {
  * Menu callback, show admin list of queue status.
  */
 function notify_admin_queue($form, &$form_state) {
-  $period = config_get('notify.settings','notify_period');
-  $since = config_get('notify.settings','notify_send_last');
+  $period = config_get('notify.settings', 'notify_period');
+  $since = config_get('notify.settings', 'notify_send_last');
   $lastdate = format_date($since, 'short');
-  $start = config_get('notify.settings','notify_send_start');
+  $start = config_get('notify.settings', 'notify_send_start');
   $startdate = format_date($start, 'short');
-  $notify_send_last  = config_get('notify.settings','notify_send_last');
+  $notify_send_last = config_get('notify.settings', 'notify_send_last');
   $next_last = _notify_next_notificaton($notify_send_last);
 
   if ($next_last == -1) {
     $batch_msg = t('No more notifications scheduled');
-  } elseif ($next_last == 0) {
+  }
+  elseif ($next_last == 0) {
     $batch_msg = t('The next notification is scheduled for the next cron run');
   }
   else {
@@ -201,12 +232,16 @@ function notify_admin_queue($form, &$form_state) {
     '#type' => 'radios',
     '#title' => t('Notification queue operations'),
     '#default_value' => 0,
-    '#options' => array(t('Send batch now'), t('Truncate queue'), t('Override timestamp')),
+    '#options' => array(
+      t('Send batch now'),
+      t('Truncate queue'),
+      t('Override timestamp')
+    ),
     '#description' => t('Select &#8220;Send batch now&#8220; to send next batch of e-mails queued for notifications. Select &#8220;Truncate queue&#8220; to empty queue of pending notification <em>without</em> sending e-mails. Select &#8220;Override timestamp&#8220; to override the last notification timestamp. Press &#8220;Submit&#8220; to execute.'),
   );
 
   $send_last = format_date($notify_send_last, 'custom', 'Y-m-d H:i:s');
-  
+
   $form['lastdate'] = array(
     '#type' => 'textfield',
     '#title' => t('Last notification timestamp'),
@@ -214,7 +249,7 @@ function notify_admin_queue($form, &$form_state) {
     '#size' => 19,
     '#maxlength' => 19,
     '#description' => t('To explicitly set the last notification timestamp, change the value of this field and select the &#8220;Override timestamp&#8220; option above, then press &#8220;Submit&#8220; to execute.'),
-  ); 
+  );
 
   $form['submit'] = array(
     '#type' => 'submit',
@@ -234,15 +269,17 @@ function notify_admin_queue($form, &$form_state) {
     $queue_msg = t('Notifications about at least !item queued', array(
       '!item' => format_plural($npcp, '1 item is', '@count items are'),
     ));
-  } else {
+  }
+  else {
     $queue_msg = t('No notifications queued');
   }
-  $flagcnt = count(config_get('notify.settings','notify_skip_nodes')) + count(config_get('notify.settings','notify_skip_comments'));
+  $flagcnt = count(config_get('notify.settings', 'notify_skip_nodes')) + count(config_get('notify.settings', 'notify_skip_comments'));
   if ($flagcnt) {
     $skip_msg = t('!item flagged for skipping', array(
       '!item' => format_plural($flagcnt, '1 item is', '@count items are'),
     ));
-  } else {
+  }
+  else {
     $skip_msg = t('No item is flagged for skipping');
   }
 
@@ -254,22 +291,22 @@ function notify_admin_queue($form, &$form_state) {
   }
   if ($nu + $cu) {
     $unpub_msg = t('Unpublished: !nodeup and !commup', array(
-      '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
-      '!commup' => format_plural($cu, '1 comment', '@count comments'),
-    )) . $nonew_msg;
+        '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
+        '!commup' => format_plural($cu, '1 comment', '@count comments'),
+      )) . $nonew_msg;
   }
   else {
     $unpub_msg = t('No unpublished items');
   }
 
-  $sent = config_get('notify.settings','notify_num_sent');
-  $fail = config_get('notify.settings','notify_num_failed');
-  $batch_remain = count(config_get('notify.settings','notify_users'));
+  $sent = config_get('notify.settings', 'notify_num_sent');
+  $fail = config_get('notify.settings', 'notify_num_failed');
+  $batch_remain = count(config_get('notify.settings', 'notify_users'));
 
   $creat_msg = t('There are !nodes and !comms !created', array(
     '!nodes' => format_plural($np, '1 node', '@count nodes'),
     '!comms' => format_plural($cp, '1 comment', '@count comments'),
-    '!created' =>   config_get('notify.settings','notify_include_updates') ? t('updated') : t('created'),
+    '!created' => config_get('notify.settings', 'notify_include_updates') ? t('updated') : t('created'),
   ));
   if ($nn + $cn) {
     $publ_msg = t(', and in addition !noderp and !commrp published,', array(
@@ -282,8 +319,8 @@ function notify_admin_queue($form, &$form_state) {
   }
   if ($batch_remain) {
     $intrv_msg = t('between !last and !start', array(
-       '!last' => $lastdate,
-       '!start' => $startdate,
+      '!last' => $lastdate,
+      '!start' => $startdate,
     ));
     $sent_msg = t('Batch not yet complete.  So far !sent has been sent (!fail, !remain to go)', array(
       '!sent' => format_plural($sent, '1 e-mail', '@count e-mails'),
@@ -306,23 +343,23 @@ function notify_admin_queue($form, &$form_state) {
     }
     if ($fail > 0) {
       $sent_msg .= ', ' . t('!fail', array(
-        '!fail' => format_plural($fail, '1 failure', '@count failures'),
-      ));
+          '!fail' => format_plural($fail, '1 failure', '@count failures'),
+        ));
     }
     elseif ($sent) {
       $sent_msg .= ', ' . t('no failures');
     }
   }
-  $mailsystem = config_get('system.mail','mail_system');
+  $mailsystem = config_get('system.mail', 'mail_system');
   $ms = isset($mailsystem['default-system']) ? $mailsystem['default-system'] : t('system default');
   $form['batch']['schedule'] = array(
     '#markup' => $creat_msg . $publ_msg . ' ' . $intrv_msg . '.<br>'
-    . $unpub_msg . '.<br>'
-    . $queue_msg . '.<br>'
-    . $skip_msg . '.<br>'
-    . $sent_msg . '.<br>'
-    . $batch_msg . '.<br>'
-    . t('Default MailSystem: ') . $ms . '.'
+      . $unpub_msg . '.<br>'
+      . $queue_msg . '.<br>'
+      . $skip_msg . '.<br>'
+      . $sent_msg . '.<br>'
+      . $batch_msg . '.<br>'
+      . t('Default MailSystem: ') . $ms . '.'
   );
   return $form;
 }
@@ -333,14 +370,14 @@ function notify_admin_queue($form, &$form_state) {
 function notify_admin_queue_submit($form, &$form_state) {
   unset($form);
 
-  $process= $form_state['values']['process'];
-  $notify_send_last = config_get('notify.settings','notify_send_last');
+  $process = $form_state['values']['process'];
+  $notify_send_last = config_get('notify.settings', 'notify_send_last');
   $frform_send_last = strtotime($form_state['values']['lastdate']);
-  if (FALSE ===  $frform_send_last) {
+  if (FALSE === $frform_send_last) {
     form_set_error('notify_admin_queue', t('This does not look like a valid date format.'));
     return;
   }
-  $frform_string = format_date($frform_send_last. 'short');
+  $frform_string = format_date($frform_send_last . 'short');
   if ($process < 2) {
     if ($notify_send_last != $frform_send_last) {
       form_set_error('notify_admin_queue', t('You must select &#8220;Override timestamp&#8221; to override the timestamp.'));
@@ -354,21 +391,26 @@ function notify_admin_queue_submit($form, &$form_state) {
     }
   }
 
-  $watchdog_level = config_get('notify.settings','notify_watchdog');
+  $watchdog_level = config_get('notify.settings', 'notify_watchdog');
   if (0 == $form_state['values']['process']) { // flush
     list($num_sent, $num_fail) = _notify_send();
 
     if ($num_fail > 0) {
       backdrop_set_message(t('!sent notification !emsent sent successfully, !fail !emfail could not be sent.',
         array(
-          '!sent' => $num_sent, '!emsent' =>  format_plural($num_sent, 'e-mail', 'e-mails'),
-          '!fail' => $num_fail, '!emfail' =>  format_plural($num_fail, 'notification', 'notifications'),
+          '!sent' => $num_sent,
+          '!emsent' => format_plural($num_sent, 'e-mail', 'e-mails'),
+          '!fail' => $num_fail,
+          '!emfail' => format_plural($num_fail, 'notification', 'notifications'),
         )
       ), 'error');
       $watchdog_status = WATCHDOG_ERROR;
     }
     elseif ($num_sent > 0) {
-      backdrop_set_message(t('!count pending notification !emails have been sent in this pass.', array('!count' => $num_sent, '!emails' =>  format_plural($num_sent, 'e-mail', 'e-mails'))));
+      backdrop_set_message(t('!count pending notification !emails have been sent in this pass.', array(
+        '!count' => $num_sent,
+        '!emails' => format_plural($num_sent, 'e-mail', 'e-mails')
+      )));
       $watchdog_status = WATCHDOG_INFO;
     }
     if (0 == ($num_sent + $num_fail)) {
@@ -376,26 +418,35 @@ function notify_admin_queue_submit($form, &$form_state) {
     }
     else {
       if ($watchdog_level <= 1) {
-        watchdog('notify', 'Notifications sent: !sent, failures: !fail.', array('!sent' => $num_sent, '!fail' => $num_fail), $watchdog_status);
+        watchdog('notify', 'Notifications sent: !sent, failures: !fail.', array(
+          '!sent' => $num_sent,
+          '!fail' => $num_fail
+        ), $watchdog_status);
       }
     }
-    $num_sent += config_get('notify.settings','notify_num_sent');
-    $num_fail += config_get('notify.settings','notify_num_failed');
-    config_set('notify.settings','notify_num_sent', $num_sent);
-    config_set('notify.settings','notify_num_failed', $num_fail);
+    $num_sent += config_get('notify.settings', 'notify_num_sent');
+    $num_fail += config_get('notify.settings', 'notify_num_failed');
+    config_set('notify.settings', 'notify_num_sent', $num_sent);
+    config_set('notify.settings', 'notify_num_failed', $num_fail);
   }
   elseif (1 == $form_state['values']['process']) { // truncate
     list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
     foreach ($res_nopub as $row) {
-      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
+      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(
+        ':cid' => 0,
+        ':nid' => $row->nid
+      ));
     }
     foreach ($res_copub as $row) {
-      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => $row->cid, ':nid' => $row->nid));
+      db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(
+        ':cid' => $row->cid,
+        ':nid' => $row->nid
+      ));
     }
-    config_set('notify.settings','notify_send_start', REQUEST_TIME);
-    config_set('notify.settings','notify_send_last', REQUEST_TIME);
-    config_set('notify.settings','notify_cron_next', 0); // Force reset
-    config_set('notify.settings','notify_users', array());
+    config_set('notify.settings', 'notify_send_start', REQUEST_TIME);
+    config_set('notify.settings', 'notify_send_last', REQUEST_TIME);
+    config_set('notify.settings', 'notify_cron_next', 0); // Force reset
+    config_set('notify.settings', 'notify_users', array());
     backdrop_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
     if ($watchdog_level <= 1) {
       watchdog('notify', 'Notification queue truncated.', NULL, WATCHDOG_INFO);
@@ -404,7 +455,7 @@ function notify_admin_queue_submit($form, &$form_state) {
   }
   elseif (2 == $form_state['values']['process']) { // override
     $date = strtotime($form_state['values']['lastdate']);
-    config_set('notify.settings','notify_send_last', $date);
+    config_set('notify.settings', 'notify_send_last', $date);
   }
   variable_del('notify_skip_nodes');
   variable_del('notify_skip_comments');
@@ -466,8 +517,8 @@ function notify_admin_skip($form, &$form_state) {
     '#markup' => '<p>' . t('The following table shows all messages that are candidates for bulk notifications:' . '</p>'),
   );
 
-  $skpnodes = config_get('notify.settings','notify_skip_nodes');
-  $skpcomts = config_get('notify.settings','notify_skip_comments');
+  $skpnodes = config_get('notify.settings', 'notify_skip_nodes');
+  $skpcomts = config_get('notify.settings', 'notify_skip_comments');
   $ii = 0;
   $entities = array();
   foreach ($nodes as $node) {
@@ -521,7 +572,7 @@ function notify_admin_skip($form, &$form_state) {
     }
   }
   $form['entities'] = $entities;
-  $batch_remain = count(config_get('notify.settings','notify_users'));
+  $batch_remain = count(config_get('notify.settings', 'notify_users'));
   if ($batch_remain) {
     $form['info2'] = array(
       '#markup' => '<p>' . t('Please note that the list above may be out of sync.  Saving an altered list of skip flags is disabled as long as notifications are being processed.') . '</p> ',
@@ -550,18 +601,18 @@ function notify_admin_skip_submit($form, &$form_state) {
   if (isset($form_state['values']['entities']) && $form_state['values']['entities']) {
     foreach ($form_state['values']['entities'] as $dist => $ii) {
       if ($ii['dist']) {
-        $nid = $form_state['complete form']['entities'][$dist]['nid']['#markup'];
-        $cid = $form_state['complete form']['entities'][$dist]['cid']['#markup'];
-	if ('-' == $cid) {
-          array_push($nodes, (int)$nid);
-	}
-	else {
-          array_push($comts, (int)$cid);
-	}
+        $nid = $form_state['complete_form']['entities'][$dist]['nid']['#markup'];
+        $cid = $form_state['complete_form']['entities'][$dist]['cid']['#markup'];
+        if ('-' == $cid) {
+          array_push($nodes, (int) $nid);
+        }
+        else {
+          array_push($comts, (int) $cid);
+        }
       }
     }
-    config_set('notify.settings','notify_skip_nodes', $nodes);
-    config_set('notify.settings','notify_skip_comments', $comts);
+    config_set('notify.settings', 'notify_skip_nodes', $nodes);
+    config_set('notify.settings', 'notify_skip_comments', $comts);
   }
 
   backdrop_set_message(t('Skip flags saved.'));
@@ -595,10 +646,12 @@ function theme_notify_admin_skip($variables) {
   }
 
   if (!$rows) {
-    $rows[] = array(array(
+    $rows[] = array(
+      array(
         'data' => t('No notifications are scheduled.'),
         'colspan' => 5,
-      ));
+      )
+    );
   }
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
 
@@ -613,7 +666,7 @@ function theme_notify_admin_skip($variables) {
 function notify_admin_defaults($form, &$form_state) {
   $form = array();
 
-  $defnu = config_get('notify.settings','notify_reg_default');
+  $defnu = config_get('notify.settings', 'notify_reg_default');
   $perms = user_role_permissions(array(BACKDROP_ANONYMOUS_ROLE => 'anon'));
   $anonp = array_key_exists('access notify', $perms[1]);
   if ($defnu && !$anonp) {
@@ -633,7 +686,7 @@ function notify_admin_defaults($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Receive e-mail notifications'),
     '#return_value' => 1,
-    '#default_value' => config_get('notify.settings','notify_reg_default'),
+    '#default_value' => config_get('notify.settings', 'notify_reg_default'),
   );
 
   $form['notify_defs'] = array(
@@ -646,7 +699,7 @@ function notify_admin_defaults($form, &$form_state) {
   $form['notify_defs']['node'] = array(
     '#type' => 'radios',
     '#title' => t('Notify new content'),
-    '#default_value' => config_get('notify.settings','notify_def_node'),
+    '#default_value' => config_get('notify.settings', 'notify_def_node'),
     '#options' => array(t('Disabled'), t('Enabled')),
     '#description' => t('Include new posts in the notification mail.'),
   );
@@ -654,14 +707,14 @@ function notify_admin_defaults($form, &$form_state) {
     '#type' => 'radios',
     '#access' => module_exists('comment'),
     '#title' => t('Notify new comments'),
-    '#default_value' => config_get('notify.settings','notify_def_comment'),
+    '#default_value' => config_get('notify.settings', 'notify_def_comment'),
     '#options' => array(t('Disabled'), t('Enabled')),
     '#description' => t('Include new comments in the notification mail.'),
   );
   $form['notify_defs']['teasers'] = array(
     '#type' => 'radios',
     '#title' => t('How much to include?'),
-    '#default_value' => config_get('notify.settings','notify_def_teasers'),
+    '#default_value' => config_get('notify.settings', 'notify_def_teasers'),
     '#options' => array(
       t('Title only'),
       t('Title + Teaser/Excerpt'),
@@ -685,7 +738,7 @@ function notify_admin_defaults($form, &$form_state) {
       '#type' => 'checkbox',
       '#title' => $object->name,
       '#return_value' => 1,
-      '#default_value' => config_get('notify.settings',NOTIFY_NODE_TYPE . $type),
+      '#default_value' => config_get('notify.settings', NOTIFY_NODE_TYPE . $type),
     );
   }
 
@@ -702,14 +755,14 @@ function notify_admin_defaults($form, &$form_state) {
  * Submit for the notify_admin_defaults form.
  */
 function notify_admin_defaults_submit($form, &$form_state) {
-  config_set('notify.settings','notify_reg_default', $form_state['values']['notify_reg_default']);
-  config_set('notify.settings','notify_def_node',    $form_state['values']['node']);
-  config_set('notify.settings','notify_def_comment', $form_state['values']['comment']);
-  config_set('notify.settings','notify_def_teasers', $form_state['values']['teasers']);
+  config_set('notify.settings', 'notify_reg_default', $form_state['values']['notify_reg_default']);
+  config_set('notify.settings', 'notify_def_node', $form_state['values']['node']);
+  config_set('notify.settings', 'notify_def_comment', $form_state['values']['comment']);
+  config_set('notify.settings', 'notify_def_teasers', $form_state['values']['teasers']);
 
   foreach (node_type_get_types() as $type => $object) {
     $ntype = NOTIFY_NODE_TYPE . $type;
-    config_set('notify.settings',$ntype, $form_state['values'][$ntype]);
+    config_set('notify.settings', $ntype, $form_state['values'][$ntype]);
   }
 
   backdrop_set_message(t('Notify default settings saved.'));
@@ -794,22 +847,22 @@ function notify_admin_users_submit($form, &$form_state) {
   unset($form);
 
   if (isset($form_state['values']['bulk']) && 1 == $form_state['values']['bulk']) {
-    $node = config_get('notify.settings','notify_def_node');
-    $comment = config_get('notify.settings','notify_def_comment');
-    $teasers = config_get('notify.settings','notify_def_teasers');
+    $node = config_get('notify.settings', 'notify_def_node');
+    $comment = config_get('notify.settings', 'notify_def_comment');
+    $teasers = config_get('notify.settings', 'notify_def_teasers');
     $result = db_query('SELECT u.uid, u.name FROM {users} u WHERE u.uid > 0 AND status = 1 AND u.uid NOT IN (SELECT n.uid FROM {notify} n)');
 
     foreach ($result as $record) {
       db_insert('notify')
-      ->fields(array(
-        'uid' => $record->uid,
-        'status' => 1,
-        'node' => $node,
-        'comment' => $comment,
-        'teasers' => $teasers,
-        'attempts' => 0,
-      ))
-      ->execute();
+        ->fields(array(
+          'uid' => $record->uid,
+          'status' => 1,
+          'node' => $node,
+          'comment' => $comment,
+          'teasers' => $teasers,
+          'attempts' => 0,
+        ))
+        ->execute();
     }
   }
   elseif (!array_key_exists('users', $form_state['values'])) {
@@ -819,14 +872,14 @@ function notify_admin_users_submit($form, &$form_state) {
   if (isset($form_state['values']['users']) && $form_state['values']['users']) {
     foreach ($form_state['values']['users'] as $uid => $settings) {
       db_update('notify')
-      ->fields(array(
-        'node' => $settings['node'],
-        'teasers' => $settings['teasers'],
-        'comment' => $settings['comment'],
-        // 'attempts' => $settings['attempts'],
-      ))
-      ->condition('uid', $uid)
-      ->execute();
+        ->fields(array(
+          'node' => $settings['node'],
+          'teasers' => $settings['teasers'],
+          'comment' => $settings['comment'],
+          // 'attempts' => $settings['attempts'],
+        ))
+        ->condition('uid', $uid)
+        ->execute();
     }
   }
 
@@ -860,10 +913,12 @@ function theme_notify_admin_users($variables) {
   }
 
   if (!$rows) {
-    $rows[] = array(array(
+    $rows[] = array(
+      array(
         'data' => t('No users have notifications enabled.'),
         'colspan' => 6,
-      ));
+      )
+    );
   }
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
 
@@ -889,10 +944,12 @@ function notify_user_settings_form($form, &$form_state, $arg) {
   }
 
   $result = db_query('SELECT u.uid, u.name, u.mail, n.status, n.node, n.teasers, n.comment FROM {users} u LEFT JOIN {notify} n ON u.uid = n.uid WHERE u.uid = :uid', array(':uid' => $account->uid));
-  if (0==$result->rowCount())
-    $notify = NULL; // Internal error.
-  else
+  if (0 == $result->rowCount()) {
+    $notify = NULL;
+  } // Internal error.
+  else {
     $notify = $result->fetchObject();
+  }
 
   $form = array();
   if (!$notify->mail) {
@@ -976,11 +1033,11 @@ function notify_user_settings_form($form, &$form_state, $arg) {
   $enatypes = array();
 
   foreach (node_type_get_types() as $type => $object) {
-    if (config_get('notify.settings',NOTIFY_NODE_TYPE . $type)) {
+    if (config_get('notify.settings', NOTIFY_NODE_TYPE . $type)) {
       $enatypes[] = array($type, $object->name);
     }
   }
-  if (user_access('administer notify queue', $account) || empty($enatypes )) {
+  if (user_access('administer notify queue', $account) || empty($enatypes)) {
     $enatypes = array();
     foreach ($alltypes as $obj) {
       $enatypes[] = array($obj->type, $obj->name);
@@ -991,7 +1048,10 @@ function notify_user_settings_form($form, &$form_state, $arg) {
   if ($exists) {
     // Custom subscriptions exists, use those.
     foreach ($enatypes as $type) {
-      $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :type)', array(':uid' => $account->uid, ':type' => $type[0]))->fetchObject();
+      $field = db_query('SELECT uid FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :type)', array(
+        ':uid' => $account->uid,
+        ':type' => $type[0]
+      ))->fetchObject();
       $default = $field ? TRUE : FALSE;
       $form[$set][NOTIFY_NODE_TYPE . $type[0]] = array(
         '#type' => 'checkbox',
@@ -1039,46 +1099,49 @@ function notify_user_settings_form_submit($form, &$form_state) {
 
   $id = db_insert('notify')
     ->fields(array(
-    'uid' => $uid,
-    'status' => $form_state['values']['status'],
-    'node' => $form_state['values']['node'],
-    'teasers' => $form_state['values']['teasers'],
-    'comment' => $form_state['values']['comment'],
-  ))
+      'uid' => $uid,
+      'status' => $form_state['values']['status'],
+      'node' => $form_state['values']['node'],
+      'teasers' => $form_state['values']['teasers'],
+      'comment' => $form_state['values']['comment'],
+    ))
     ->execute();
   $subscriptions = array();
   // Remember that this is a custom subscriber.
   $subscriber = _notify_user_has_subscriptions($uid);
   if (!$subscriber) {
     db_insert('notify_subscriptions')
-    ->fields(array(
-      'uid' => $uid,
-      'type' => 'magic custom subscription',
-    ))
-    ->execute();
+      ->fields(array(
+        'uid' => $uid,
+        'type' => 'magic custom subscription',
+      ))
+      ->execute();
   }
 
   foreach ($form_state['values'] as $key => $value) {
     if (preg_match("/^" . NOTIFY_NODE_TYPE . "/", $key)) {
       $key = substr($key, 17);
-      $id = db_query('SELECT id FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :key)', array(':uid' => $uid, ':key' => $key))->fetchObject();
+      $id = db_query('SELECT id FROM {notify_subscriptions} WHERE (uid = :uid) AND (type = :key)', array(
+        ':uid' => $uid,
+        ':key' => $key
+      ))->fetchObject();
       if ($id) {
         $id = $id->id;
-	if (!$value) {
+        if (!$value) {
           db_delete('notify_subscriptions')
             ->condition('id', $id)
             ->execute();
         }
       }
       else {
-         if ($value) {
-	   db_insert('notify_subscriptions')
-             ->fields(array(
-               'uid' => $uid,
-               'type' => $key,
-             ))
-             ->execute();
-         }
+        if ($value) {
+          db_insert('notify_subscriptions')
+            ->fields(array(
+              'uid' => $uid,
+              'type' => $key,
+            ))
+            ->execute();
+        }
       }
     }
   }
