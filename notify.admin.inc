@@ -667,8 +667,8 @@ function notify_admin_defaults($form, &$form_state) {
   $form = array();
 
   $defnu = config_get('notify.settings', 'notify_reg_default');
-  $perms = user_role_permissions(array(BACKDROP_ANONYMOUS_ROLE => 'anon'));
-  $anonp = array_key_exists('access notify', $perms[1]);
+  $perms = user_role_permissions(array(BACKDROP_ANONYMOUS_ROLE));
+  $anonp = array_key_exists('access notify', $perms);
   if ($defnu && !$anonp) {
     backdrop_set_message(t('If you want notification enabled by default for new users, you must grant the anonymous user role the permission to access notify.'), 'warning');
   }
