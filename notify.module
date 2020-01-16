@@ -32,7 +32,7 @@ function notify_help($path, $arg) {
       $output .= '<dt>' . t('Newsletter Automation') . '</dt>';
       $output .= '<dd>' . t('Allows for automatic distribution of a site newsletter by email. Create a content type named "Newsletter" and make that content type available for subscription. The content of new newsletter nodes will automatically be mailed to all users that have opted in for notifications of that type.') . '</dd>';
       if (function_exists('advanced_help_hint_docs')) {
-        $output .= '<p>' . advanced_help_hint_docs('notify', 'http://www.drupal.org/handbook/modules/notify/', TRUE) . '</p>';
+        $output .= '<p>' . advanced_help_hint_docs('notify', 'https://www.drupal.org/docs/7/modules/notify', TRUE) . '</p>';
       }
       return $output;
   }
@@ -129,7 +129,11 @@ function notify_permission() {
     ),
     'administer notify queue' => array(
       'title' => t('administer notify queue'),
-      'description' => t('Administer the notify queue operations and skip flags'),
+      'description' => t('Administer the notify queue'),
+    ),
+    'administer notify skip flags' => array(
+      'title' => t('administer notify skip flags'),
+      'description' => t('Administer the notify skip flags'),
     ),
   );
 }
@@ -169,7 +173,7 @@ function notify_menu() {
     'page callback' => 'backdrop_get_form',
     'page arguments' => array('notify_admin_skip'),
     'access callback' => 'user_access',
-    'access arguments' => array('administer notify queue'),
+    'access arguments' => array('administer notify skip flags'),
     'file' => 'notify.admin.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
@@ -955,6 +959,18 @@ function _notify_send() {
     }
   }
   return array($num_sent, $num_fail);
+}
+
+
+/**
+ * Implements hook_config_info().
+ */
+function notify_config_info() {
+  $prefixes['notify.settings'] = array(
+    'label' => t('Notify module settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
 }
 
 
