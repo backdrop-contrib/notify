@@ -14,6 +14,17 @@
 define('NOTIFY_NODE_TYPE', 'notify_node_type_');
 
 /**
+ * Implements hook_config_info().
+ */
+function notify_config_info() {
+  $prefixes['notify.settings'] = array(
+    'label' => t('Notify settings'),
+    'group' => t('Notify'),
+  );
+  return $prefixes;
+}
+
+/**
  * Implements hook_help().
  */
 function notify_help($path, $arg) {
