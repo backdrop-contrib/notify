@@ -74,30 +74,9 @@ function notify_admin_settings($form, &$form_state) {
     '#description' => t('Specify the hour (24-hour clock) in which notifications should be sent, if the frequency is one day or greater.'),
     '#default_value' => config_get('notify.settings', 'notify_send_hour'),
     '#options' => array(
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11,
-      12,
-      13,
-      14,
-      15,
-      16,
-      17,
-      18,
-      19,
-      20,
-      21,
-      22,
-      23,
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+      20, 21, 22, 23,
     ),
   );
 
@@ -291,9 +270,9 @@ function notify_admin_queue($form, &$form_state) {
   }
   if ($nu + $cu) {
     $unpub_msg = t('Unpublished: !nodeup and !commup', array(
-        '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
-        '!commup' => format_plural($cu, '1 comment', '@count comments'),
-      )) . $nonew_msg;
+      '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
+      '!commup' => format_plural($cu, '1 comment', '@count comments'),
+    )) . $nonew_msg;
   }
   else {
     $unpub_msg = t('No unpublished items');
@@ -343,15 +322,14 @@ function notify_admin_queue($form, &$form_state) {
     }
     if ($fail > 0) {
       $sent_msg .= ', ' . t('!fail', array(
-          '!fail' => format_plural($fail, '1 failure', '@count failures'),
-        ));
+        '!fail' => format_plural($fail, '1 failure', '@count failures'),
+      ));
     }
     elseif ($sent) {
       $sent_msg .= ', ' . t('no failures');
     }
   }
-  $mailsystem = config_get('system.mail', 'mail_system');
-  $ms = isset($mailsystem['default-system']) ? $mailsystem['default-system'] : t('system default');
+  $mailsystem = config_get('system.mail', 'default-system');
   $form['batch']['schedule'] = array(
     '#markup' => $creat_msg . $publ_msg . ' ' . $intrv_msg . '.<br>'
       . $unpub_msg . '.<br>'
@@ -359,7 +337,7 @@ function notify_admin_queue($form, &$form_state) {
       . $skip_msg . '.<br>'
       . $sent_msg . '.<br>'
       . $batch_msg . '.<br>'
-      . t('Default MailSystem: ') . $ms . '.'
+      . t('Default MailSystem: ' . $mailsystem),
   );
   return $form;
 }
@@ -457,8 +435,8 @@ function notify_admin_queue_submit($form, &$form_state) {
     $date = strtotime($form_state['values']['lastdate']);
     config_set('notify.settings', 'notify_send_last', $date);
   }
-  variable_del('notify_skip_nodes');
-  variable_del('notify_skip_comments');
+  config_clear('notify.settings', 'notify_skip_nodes');
+  config_clear('notify.settings', 'notify_skip_comments');
 }
 
 /**
@@ -649,7 +627,7 @@ function theme_notify_admin_skip($variables) {
     $rows[] = array(
       array(
         'data' => t('No notifications are scheduled.'),
-        'colspan' => 5,
+        'colspan' => 6,
       )
     );
   }
@@ -823,14 +801,25 @@ function notify_admin_users($form, &$form_state) {
   }
 
   $form['info2'] = array(
-    '#markup' => '<p>' . t('You may check/uncheck the checkboxes and the &#8220;How much&#8220;-selection to change the users\' subscription. Press &#8220;Save settings&#8220; to save the settings.' . '</p>'),
+    '#markup' => '<p>' . t("You may check/uncheck the checkboxes and the “How much”-selection to change the users' subscriptions. Press “Save settings” to save the settings." .
+      '</p><h3>' . t('Automatic enrollment tickboxes') . '</h3>'),
+  );
+
+  $form['import'] = array(
+    '#title' => t('Subscribe users when importing'),
+    '#type' => 'checkbox',
+    '#default_value' => config_get('notify.settings', 'notify_import'),
+    '#description' => t('Subscribe users that are imported by means of <strong>User Import</strong> (and similiar tools).'),
   );
 
   $form['bulk'] = array(
-    '#title' => t('Bulk subscribe all users'),
+    '#title' => t('Subscribe all users now'),
     '#type' => 'checkbox',
     '#default_value' => FALSE,
     '#description' => t('Subscribe all non-blocked users that do not already subscribe to notifications.'),
+  );
+  $form['info3'] = array(
+    '#markup' => '<p>' . t("Press “Save settings” if you have changed setting for automatic enrollment." . '</p>'),
   );
 
   $form['submit'] = array(
@@ -845,7 +834,20 @@ function notify_admin_users($form, &$form_state) {
  */
 function notify_admin_users_submit($form, &$form_state) {
   unset($form);
+  $messages = 0;
 
+  if (isset($form_state['values']['import']) && 1 == $form_state['values']['import']) {
+    config_set('notify.settings', 'notify_import', 1);
+    backdrop_set_message(t('Will subscribe users when importing.'));
+    $messages++;
+  }
+  else {
+    if (config_get('notify.settings', 'notify_import')) {
+      config_set('notify.settings', 'notify_import', 0);
+      backdrop_set_message(t('Will no longer subscribe users when importing.'));
+      $messages++;
+    }
+  }
   if (isset($form_state['values']['bulk']) && 1 == $form_state['values']['bulk']) {
     $node = config_get('notify.settings', 'notify_def_node');
     $comment = config_get('notify.settings', 'notify_def_comment');
@@ -866,7 +868,9 @@ function notify_admin_users_submit($form, &$form_state) {
     }
   }
   elseif (!array_key_exists('users', $form_state['values'])) {
-    backdrop_set_message(t('No users have notifications enabled.'), 'warning');
+    if (!$messages) {
+      backdrop_set_message(t('No users have notifications enabled.'), 'warning');
+    }
     return;
   }
   if (isset($form_state['values']['users']) && $form_state['values']['users']) {
@@ -961,6 +965,23 @@ function notify_user_settings_form($form, &$form_state, $arg) {
     '#type' => 'fieldset',
     '#title' => t('Master switch'),
   );
+  $periodsec = config_get('notify.settings', 'notify_period');
+  if (0 == $periodsec) {
+    $cron = $periodsec = config_get('notify.settings', 'cron_safe_threshold');
+  }
+  $sendhour = config_get('notify.settings', 'notify_send_hour');
+  $pp = format_interval($periodsec);
+  // If $periodsec, period depends on external cron, so we can't report it.
+  if ($periodsec) {
+    $ss = '<p>' . t('Notifications are sent every !period', array('!period' => $pp));
+    if ($periodsec >= 86400) {
+      $ss .= ' ' . t("after !sendhour o'clock", array('!sendhour' => $sendhour));
+    }
+    $ss .= '.</p>';
+    $form['notify_page_master']['period'] = array(
+      '#markup' => $ss,
+    );
+  }
   // If user existed before notify was enabled, these are not set in db.
   if (!isset($notify->status)) {
     $notify->status = 0;

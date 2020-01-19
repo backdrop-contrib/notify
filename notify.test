@@ -81,10 +81,7 @@ class TestNotify extends SharedTestFunctions {
   }
 
   public function setUp() {
-    debug('DEBUG INIT: Test Notify single');
-
-    // Use testing mail system.
-    config_set('notify.settings','mail_system', array('default-system' => 'TestingMailSystem'));
+    debug('DEBUG setUp: Test Notify single');
 
     // Enable any modules required for the test. This should be an array of
     // module names.
@@ -94,7 +91,8 @@ class TestNotify extends SharedTestFunctions {
       'access notify',
       'administer notify',
       'administer notify queue',
-      'administer nodes', 
+      'administer notify skip flags',
+      'administer nodes',
       'bypass node access', 
       'create article content',
       ));
@@ -265,9 +263,7 @@ class TestSendingHour extends SharedTestFunctions {
   }
 
   public function setUp() {
-    debug('DEBUG INIT: Test Notify sending hour');
-    // Use testing mail system.
-    config_set('notify.settings','mail_system', array('default-system' => 'TestingMailSystem'));
+    debug('DEBUG setUp: Test Notify sending hour');
 
     // Enable any modules required for the test. This should be an array of
     // module names.
@@ -277,7 +273,8 @@ class TestSendingHour extends SharedTestFunctions {
       'access notify',
       'administer notify',
       'administer notify queue',
-      'administer nodes', 
+      'administer notify skip flags',
+      'administer nodes',
       'bypass node access', 
       'create article content',
       ));
@@ -430,7 +427,7 @@ class TestNotifyVariables extends SharedTestFunctions {
   }
 
   public function setUp() {
-    debug('DEBUG INIT: Show Notify variables');
+    debug('DEBUG setUp: Show Notify variables');
     // Enable Notify.
     parent::setUp(array('notify'));
   }
@@ -466,9 +463,7 @@ class TestNotifyBatch extends SharedTestFunctions {
   }
 
   public function setUp() {
-    debug('DEBUG INIT: Show Notify batch');
-    // Use testing mail system.
-    config_set('notify.settings','mail_system', array('default-system' => 'TestingMailSystem'));
+    debug('DEBUG setUp: Show Notify batch');
 
     // Enable any modules required for the test. This should be an array of
     // module names.
@@ -478,7 +473,8 @@ class TestNotifyBatch extends SharedTestFunctions {
       'access notify',
       'administer notify',
       'administer notify queue',
-      'administer nodes', 
+      'administer notify skip flags',
+      'administer nodes',
       'bypass node access', 
       'create article content',
       ));
@@ -568,9 +564,6 @@ class TestNotifyPeriods extends SharedTestFunctions {
   }
 
   public function setUp() {
-    // Use testing mail system.
-    config_set('notify.settings','mail_system', array('default-system' => 'TestingMailSystem'));
-
     // Enable any modules required for the test. This should be an array of
     // module names.
     parent::setUp(array('notify'));
@@ -579,7 +572,8 @@ class TestNotifyPeriods extends SharedTestFunctions {
       'access notify',
       'administer notify',
       'administer notify queue',
-      'administer nodes', 
+      'administer notify skip flags',
+      'administer nodes',
       'bypass node access', 
       'create article content',
       ));
@@ -651,6 +645,67 @@ class TestNotifyPeriods extends SharedTestFunctions {
     $mails = $this->backdropGetMails();
     $howmany = count($mails);
     $this->assertEqual($howmany, 3, 'Three emails are sent.');
+  }
+
+}
+
+class TestNotifyMailSystem extends SharedTestFunctions {
+  protected $user;
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Test Notify mailsystem'),
+      'description' => t('Simple test of sending mail.'),
+      'group' => t('Notify'),
+    );
+  }
+
+  public function setUp() {
+    debug('DEBUG setUp: Test Notify mailsystem');
+
+    // Enable any modules required for the test. This should be an array of
+    // module names.
+    parent::setUp(array('notify'));
+    // Create and log in our admin user. Give permissions.
+    $admin = $this->backdropCreateAdminUser(array(
+      'access notify',
+      'administer notify',
+      'administer notify queue',
+      'administer notify skip flags',
+      'administer nodes',
+      'bypass node access',
+      'create article content',
+      ));
+    $user = $this->backdropCreateNotifyUsers(2);
+    $this->user = $user;
+    // Login admin user
+    $this->backdropLogin($admin);
+
+  }
+
+  // Tests notification about one unpublished nodes (only notify admin).
+  // Send on first cron.
+  // Function name was dupe,  Was this the bug?
+  // public function testCreateOnlyUnpublishedArticles() {
+  public function testCreateOneUnpublishedArticle() {
+    // Set up notify environment.
+    config_set('notify.settings', 'notify_attempts', 5);
+    config_set('notify.settings', 'notify_include_updates', 0);
+    config_set('notify.settings', 'notify_reg_default', 1);
+    config_set('notify.settings', 'notify_period', 0);
+    config_set('notify.settings', 'notify_send_hour',  9);
+    config_set('notify.settings', 'notify_batchsize', 100);
+
+    $now = REQUEST_TIME;
+    config_set('notify.settings', 'notify_send_start', 0);  // We haven't started
+    $tt = $now - 86400; config_set('notify.settings', 'notify_send_last',  $tt); // Last was yesterday.
+    $tt = $now + 86400; config_set('notify.settings', 'notify_cron_next',  $tt); // Next cron scheduled tomorrow.
+
+    $this->createContent(1, $this->user->name, FALSE);
+    $this->cronRun();
+    $mails = $this->backdropGetMails();
+    $howmany = count($mails);
+    $this->assertEqual($howmany, 1, 'One email is sent.');
   }
 
 }
