@@ -270,9 +270,9 @@ function notify_admin_queue($form, &$form_state) {
   }
   if ($nu + $cu) {
     $unpub_msg = t('Unpublished: !nodeup and !commup', array(
-        '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
-        '!commup' => format_plural($cu, '1 comment', '@count comments'),
-      )) . $nonew_msg;
+      '!nodeup' => format_plural($nu, '1 node', '@count nodes'),
+      '!commup' => format_plural($cu, '1 comment', '@count comments'),
+    )) . $nonew_msg;
   }
   else {
     $unpub_msg = t('No unpublished items');
@@ -322,15 +322,14 @@ function notify_admin_queue($form, &$form_state) {
     }
     if ($fail > 0) {
       $sent_msg .= ', ' . t('!fail', array(
-          '!fail' => format_plural($fail, '1 failure', '@count failures'),
-        ));
+        '!fail' => format_plural($fail, '1 failure', '@count failures'),
+      ));
     }
     elseif ($sent) {
       $sent_msg .= ', ' . t('no failures');
     }
   }
   $mailsystem = config_get('system.mail', 'default-system');
-  $ms = isset($mailsystem['default-system']) ? $mailsystem['default-system'] : t('system default');
   $form['batch']['schedule'] = array(
     '#markup' => $creat_msg . $publ_msg . ' ' . $intrv_msg . '.<br>'
       . $unpub_msg . '.<br>'
@@ -338,7 +337,7 @@ function notify_admin_queue($form, &$form_state) {
       . $skip_msg . '.<br>'
       . $sent_msg . '.<br>'
       . $batch_msg . '.<br>'
-      . t('Default MailSystem: ') . $ms . '.'
+      . t('Default MailSystem: ' . $mailsystem),
   );
   return $form;
 }
@@ -628,7 +627,7 @@ function theme_notify_admin_skip($variables) {
     $rows[] = array(
       array(
         'data' => t('No notifications are scheduled.'),
-        'colspan' => 5,
+        'colspan' => 6,
       )
     );
   }

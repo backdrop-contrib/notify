@@ -53,9 +53,9 @@ function notify_cron() {
     return; // Never notify.
   }
 
-  $send_last = config_get('notify.settings','notify_send_last');
-  $cron_next = config_get('notify.settings','notify_cron_next');
-  $doitp = config_get('notify.settings','notify_users');
+  $send_last = config_get('notify.settings', 'notify_send_last');
+  $cron_next = config_get('notify.settings', 'notify_cron_next');
+  $doitp = config_get('notify.settings', 'notify_users');
 
   if ($period >= 86400) {
     if ($doitp || ($cron_next < REQUEST_TIME)) {
@@ -69,12 +69,12 @@ function notify_cron() {
 
   if ((REQUEST_TIME > $next) || $doitp) {
     list($num_sent, $num_fail) = _notify_send();
-    $num_sent += config_get('notify.settings','notify_num_sent');
-    $num_fail += config_get('notify.settings','notify_num_failed');
-    config_set('notify.settings','notify_num_sent', $num_sent);
-    config_set('notify.settings','notify_num_failed', $num_fail);
+    $num_sent += config_get('notify.settings', 'notify_num_sent');
+    $num_fail += config_get('notify.settings', 'notify_num_failed');
+    config_set('notify.settings', 'notify_num_sent', $num_sent);
+    config_set('notify.settings', 'notify_num_failed', $num_fail);
     $next = _notify_next_notificaton(REQUEST_TIME);
-    config_set('notify.settings','notify_cron_next', $next);
+    config_set('notify.settings', 'notify_cron_next', $next);
   }
 }
 
@@ -104,9 +104,9 @@ function notify_user_insert($account) {
       ->fields(array(
       'uid' => $account->uid,
       'status' => 1,
-      'node' => config_get('notify.settings','notify_def_node'),
-      'comment' => config_get('notify.settings','notify_def_comment'),
-      'teasers' => config_get('notify.settings','notify_def_teasers'),
+      'node' => config_get('notify.settings', 'notify_def_node'),
+      'comment' => config_get('notify.settings', 'notify_def_comment'),
+      'teasers' => config_get('notify.settings', 'notify_def_teasers'),
       'attempts' => 0,
     ))
       ->execute();
@@ -318,7 +318,7 @@ function notify_theme() {
 // Helper functions
 
 function _notify_cron_next($next_time_to_send) {
-  $send_hour  = config_get('notify.settings','notify_send_hour');
+  $send_hour  = config_get('notify.settings', 'notify_send_hour');
   // Compute the next as the sending hour today.
   $cron_next = strtotime(date('Y-m-d ', $next_time_to_send) . $send_hour . ':00:00');
   return $cron_next;
@@ -336,7 +336,7 @@ function _notify_cron_next($next_time_to_send) {
  *   -1 never, 0 send instantly, else next time to notify.
  */
 function _notify_next_notificaton($send_last) {
-  $period = config_get('notify.settings','notify_period');
+  $period = config_get('notify.settings', 'notify_period');
   // Two special cases: Never and instantly.
   if ($period < 0) {
     return(-1);
@@ -356,10 +356,10 @@ function _notify_next_notificaton($send_last) {
 
   // Interval >= 1 day.
 
-  $cron_next = config_get('notify.settings','notify_cron_next');
+  $cron_next = config_get('notify.settings', 'notify_cron_next');
   if (!$cron_next) {
     $cron_next = _notify_cron_next($next_time_to_send);
-    config_set('notify.settings','notify_cron_next', $cron_next);
+    config_set('notify.settings', 'notify_cron_next', $cron_next);
   }
   return($cron_next);
 }
@@ -378,7 +378,7 @@ function _notify_user_reg_fields() {
   // Add a fieldset containing a checkbox for users to accept
   // getting updates on the registration form.
   $fields['notify_agree'] = array(
-    '#weight' => config_get('notify.settings','notify_weightur'),
+    '#weight' => config_get('notify.settings', 'notify_weightur'),
     '#type' => 'fieldset',
     '#title' => t('E-mail Notifications'),
   );
@@ -388,7 +388,7 @@ function _notify_user_reg_fields() {
     '#type' => 'checkbox',
     '#title' => t('Receive e-mail notifications of new content posted to this site. Notifications are sent every @interval.', array('@interval' => format_interval($period))),
     '#return_value' => 1,
-    '#default_value' => config_get('notify.settings','notify_reg_default'),
+    '#default_value' => config_get('notify.settings', 'notify_reg_default'),
   );
 
   return $fields;
@@ -535,16 +535,16 @@ function _notify_count() {
  *   res_nodes, res_comms, res_nopub, res_copub, res_nounp, res_counp
  */
 function _notify_select_content() {
-  $batch_remain = count(config_get('notify.settings','notify_users'));
-  $since = config_get('notify.settings','notify_send_last');
+  $batch_remain = count(config_get('notify.settings', 'notify_users'));
+  $since = config_get('notify.settings', 'notify_send_last');
   if ($batch_remain) {
-    $send_start = config_get('notify.settings','notify_send_start');
+    $send_start = config_get('notify.settings', 'notify_send_start');
   }
   else {
     $send_start = REQUEST_TIME;
   }
   if (!$since) {
-    $period = config_get('notify.settings','notify_period');
+    $period = config_get('notify.settings', 'notify_period');
     if ($period > 0) {
       $since = $send_start - $period;
     }
@@ -562,7 +562,7 @@ function _notify_select_content() {
   if (count($ntype) >= 1) {
     $q->condition('n.type', $ntype, 'IN');
   }
-  if (config_get('notify.settings','notify_include_updates')) {
+  if (config_get('notify.settings', 'notify_include_updates')) {
     $q->condition(db_or()->condition(db_and()->condition('n.created', $since, '>')->condition('n.created', $send_start, '<='))
                          ->condition(db_and()->condition('n.changed', $since, '>')->condition('n.changed', $send_start, '<=')));
   }
@@ -599,7 +599,7 @@ function _notify_select_content() {
     if (count($ntype) >= 1) {
       $q->condition('n.type', $ntype, 'IN');
     }
-    if (config_get('notify.settings','notify_include_updates')) {
+    if (config_get('notify.settings', 'notify_include_updates')) {
       $q->condition(db_or()->condition(db_and()->condition('c.created', $since, '>')->condition('c.created', $send_start, '<='))
                            ->condition(db_and()->condition('c.changed', $since, '>')->condition('c.changed', $send_start, '<=')));
     }
@@ -645,7 +645,7 @@ function _notify_send() {
   $separator = "------------------------------------------------------------------------------\n";
   $mini_separator = "----\n";
 
-  $send_start = config_get('notify.settings','notify_send_start');
+  $send_start = config_get('notify.settings', 'notify_send_start');
   $num_sent = 0;
   $num_fail = 0;
   list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
@@ -696,7 +696,7 @@ function _notify_send() {
   }
 
   if ($count) {
-    $uresult = config_get('notify.settings','notify_users');
+    $uresult = config_get('notify.settings', 'notify_users');
     if (empty($uresult)) {
       // Set up for sending a new batch. Init all variables.
       $sql = 'SELECT u.uid, u.name, u.mail, u.language, n.status, n.node, n.teasers, n.comment
@@ -706,13 +706,13 @@ function _notify_send() {
         WHERE (n.status = :nstatus) AND (u.status = :ustatus) AND (n.attempts <= :attempts)
         ORDER BY u.uid asc';
       $uresult = db_query($sql, array(':nstatus' => 1, 'ustatus' => 1, ':attempts' => 5))->fetchAll(PDO::FETCH_ASSOC);
-      config_set('notify.settings','notify_send_start', REQUEST_TIME);
-      config_set('notify.settings','notify_users', $uresult);
-      config_set('notify.settings','notify_num_sent', 0);
-      config_set('notify.settings','notify_num_failed', 0);
+      config_set('notify.settings', 'notify_send_start', REQUEST_TIME);
+      config_set('notify.settings', 'notify_users', $uresult);
+      config_set('notify.settings', 'notify_num_sent', 0);
+      config_set('notify.settings', 'notify_num_failed', 0);
     }
 
-    $batchlimit = config_get('notify.settings','notify_batchsize');
+    $batchlimit = config_get('notify.settings', 'notify_batchsize');
     $batchcount = 0;
 
     //$s1 = t('Never', array(), array('langcode' => 'nb'));
@@ -723,8 +723,8 @@ function _notify_send() {
     $old_state = backdrop_save_session();
     backdrop_save_session(FALSE);
 
-    $notify_skip_nodes = config_get('notify.settings','notify_skip_nodes');
-    $notify_skip_comments = config_get('notify.settings','notify_skip_comments');
+    $notify_skip_nodes = config_get('notify.settings', 'notify_skip_nodes');
+    $notify_skip_comments = config_get('notify.settings', 'notify_skip_comments');
 
     foreach ($uresult as $index => $userrow) {
       if (++$batchcount > $batchlimit) {
@@ -758,7 +758,7 @@ function _notify_send() {
 	  if (!user_access('administer nodes', $userobj) && !in_array($node->type, $defaultlist)) {
             continue;
           }
-	  if (!config_get('notify.settings','notify_unpublished') && NODE_NOT_PUBLISHED == $node->status) {
+	  if (!config_get('notify.settings', 'notify_unpublished') && NODE_NOT_PUBLISHED == $node->status) {
             continue;
           }
           if (!node_access('view', $node, $userobj)) {
@@ -774,7 +774,7 @@ function _notify_send() {
 	    }
           }
 
-          $ml_level = config_get('notify.settings','notify_multilingual');
+          $ml_level = config_get('notify.settings', 'notify_multilingual');
           if (!user_access('administer notify')) {
             if ($ml_level && $node->tnid) {
 	      if ($node->language != $upl->langcode) {
@@ -784,7 +784,7 @@ function _notify_send() {
 	    if ((2 == $ml_level) && (0 == $node->tnid) && (LANGUAGE_NONE != $node->language)) {
 	      continue;
             }
-	    $ignore_unverified = config_get('notify.settings','notify_unverified');
+	    $ignore_unverified = config_get('notify.settings', 'notify_unverified');
   	    if ($ignore_unverified && !$node->uid) {
 	      continue;
  	    }
@@ -870,7 +870,7 @@ function _notify_send() {
   	    if (!user_access('administer comments', $userobj) && !in_array($node->type, $defaultlist)) {
               continue;
             }
-            if (!config_get('notify.settings','notify_unpublished') && COMMENT_NOT_PUBLISHED == $commobj->status) {
+            if (!config_get('notify.settings', 'notify_unpublished') && COMMENT_NOT_PUBLISHED == $commobj->status) {
               continue;
             }
             // Determine whether to show comment status.
@@ -913,11 +913,9 @@ function _notify_send() {
 
       $body = $node_body . $comment_body;
 
-      //if (config_get('notify.settings','notify_unpublished')) {}
-
       // If there was anything new, send mail.
       if ($body) {
-        $watchdog_level = config_get('notify.settings','notify_watchdog');
+        $watchdog_level = config_get('notify.settings', 'notify_watchdog');
         if (backdrop_mail('notify', 'send', $userrow['mail'], user_preferred_language($userrow), array('content' => $body, 'user' => $userobj, 'viewmode' => $userrow['teasers']))) {
           if ($watchdog_level == 0) {
             watchdog('notify', 'User %name (%mail) notified successfully.', array('%name' => $userrow['name'], '%mail' => $userrow['mail']), WATCHDOG_INFO);
@@ -936,18 +934,21 @@ function _notify_send() {
         }
       }
       unset($uresult[$index]);
-      config_set('notify.settings','notify_users', $uresult);
+      config_set('notify.settings', 'notify_users', $uresult);
     }
     // Restore the original user session.
     $user = $original_user;
     backdrop_save_session($old_state);
   }
-  $rest = count(config_get('notify.settings','notify_users'));
+  else {
+    config_clear('notify.settings', 'notify_users');
+  }
+  $rest = count(config_get('notify.settings', 'notify_users'));
   // If $rest is empty, then set notify_send_last.
   if (!$rest) {
-    $send_start = config_get('notify.settings','notify_send_start');
-    config_set('notify.settings','notify_send_last', $send_start);
-    config_set('notify.settings','notify_cron_next', 0); // Force reset
+    $send_start = config_get('notify.settings', 'notify_send_start');
+    config_set('notify.settings', 'notify_send_last', $send_start);
+    config_set('notify.settings', 'notify_cron_next', 0); // Force reset
     list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
     foreach ($res_nopub as $row) {
       db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
@@ -960,19 +961,6 @@ function _notify_send() {
   }
   return array($num_sent, $num_fail);
 }
-
-
-/**
- * Implements hook_config_info().
- */
-function notify_config_info() {
-  $prefixes['notify.settings'] = array(
-    'label' => t('Notify module settings'),
-    'group' => t('Configuration'),
-  );
-  return $prefixes;
-}
-
 
 /**
  * Implements hook_autoload_info().
