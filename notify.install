@@ -221,3 +221,26 @@ function notify_update_1000() {
 function notify_update_last_removed() {
   return 7003;
 }
+
+/**
+ * Move some values from settings to states
+ */
+function notify_update_1001() {
+  $config = config('notify.settings');
+
+  $names = array(
+    'notify_cron_next',
+    'notify_num_sent',
+    'notify_num_failed',
+    'notify_send_last',
+    'notify_send_start',
+    'notify_users',
+  );
+
+  foreach ($names as $name) {
+    state_set($name, $config->get($name));
+    $config->clear($name);
+  }
+
+  $config->save();
+}
