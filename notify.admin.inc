@@ -195,11 +195,11 @@ function notify_admin_settings_submit($form, &$form_state) {
  */
 function notify_admin_queue($form, &$form_state) {
   $period = config_get('notify.settings', 'notify_period');
-  $since = state_get('notify_send_last', 1579447234);
+  $since = state_get('notify_send_last', 1577836800);
   $lastdate = format_date($since, 'short');
-  $start = state_get('notify_send_start', 1579447234);
+  $start = state_get('notify_send_start', 1577836800);
   $startdate = format_date($start, 'short');
-  $notify_send_last = state_get('notify_send_last', 1579447234);
+  $notify_send_last = state_get('notify_send_last', 1577836800);
   $next_last = _notify_next_notificaton($notify_send_last);
 
   if ($next_last == -1) {
