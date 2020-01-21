@@ -11,6 +11,52 @@
  * to monitor content submissions and comment posts.
  */
 
+/**
+ * Data definitions - configuration:
+ *
+ * notify_attempts: The maximum number of failed attempts to send e-mail to tolerate before notification is suspended.
+ * notify_batchsize: The maximum number of users to process in each pass of a cron maintenance task.
+ * notify_def_comment: Include new comments in the notification mail. (Boolean)
+ * notify_def_node: Include new posts in the notification mail. (Boolean)
+ * notify_def_teasers: Select the amount of each item to include in the notification e-mail: (Options)
+ *   'Title only'; 'Title + Teaser/Excerpt'; 'Title + Body'; 'Title + Body + Fields'.
+ * notify_include_updates: Include updated posts in notifications. (Boolean)
+ * notify_multilingual: What subscribed contents to include in user notifications on a multilingual site. (Options)
+ *   'All contents'; 'Contents in the user's preferred language + contents not yet translated';
+ *   'Only contents in the user's preferred language'
+ * notify_node_type:
+ * notify_period: How often should new content notifications be sent? Requires cron to be running at least this often. (Seconds)
+ * notify_reg_default: Registered to receive e-mail notifications of new content posted to this site.
+ * notify_send_hour: The hour (24-hour clock) in which notifications should be sent.
+ * notify_skip_comments: Skip sending these comment notifications.
+ * notify_skip_nodes: Skip sending these node notifications.
+ * notify_unpublished: Administrators shall be notified about unpublished content of tracked types.
+ * notify_unverified: Exclude contents from unverified authors from user notifications.
+ * notify_watchdog: Watchdog current level
+ * notify_weightur: Weight of notification field in user registration form.
+ *
+ * Data definitions - environment-specific:
+ *
+ * notify_cron_next: Date/Time of next send.
+ * notify_num_sent: Number of notifications sent.
+ * notify_num_failed: Number of notifications not sent.
+ * notify_send_last: Date/Time of sending of last notification.
+ * notify_send_start: Date/Time of start of notification period.
+ * notify_users: Limit on number of users.
+ *
+ * Data Tables (as on 18 Jan 2020):
+ * notify:
+ *    fields: UID (int 10); status, node, comment, attempts, teasers (tinyint 4).
+ * notify_bytecount: Node id and size, used to determine if node has really changed.
+ *    fields: id, nid, bytes (int 10);
+ * notify_subscriptions: Stores custom user subscriptions to nodes, with node type.
+ *    fields: id, uid, nid (int 10); type (varchar 32).
+ * notify_unpublished_queue: Stores a list of unpublished contents (comments and nodes) to determine what content
+ *    has been published since last notification.
+ *    fields: id (int 10); cid, nid (int 11).
+ *
+ */
+
 define('NOTIFY_NODE_TYPE', 'notify_node_type_');
 
 /**
@@ -54,7 +100,6 @@ function notify_help($path, $arg) {
  *
  */
 function notify_cron() {
-
   $period = config_get('notify.settings',"notify_period");
   if (-2 == $period) {
     return;
@@ -63,10 +108,9 @@ function notify_cron() {
   if (-1 == $period) {
     return; // Never notify.
   }
-
-  $send_last = config_get('notify.settings', 'notify_send_last');
-  $cron_next = config_get('notify.settings', 'notify_cron_next');
-  $doitp = config_get('notify.settings', 'notify_users');
+  $send_last = state_get('notify_send_last', 1579447234);
+  $cron_next = state_get('notify_cron_next', 0);
+  $doitp = state_get('notify_users', 0);
 
   if ($period >= 86400) {
     if ($doitp || ($cron_next < REQUEST_TIME)) {
@@ -77,15 +121,14 @@ function notify_cron() {
     }
   }
   $next = _notify_next_notificaton($send_last);
-
   if ((REQUEST_TIME > $next) || $doitp) {
     list($num_sent, $num_fail) = _notify_send();
-    $num_sent += config_get('notify.settings', 'notify_num_sent');
-    $num_fail += config_get('notify.settings', 'notify_num_failed');
-    config_set('notify.settings', 'notify_num_sent', $num_sent);
-    config_set('notify.settings', 'notify_num_failed', $num_fail);
+    $num_sent += state_get('notify_num_sent', 0);
+    $num_fail += state_get('notify_num_failed', 0);
+    state_set('notify_num_sent', $num_sent);
+    state_set('notify_num_failed', $num_fail);
     $next = _notify_next_notificaton(REQUEST_TIME);
-    config_set('notify.settings', 'notify_cron_next', $next);
+    state_set('notify_cron_next', $next);
   }
 }
 
@@ -367,10 +410,10 @@ function _notify_next_notificaton($send_last) {
 
   // Interval >= 1 day.
 
-  $cron_next = config_get('notify.settings', 'notify_cron_next');
+  $cron_next = state_get('notify_cron_next', 0);
   if (!$cron_next) {
     $cron_next = _notify_cron_next($next_time_to_send);
-    config_set('notify.settings', 'notify_cron_next', $cron_next);
+    state_set('notify_cron_next', $cron_next);
   }
   return($cron_next);
 }
@@ -546,10 +589,10 @@ function _notify_count() {
  *   res_nodes, res_comms, res_nopub, res_copub, res_nounp, res_counp
  */
 function _notify_select_content() {
-  $batch_remain = count(config_get('notify.settings', 'notify_users'));
-  $since = config_get('notify.settings', 'notify_send_last');
+  $batch_remain = count(state_get('notify_users', 0));
+  $since = state_get('notify_send_last', 1579447234);
   if ($batch_remain) {
-    $send_start = config_get('notify.settings', 'notify_send_start');
+    $send_start = state_get('notify_send_start', 1579447234);
   }
   else {
     $send_start = REQUEST_TIME;
@@ -656,7 +699,7 @@ function _notify_send() {
   $separator = "------------------------------------------------------------------------------\n";
   $mini_separator = "----\n";
 
-  $send_start = config_get('notify.settings', 'notify_send_start');
+  $send_start = state_get('notify_send_start', 1579447234);
   $num_sent = 0;
   $num_fail = 0;
   list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
@@ -707,7 +750,7 @@ function _notify_send() {
   }
 
   if ($count) {
-    $uresult = config_get('notify.settings', 'notify_users');
+    $uresult = state_get('notify_users', 0);
     if (empty($uresult)) {
       // Set up for sending a new batch. Init all variables.
       $sql = 'SELECT u.uid, u.name, u.mail, u.language, n.status, n.node, n.teasers, n.comment
@@ -717,10 +760,10 @@ function _notify_send() {
         WHERE (n.status = :nstatus) AND (u.status = :ustatus) AND (n.attempts <= :attempts)
         ORDER BY u.uid asc';
       $uresult = db_query($sql, array(':nstatus' => 1, 'ustatus' => 1, ':attempts' => 5))->fetchAll(PDO::FETCH_ASSOC);
-      config_set('notify.settings', 'notify_send_start', REQUEST_TIME);
-      config_set('notify.settings', 'notify_users', $uresult);
-      config_set('notify.settings', 'notify_num_sent', 0);
-      config_set('notify.settings', 'notify_num_failed', 0);
+      state_set('notify_send_start', REQUEST_TIME);
+      state_set('notify_users', $uresult);
+      state_set('notify_num_sent', 0);
+      state_set('notify_num_failed', 0);
     }
 
     $batchlimit = config_get('notify.settings', 'notify_batchsize');
@@ -945,21 +988,21 @@ function _notify_send() {
         }
       }
       unset($uresult[$index]);
-      config_set('notify.settings', 'notify_users', $uresult);
+      state_set('notify_users', $uresult);
     }
     // Restore the original user session.
     $user = $original_user;
     backdrop_save_session($old_state);
   }
   else {
-    config_clear('notify.settings', 'notify_users');
+    state_set('notify_users', 0);
   }
-  $rest = count(config_get('notify.settings', 'notify_users'));
+  $rest = count(state_get('notify_users', 0));
   // If $rest is empty, then set notify_send_last.
   if (!$rest) {
-    $send_start = config_get('notify.settings', 'notify_send_start');
-    config_set('notify.settings', 'notify_send_last', $send_start);
-    config_set('notify.settings', 'notify_cron_next', 0); // Force reset
+    $send_start = state_get('notify_send_start', 1579447234);
+    state_set('notify_send_last', $send_start);
+    state_set('notify_cron_next', 0); // Force reset
     list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
     foreach ($res_nopub as $row) {
       db_query('DELETE FROM {notify_unpublished_queue} WHERE cid = :cid AND nid = :nid', array(':cid' => 0, ':nid' => $row->nid));
