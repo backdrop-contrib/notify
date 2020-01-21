@@ -9,6 +9,14 @@
  * Menu callback, show admin notification settings form.
  */
 function notify_admin_settings($form, &$form_state) {
+
+  $cnext = state_get('notify_cron_next', 0);
+  $nsent = state_get('notify_num_sent', 0);
+  $nfail = state_get('notify_num_failed', 0);
+  $nlast = state_get('notify_send_last', 1579447234);
+  $nstart = state_get('notify_send_start', 1579447234);
+  $nusers = state_get('notify_users', 0);
+
   $period = array(
     0 => t('Cron'),
     3600 => format_interval(3600),
@@ -178,7 +186,7 @@ function notify_admin_settings_submit($form, &$form_state) {
   config_set('notify.settings', 'notify_watchdog', $form_state['values']['notify_watchdog']);
   config_set('notify.settings', 'notify_weightur', $form_state['values']['notify_weightur']);
 
-  config_set('notify.settings', 'notify_cron_next', 0); // Force reset.
+  state_set('notify_cron_next', 0); // Force reset.
   backdrop_set_message(t('Notify admin settings saved.'));
 }
 
@@ -187,11 +195,11 @@ function notify_admin_settings_submit($form, &$form_state) {
  */
 function notify_admin_queue($form, &$form_state) {
   $period = config_get('notify.settings', 'notify_period');
-  $since = config_get('notify.settings', 'notify_send_last');
+  $since = state_get('notify_send_last', 1579447234);
   $lastdate = format_date($since, 'short');
-  $start = config_get('notify.settings', 'notify_send_start');
+  $start = state_get('notify_send_start', 1579447234);
   $startdate = format_date($start, 'short');
-  $notify_send_last = config_get('notify.settings', 'notify_send_last');
+  $notify_send_last = state_get('notify_send_last', 1579447234);
   $next_last = _notify_next_notificaton($notify_send_last);
 
   if ($next_last == -1) {
@@ -216,18 +224,18 @@ function notify_admin_queue($form, &$form_state) {
       t('Truncate queue'),
       t('Override timestamp')
     ),
-    '#description' => t('Select &#8220;Send batch now&#8220; to send next batch of e-mails queued for notifications. Select &#8220;Truncate queue&#8220; to empty queue of pending notification <em>without</em> sending e-mails. Select &#8220;Override timestamp&#8220; to override the last notification timestamp. Press &#8220;Submit&#8220; to execute.'),
+    '#description' => t('Select &#8220;Send batch now&#8220; to send next batch of e-mails queued for notifications.</br>Select &#8220;Truncate queue&#8220; to empty queue of pending notification <em>without</em> sending e-mails.</br>Select &#8220;Override timestamp&#8220; to override the previous notification timestamp. Press &#8220;Submit&#8220; to execute.'),
   );
 
   $send_last = format_date($notify_send_last, 'custom', 'Y-m-d H:i:s');
 
   $form['lastdate'] = array(
     '#type' => 'textfield',
-    '#title' => t('Last notification timestamp'),
+    '#title' => t('Previous notification timestamp'),
     '#default_value' => $send_last,
     '#size' => 19,
     '#maxlength' => 19,
-    '#description' => t('To explicitly set the last notification timestamp, change the value of this field and select the &#8220;Override timestamp&#8220; option above, then press &#8220;Submit&#8220; to execute.'),
+    '#description' => t('To explicitly set the previous notification timestamp, change the value of this field and select the &#8220;Override timestamp&#8220; option above, then press &#8220;Submit&#8220; to execute.'),
   );
 
   $form['submit'] = array(
@@ -278,9 +286,9 @@ function notify_admin_queue($form, &$form_state) {
     $unpub_msg = t('No unpublished items');
   }
 
-  $sent = config_get('notify.settings', 'notify_num_sent');
-  $fail = config_get('notify.settings', 'notify_num_failed');
-  $batch_remain = count(config_get('notify.settings', 'notify_users'));
+  $sent = state_get('notify_num_sent', 0);
+  $fail = state_get('notify_num_failed', 0);
+  $batch_remain = count(state_get('notify_users', 0));
 
   $creat_msg = t('There are !nodes and !comms !created', array(
     '!nodes' => format_plural($np, '1 node', '@count nodes'),
@@ -337,7 +345,7 @@ function notify_admin_queue($form, &$form_state) {
       . $skip_msg . '.<br>'
       . $sent_msg . '.<br>'
       . $batch_msg . '.<br>'
-      . t('Default MailSystem: ' . $mailsystem),
+      . t('Mail System: ' . $mailsystem),
   );
   return $form;
 }
@@ -349,7 +357,7 @@ function notify_admin_queue_submit($form, &$form_state) {
   unset($form);
 
   $process = $form_state['values']['process'];
-  $notify_send_last = config_get('notify.settings', 'notify_send_last');
+  $notify_send_last = state_get('notify_send_last', 1579447234);
   $frform_send_last = strtotime($form_state['values']['lastdate']);
   if (FALSE === $frform_send_last) {
     form_set_error('notify_admin_queue', t('This does not look like a valid date format.'));
@@ -402,10 +410,10 @@ function notify_admin_queue_submit($form, &$form_state) {
         ), $watchdog_status);
       }
     }
-    $num_sent += config_get('notify.settings', 'notify_num_sent');
-    $num_fail += config_get('notify.settings', 'notify_num_failed');
-    config_set('notify.settings', 'notify_num_sent', $num_sent);
-    config_set('notify.settings', 'notify_num_failed', $num_fail);
+    $num_sent += state_get('notify_num_sent', 0);
+    $num_fail += state_get('notify_num_failed', 0);
+    state_set('notify_num_sent', $num_sent);
+    state_set('notify_num_failed', $num_fail);
   }
   elseif (1 == $form_state['values']['process']) { // truncate
     list ($res_nodes, $res_comms, $res_nopub, $res_copub, $res_nounp, $res_counp) = _notify_select_content();
@@ -421,10 +429,10 @@ function notify_admin_queue_submit($form, &$form_state) {
         ':nid' => $row->nid
       ));
     }
-    config_set('notify.settings', 'notify_send_start', REQUEST_TIME);
-    config_set('notify.settings', 'notify_send_last', REQUEST_TIME);
-    config_set('notify.settings', 'notify_cron_next', 0); // Force reset
-    config_set('notify.settings', 'notify_users', array());
+    state_set('notify_send_start', REQUEST_TIME);
+    state_set('notify_send_last', REQUEST_TIME);
+    state_set('notify_cron_next', 0); // Force reset
+    state_set('notify_users', array());
     backdrop_set_message(t('The notification queue has been truncated. No e-mail were sent.'));
     if ($watchdog_level <= 1) {
       watchdog('notify', 'Notification queue truncated.', NULL, WATCHDOG_INFO);
@@ -433,10 +441,10 @@ function notify_admin_queue_submit($form, &$form_state) {
   }
   elseif (2 == $form_state['values']['process']) { // override
     $date = strtotime($form_state['values']['lastdate']);
-    config_set('notify.settings', 'notify_send_last', $date);
+    state_set('notify_send_last', $date);
   }
-  config_clear('notify.settings', 'notify_skip_nodes');
-  config_clear('notify.settings', 'notify_skip_comments');
+  config_set('notify.settings', 'notify_skip_nodes', array());
+  config_set('notify.settings', 'notify_skip_comments', array());
 }
 
 /**
@@ -550,7 +558,7 @@ function notify_admin_skip($form, &$form_state) {
     }
   }
   $form['entities'] = $entities;
-  $batch_remain = count(config_get('notify.settings', 'notify_users'));
+  $batch_remain = count(state_get('notify_users', 0));
   if ($batch_remain) {
     $form['info2'] = array(
       '#markup' => '<p>' . t('Please note that the list above may be out of sync.  Saving an altered list of skip flags is disabled as long as notifications are being processed.') . '</p> ',
@@ -604,8 +612,8 @@ function theme_notify_admin_skip($variables) {
   $form = $variables['form'];
   $output = backdrop_render($form['info']);
   $header = array(
-    t('Nid'),
-    t('Cid'),
+    t('Node id'),
+    t('Comment id'),
     t('Created'),
     t('Updated'),
     t('Title'),

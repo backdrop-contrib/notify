@@ -113,9 +113,9 @@ class TestNotify extends SharedTestFunctions {
     config_set('notify.settings','notify_send_hour',  9);
     config_set('notify.settings','notify_batchsize', 100);
     $now = REQUEST_TIME;
-    config_set('notify.settings','notify_send_start', 0);  // We haven't started
-    $tt = $now - 86400; config_set('notify.settings','notify_send_last',  $tt); // Last was yesterday.
-    $tt = $now + 86400; config_set('notify.settings','notify_cron_next',  $tt); // Next cron scheduled tomorrow.
+    state_set('notify_send_start', 0);  // We haven't started
+    $tt = $now - 86400; state_set('notify_send_last',  $tt); // Last was yesterday.
+    $tt = $now + 86400; state_set('notify_cron_next',  $tt); // Next cron scheduled tomorrow.
 
     $this->createContent(3);
     $this->cronRun();
@@ -138,9 +138,9 @@ class TestNotify extends SharedTestFunctions {
     config_set('notify.settings','notify_batchsize', 100);
 
     $now = REQUEST_TIME;
-    config_set('notify.settings','notify_send_start', 0); // reset
-    $tt = $now - 86400; config_set('notify.settings','notify_send_last',  $tt);
-    config_set('notify.settings','notify_cron_next',  0); // reset
+    state_set('notify_send_start', 0); // reset
+    $tt = $now - 86400; state_set('notify_send_last',  $tt);
+    state_set('notify_cron_next',  0); // reset
     
     // Content is old
     $this->createContent(3, NULL, TRUE, '2014-01-01 01:00:00 +0100');
@@ -164,9 +164,9 @@ class TestNotify extends SharedTestFunctions {
     config_set('notify.settings','notify_batchsize', 100);
 
     $now = REQUEST_TIME;
-    config_set('notify.settings','notify_send_start', 0); // reset
-    $tt = $now - 86400; config_set('notify.settings','notify_send_last',  $tt);
-    config_set('notify.settings','notify_cron_next',  0); // reset
+    state_set('notify_send_start', 0); // reset
+    $tt = $now - 86400; state_set('notify_send_last',  $tt);
+    state_set('notify_cron_next',  0); // reset
     
     // Content is old
     $this->createContent(3, NULL, TRUE, '2014-01-01 01:00:00 +0100');
@@ -187,9 +187,9 @@ class TestNotify extends SharedTestFunctions {
     config_set('notify.settings','notify_send_hour',  9);
     config_set('notify.settings','notify_batchsize', 100);
     $now = REQUEST_TIME;
-    config_set('notify.settings','notify_send_start', 0);  // We haven't started
-    $tt = $now - 86400; config_set('notify.settings','notify_send_last',  $tt); // Last was yesterday.
-    $tt = $now + 86400; config_set('notify.settings','notify_cron_next',  $tt); // Next cron scheduled tomorrow.
+    state_set('notify_send_start', 0);  // We haven't started
+    $tt = $now - 86400; state_set('notify_send_last',  $tt); // Last was yesterday.
+    $tt = $now + 86400; state_set('notify_cron_next',  $tt); // Next cron scheduled tomorrow.
 
     $this->createContent(1, '', FALSE);
     $this->createContent(1, $this->user->name, FALSE);
@@ -210,9 +210,9 @@ class TestNotify extends SharedTestFunctions {
     config_set('notify.settings','notify_send_hour',  9);
     config_set('notify.settings','notify_batchsize', 100);
     $now = REQUEST_TIME;
-    config_set('notify.settings','notify_send_start', 0);  // We haven't started
-    $tt = $now - 86400; config_set('notify.settings','notify_send_last',  $tt); // Last was yesterday.
-    $tt = $now + 86400; config_set('notify.settings','notify_cron_next',  $tt); // Next cron scheduled tomorrow.
+    state_set('notify_send_start', 0);  // We haven't started
+    $tt = $now - 86400; state_set('notify_send_last',  $tt); // Last was yesterday.
+    $tt = $now + 86400; state_set('notify_cron_next',  $tt); // Next cron scheduled tomorrow.
 
     $this->createContent(1, '', FALSE);
     $this->createContent(1, $this->user->name);
@@ -236,9 +236,9 @@ class TestNotify extends SharedTestFunctions {
     config_set('notify.settings','notify_batchsize', 100);
 
     $now = REQUEST_TIME;
-    config_set('notify.settings','notify_send_start', 0); // reset
-    $tt = $now - 86400; config_set('notify.settings','notify_send_last',  $tt); // yesterday
-    config_set('notify.settings','notify_cron_next',  0); // reset
+    state_set('notify_send_start', 0); // reset
+    $tt = $now - 86400; state_set('notify_send_last',  $tt); // yesterday
+    state_set('notify_cron_next',  0); // reset
     
     // Content is: 1 x old, 2 x 5 hour old
     $fivehoursago = format_date($now-18000, 'custom', 'Y-m-d H:i:s O');
@@ -317,11 +317,8 @@ class TestSendingHour extends SharedTestFunctions {
     $send_hour = config_get('notify.settings','notify_send_hour',  8);
     //debug($send_hour, 'notify_send_hour (about two hours ago)');
 
-    config_set('notify.settings','notify_send_start', 0); // reset
-    config_set('notify.settings','notify_send_last',  $yesterday);
-    //$cron_next = $now + 6000; // +1:40 (future)
-    //$_debug = format_date($cron_next, 'custom', 'Y-m-d H:i:s O');
-    //debug($_debug, 'notify_cron_next (string) #1');
+    state_set('notify_send_start', 0); // reset
+    state_set('notify_send_last',  $yesterday);
     debug('DEBUG: Not setting $cron_next.');
 
     $this->cronRun();
@@ -333,18 +330,16 @@ class TestSendingHour extends SharedTestFunctions {
     //$_debug = format_date($cron_next, 'custom', 'Y-m-d H:i:s O');
     //debug($_debug, 'notify_cron_next (string) #2');
 
-    config_set('notify.settings','notify_send_start', 0); // reset
-    config_set('notify.settings','notify_send_last',  $yesterday);
-    config_set('notify.settings','notify_cron_next',  $cron_next);
+    state_set('notify_send_start', 0); // reset
+    state_set('notify_send_last',  $yesterday);
+    state_set('notify_cron_next',  $cron_next);
 
     $this->cronRun();
     $mails = $this->backdropGetMails();
     $firstbatch = count($mails);
     $this->assertEqual($firstbatch, 3, 'Three emails are sent.');
 
-    $cron_next = config_get('notify.settings','notify_cron_next', 0);
-    //$_debug = format_date($cron_next, 'custom', 'Y-m-d H:i:s O');
-    //debug($_debug, 'notify_cron_next (string) #3');
+    $cron_next = state_get('notify_cron_next', 0);
   }
 
   // Tests whether sending time is respected.
@@ -384,9 +379,9 @@ class TestSendingHour extends SharedTestFunctions {
     $_debug = format_date($cron_next, 'custom', 'Y-m-d H:i:s O');
     debug($_debug, 'notify_cron_next (string) #1');
 
-    config_set('notify.settings','notify_send_start', 0); // reset
-    config_set('notify.settings','notify_send_last',  $yesterday);
-    config_set('notify.settings','notify_cron_next',  $cron_next);
+    state_set('notify_send_start', 0); // reset
+    state_set('notify_send_last',  $yesterday);
+    state_set('notify_cron_next',  $cron_next);
 
     $this->cronRun();
     $mails = $this->backdropGetMails();
@@ -398,18 +393,16 @@ class TestSendingHour extends SharedTestFunctions {
     $_debug = format_date($cron_next, 'custom', 'Y-m-d H:i:s O');
     debug($_debug, 'notify_cron_next (string) #2');
 
-    config_set('notify.settings','notify_send_start', 0); // reset
-    config_set('notify.settings','notify_send_last',  $yesterday);
-    config_set('notify.settings','notify_cron_next',  $cron_next);
+    state_set('notify_send_start', 0); // reset
+    state_set('notify_send_last',  $yesterday);
+    state_set('notify_cron_next',  $cron_next);
 
     $this->cronRun();
     $mails = $this->backdropGetMails();
     $firstbatch = count($mails);
     $this->assertEqual($firstbatch, 3, 'Three emails are sent.');
 
-    $cron_next = config_get('notify.settings','notify_cron_next', 0);
-    //$_debug = format_date($cron_next, 'custom', 'Y-m-d H:i:s O');
-    //debug($_debug, 'notify_cron_next (string) #3');
+    $cron_next = state_get('notify_cron_next', 0);
   }
 
 }
@@ -495,9 +488,9 @@ class TestNotifyBatch extends SharedTestFunctions {
     config_set('notify.settings','notify_send_hour',  9);
     config_set('notify.settings','notify_batchsize', 100);
     $now = REQUEST_TIME;
-    config_set('notify.settings','notify_send_start', 0);  // We haven't started
-    $tt = $now - 86400; config_set('notify.settings','notify_send_last',  $tt); // Last was yesterday.
-    config_set('notify.settings','notify_cron_next',  0); // Cron reset
+    state_set('notify_send_start', 0);  // We haven't started
+    $tt = $now - 86400; state_set('notify_send_last',  $tt); // Last was yesterday.
+    state_set('notify_cron_next',  0); // Cron reset
 
     $this->createContent(3);
     $this->cronRun();
@@ -516,9 +509,9 @@ class TestNotifyBatch extends SharedTestFunctions {
     config_set('notify.settings','notify_send_hour',  9);
     config_set('notify.settings','notify_batchsize', 3);
     $now = REQUEST_TIME;
-    config_set('notify.settings','notify_send_start', 0);  // We haven't started
-    $tt = $now - 86400; config_set('notify.settings','notify_send_last',  $tt); // Last was yesterday.
-    config_set('notify.settings','notify_cron_next',  0); // Cron reset
+    state_set('notify_send_start', 0);  // We haven't started
+    $tt = $now - 86400; state_set('notify_send_last',  $tt); // Last was yesterday.
+    state_set('notify_cron_next',  0); // Cron reset
     $this->createContent(3);
 
     $this->cronRun(); //  3
@@ -594,9 +587,9 @@ class TestNotifyPeriods extends SharedTestFunctions {
     config_set('notify.settings','notify_send_hour',  9);
     config_set('notify.settings','notify_batchsize', 100);
     // $now = REQUEST_TIME; $tt = $now - 86400; 
-    config_set('notify.settings','notify_send_start', 0); // We haven't started
-    config_set('notify.settings','notify_send_last',  0); // Last reset
-    config_set('notify.settings','notify_cron_next',  0); // Cron reset
+    state_set('notify_send_start', 0); // We haven't started
+    state_set('notify_send_last',  0); // Last reset
+    state_set('notify_cron_next',  0); // Cron reset
 
     $this->createContent(3);
     $this->cronRun();
@@ -615,9 +608,9 @@ class TestNotifyPeriods extends SharedTestFunctions {
     config_set('notify.settings','notify_send_hour',  9);
     config_set('notify.settings','notify_batchsize', 100);
     $yd = REQUEST_TIME - 86400; 
-    config_set('notify.settings','notify_send_start', 0);  // We haven't started
-    config_set('notify.settings','notify_send_last', $yd); // Last reset
-    config_set('notify.settings','notify_cron_next',  0);  // Cron reset
+    state_set('notify_send_start', 0);  // We haven't started
+    state_set('notify_send_last', $yd); // Last reset
+    state_set('notify_cron_next',  0);  // Cron reset
 
     $this->createContent(3);
     $this->cronRun();
@@ -636,9 +629,9 @@ class TestNotifyPeriods extends SharedTestFunctions {
     config_set('notify.settings','notify_send_hour',  9);
     config_set('notify.settings','notify_batchsize', 100);
     // $now = REQUEST_TIME; $tt = $now - 86400; 
-    config_set('notify.settings','notify_send_start', 0); // We haven't started
-    config_set('notify.settings','notify_send_last',  0); // Last reset
-    config_set('notify.settings','notify_cron_next',  0); // Cron reset
+    state_set('notify_send_start', 0); // We haven't started
+    state_set('notify_send_last',  0); // Last reset
+    state_set('notify_cron_next',  0); // Cron reset
 
     $this->createContent(3);
     $this->cronRun();
@@ -697,9 +690,9 @@ class TestNotifyMailSystem extends SharedTestFunctions {
     config_set('notify.settings', 'notify_batchsize', 100);
 
     $now = REQUEST_TIME;
-    config_set('notify.settings', 'notify_send_start', 0);  // We haven't started
-    $tt = $now - 86400; config_set('notify.settings', 'notify_send_last',  $tt); // Last was yesterday.
-    $tt = $now + 86400; config_set('notify.settings', 'notify_cron_next',  $tt); // Next cron scheduled tomorrow.
+    state_set('notify_send_start', 0);  // We haven't started
+    $tt = $now - 86400; state_set('notify_send_last',  $tt); // Last was yesterday.
+    $tt = $now + 86400; state_set('notify_cron_next',  $tt); // Next cron scheduled tomorrow.
 
     $this->createContent(1, $this->user->name, FALSE);
     $this->cronRun();
