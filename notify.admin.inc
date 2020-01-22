@@ -15,7 +15,7 @@ function notify_admin_settings($form, &$form_state) {
   $nfail = state_get('notify_num_failed', 0);
   $nlast = state_get('notify_send_last', 1579447234);
   $nstart = state_get('notify_send_start', 1579447234);
-  $nusers = state_get('notify_users', 0);
+  $nusers = state_get('notify_users', array());
 
   $period = array(
     0 => t('Cron'),
@@ -288,7 +288,7 @@ function notify_admin_queue($form, &$form_state) {
 
   $sent = state_get('notify_num_sent', 0);
   $fail = state_get('notify_num_failed', 0);
-  $batch_remain = count(state_get('notify_users', 0));
+  $batch_remain = count(state_get('notify_users', array()));
 
   $creat_msg = t('There are !nodes and !comms !created', array(
     '!nodes' => format_plural($np, '1 node', '@count nodes'),
@@ -558,7 +558,7 @@ function notify_admin_skip($form, &$form_state) {
     }
   }
   $form['entities'] = $entities;
-  $batch_remain = count(state_get('notify_users', 0));
+  $batch_remain = count(state_get('notify_users', array()));
   if ($batch_remain) {
     $form['info2'] = array(
       '#markup' => '<p>' . t('Please note that the list above may be out of sync.  Saving an altered list of skip flags is disabled as long as notifications are being processed.') . '</p> ',
