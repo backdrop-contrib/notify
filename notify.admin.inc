@@ -558,6 +558,7 @@ function notify_admin_skip($form, &$form_state) {
     }
   }
   $form['entities'] = $entities;
+
   $batch_remain = count(state_get('notify_users', array()));
   if ($batch_remain) {
     $form['info2'] = array(

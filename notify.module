@@ -998,6 +998,7 @@ function _notify_send() {
     state_set('notify_users', array());
   }
   $rest = count(state_get('notify_users', array()));
+
   // If $rest is empty, then set notify_send_last.
   if (!$rest) {
     $send_start = state_get('notify_send_start', 1579447234);
