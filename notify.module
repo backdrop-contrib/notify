@@ -14,7 +14,7 @@
 /**
  * Data definitions - configuration:
  *
- * notify_attempts: The maximum number of failed attempts to send e-mail to tolerate before notification is suspended.
+ * notify_attempts: The maximum number of failed attempts to send email before notification is suspended.
  * notify_batchsize: The maximum number of users to process in each pass of a cron maintenance task.
  * notify_def_comment: Include new comments in the notification mail. (Boolean)
  * notify_def_node: Include new posts in the notification mail. (Boolean)
@@ -40,12 +40,12 @@
  * notify_cron_next: Date/Time of next send.
  * notify_num_sent: Number of notifications sent.
  * notify_num_failed: Number of notifications not sent.
- * notify_send_last: Date/Time of sending of last notification.
+ * notify_send_last: Date/Time of sending of previous notification.
  * notify_send_start: Date/Time of start of notification period.
- * notify_users: Limit on number of users.
+ * notify_users: Notifications for each user.
  *
  * Data Tables (as on 18 Jan 2020):
- * notify:
+ * notify: Per-user settings for notify.
  *    fields: UID (int 10); status, node, comment, attempts, teasers (tinyint 4).
  * notify_bytecount: Node id and size, used to determine if node has really changed.
  *    fields: id, nid, bytes (int 10);
@@ -110,7 +110,7 @@ function notify_cron() {
   }
   $send_last = state_get('notify_send_last', 1579447234);
   $cron_next = state_get('notify_cron_next', 0);
-  $doitp = state_get('notify_users', 0);
+  $doitp = state_get('notify_users', array());
 
   if ($period >= 86400) {
     if ($doitp || ($cron_next < REQUEST_TIME)) {
@@ -589,7 +589,7 @@ function _notify_count() {
  *   res_nodes, res_comms, res_nopub, res_copub, res_nounp, res_counp
  */
 function _notify_select_content() {
-  $batch_remain = count(state_get('notify_users', 0));
+  $batch_remain = count(state_get('notify_users', array()));
   $since = state_get('notify_send_last', 1579447234);
   if ($batch_remain) {
     $send_start = state_get('notify_send_start', 1579447234);
@@ -750,7 +750,7 @@ function _notify_send() {
   }
 
   if ($count) {
-    $uresult = state_get('notify_users', 0);
+    $uresult = state_get('notify_users', array());
     if (empty($uresult)) {
       // Set up for sending a new batch. Init all variables.
       $sql = 'SELECT u.uid, u.name, u.mail, u.language, n.status, n.node, n.teasers, n.comment
@@ -995,9 +995,10 @@ function _notify_send() {
     backdrop_save_session($old_state);
   }
   else {
-    state_set('notify_users', 0);
+    state_set('notify_users', array());
   }
-  $rest = count(state_get('notify_users', 0));
+  $rest = count(state_get('notify_users', array()));
+
   // If $rest is empty, then set notify_send_last.
   if (!$rest) {
     $send_start = state_get('notify_send_start', 1579447234);
